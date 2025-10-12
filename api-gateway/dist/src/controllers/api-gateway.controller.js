@@ -8,6 +8,9 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
+var __param = (this && this.__param) || function (paramIndex, decorator) {
+    return function (target, key) { decorator(target, key, paramIndex); }
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ApiGatewayController = void 0;
 const common_1 = require("@nestjs/common");
@@ -16,6 +19,60 @@ const rxjs_1 = require("rxjs");
 let ApiGatewayController = class ApiGatewayController {
     constructor(httpService) {
         this.httpService = httpService;
+    }
+    async getCaptcha() {
+        try {
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get('http://localhost:3001/auth/captcha'));
+            return response.data;
+        }
+        catch (error) {
+            throw new common_1.HttpException('Error al obtener captcha', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+    async login(body) {
+        try {
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.post('http://localhost:3001/auth/login', body));
+            return response.data;
+        }
+        catch (error) {
+            throw new common_1.HttpException('Error en login', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+    async verifyEmail(body) {
+        try {
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.post('http://localhost:3001/auth/verify-email', body));
+            return response.data;
+        }
+        catch (error) {
+            throw new common_1.HttpException('Error en verificación', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+    async getPerfil() {
+        try {
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get('http://localhost:3002/jefe/perfil'));
+            return response.data;
+        }
+        catch (error) {
+            throw new common_1.HttpException('Error al obtener perfil', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+    async updatePerfil(body) {
+        try {
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.put('http://localhost:3002/jefe/perfil', body));
+            return response.data;
+        }
+        catch (error) {
+            throw new common_1.HttpException('Error al actualizar perfil', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+    async updatePassword(body) {
+        try {
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.put('http://localhost:3002/jefe/password', body));
+            return response.data;
+        }
+        catch (error) {
+            throw new common_1.HttpException('Error al cambiar contraseña', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
     async getJefeStats() {
         try {
@@ -73,6 +130,46 @@ let ApiGatewayController = class ApiGatewayController {
     }
 };
 exports.ApiGatewayController = ApiGatewayController;
+__decorate([
+    (0, common_1.Get)('auth/captcha'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], ApiGatewayController.prototype, "getCaptcha", null);
+__decorate([
+    (0, common_1.Post)('auth/login'),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], ApiGatewayController.prototype, "login", null);
+__decorate([
+    (0, common_1.Post)('auth/verify-email'),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], ApiGatewayController.prototype, "verifyEmail", null);
+__decorate([
+    (0, common_1.Get)('jefe/perfil'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], ApiGatewayController.prototype, "getPerfil", null);
+__decorate([
+    (0, common_1.Put)('jefe/perfil'),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], ApiGatewayController.prototype, "updatePerfil", null);
+__decorate([
+    (0, common_1.Put)('jefe/password'),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], ApiGatewayController.prototype, "updatePassword", null);
 __decorate([
     (0, common_1.Get)('jefe/stats'),
     __metadata("design:type", Function),

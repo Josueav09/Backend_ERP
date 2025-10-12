@@ -1,10 +1,86 @@
-import { Controller, Get, HttpException, HttpStatus } from '@nestjs/common';
+import { Body, Controller, Get, HttpException, HttpStatus, Post, Put } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
 
 @Controller()
 export class ApiGatewayController {
-  constructor(private readonly httpService: HttpService) {}
+  constructor(private readonly httpService: HttpService) { }
+
+
+  // 🔐 RUTAS DE AUTENTICACIÓN
+  @Get('auth/captcha')
+  async getCaptcha() {
+    try {
+      const response = await firstValueFrom(
+        this.httpService.get('http://localhost:3001/auth/captcha')
+      );
+      return response.data;
+    } catch (error) {
+      throw new HttpException('Error al obtener captcha', HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
+
+  @Post('auth/login')
+  async login(@Body() body: any) {
+    try {
+      const response = await firstValueFrom(
+        this.httpService.post('http://localhost:3001/auth/login', body)
+      );
+      return response.data;
+    } catch (error) {
+      throw new HttpException('Error en login', HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
+
+  @Post('auth/verify-email')
+  async verifyEmail(@Body() body: any) {
+    try {
+      const response = await firstValueFrom(
+        this.httpService.post('http://localhost:3001/auth/verify-email', body)
+      );
+      return response.data;
+    } catch (error) {
+      throw new HttpException('Error en verificación', HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
+
+  @Get('jefe/perfil')
+  async getPerfil() {
+    try {
+      const response = await firstValueFrom(
+        this.httpService.get('http://localhost:3002/jefe/perfil')
+      );
+      return response.data;
+    } catch (error) {
+      throw new HttpException('Error al obtener perfil', HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
+
+  @Put('jefe/perfil')
+  async updatePerfil(@Body() body: any) {
+    try {
+      const response = await firstValueFrom(
+        this.httpService.put('http://localhost:3002/jefe/perfil', body)
+      );
+      return response.data;
+    } catch (error) {
+      throw new HttpException('Error al actualizar perfil', HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
+
+  @Put('jefe/password')
+  async updatePassword(@Body() body: any) {
+    try {
+      const response = await firstValueFrom(
+        this.httpService.put('http://localhost:3002/jefe/password', body)
+      );
+      return response.data;
+    } catch (error) {
+      throw new HttpException('Error al cambiar contraseña', HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
+
+
 
   @Get('jefe/stats')
   async getJefeStats() {
