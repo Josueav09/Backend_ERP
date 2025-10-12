@@ -1,0 +1,16 @@
+// {
+//   "extends": "../../tsconfig.json",
+//   "compilerOptions": {
+//     "outDir": "../../dist/user-service",
+//     "rootDir": "src"
+//   }
+// }
+
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "outDir": "./dist"
+  },
+  "include": ["**/*"],
+  "exclude": ["node_modules", "dist", "test", "**/*spec.ts"]
+}

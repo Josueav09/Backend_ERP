@@ -1,0 +1,6 @@
+export declare class LoginDto {
+    email: string;
+    password: string;
+    captchaToken: string;
+    captchaResponse: string;
+}
