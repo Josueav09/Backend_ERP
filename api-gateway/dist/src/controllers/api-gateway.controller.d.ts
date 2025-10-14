@@ -14,4 +14,14 @@ export declare class ApiGatewayController {
     getEjecutivas(): Promise<any>;
     getEmpresas(): Promise<any>;
     getTrazabilidad(): Promise<any>;
+    getClienteStats(): Promise<any>;
+    getClienteTrazabilidad(): Promise<any>;
+    getTraceabilityClienteTrazabilidad(): Promise<any>;
+    getEjecutivaStats(ejecutivaId: string): Promise<any>;
+    getEjecutivaEmpresas(ejecutivaId: string): Promise<any>;
+    createEjecutivaEmpresa(body: any): Promise<any>;
+    getEjecutivaClientes(ejecutivaId: string): Promise<any>;
+    createEjecutivaCliente(body: any): Promise<any>;
+    getEjecutivaTrazabilidad(ejecutivaId: string): Promise<any>;
+    createEjecutivaTrazabilidad(body: any): Promise<any>;
 }
