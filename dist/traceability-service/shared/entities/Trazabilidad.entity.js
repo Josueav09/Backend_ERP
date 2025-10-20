@@ -50,7 +50,7 @@ __decorate([
     (0, typeorm_1.Column)({
         type: 'varchar',
         length: 50,
-        enum: ['Llamada', 'WhatsApp', 'Email', 'LinkedIn', 'Reunión presencial', 'Otro']
+        enum: ['Llamada telefónica', 'Chat de Whatsapp', 'Correo electrónico', 'Contacto por linkedin', 'Reunión presencial', 'Otro']
     }),
     __metadata("design:type", String)
 ], Trazabilidad.prototype, "tipo_contacto", void 0);
@@ -58,6 +58,10 @@ __decorate([
     (0, typeorm_1.Column)({ type: 'timestamp' }),
     __metadata("design:type", Date)
 ], Trazabilidad.prototype, "fecha_contacto", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'timestamp', nullable: true }),
+    __metadata("design:type", Date)
+], Trazabilidad.prototype, "fecha_respuesta", void 0);
 __decorate([
     (0, typeorm_1.Column)({
         type: 'varchar',
@@ -67,21 +71,37 @@ __decorate([
     __metadata("design:type", String)
 ], Trazabilidad.prototype, "resultado_contacto", void 0);
 __decorate([
-    (0, typeorm_1.Column)({
-        type: 'varchar',
-        length: 50,
-        enum: [
-            'Prospección', 'Calificación', 'Detección de necesidades', 'Presentación de solución',
-            'Manejo de objeciones', 'Presentación de propuesta', 'Negociación', 'Firma de contrato',
-            'Venta ganada', 'Venta perdida', 'Venta suspendida'
-        ]
-    }),
+    (0, typeorm_1.Column)({ type: 'text', nullable: true }),
     __metadata("design:type", String)
-], Trazabilidad.prototype, "etapa_oportunidad", void 0);
+], Trazabilidad.prototype, "informacion_importante", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'boolean', default: false }),
+    __metadata("design:type", Boolean)
+], Trazabilidad.prototype, "reunion_agendada", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'timestamp', nullable: true }),
+    __metadata("design:type", Date)
+], Trazabilidad.prototype, "fecha_reunion", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'text', nullable: true }),
+    __metadata("design:type", String)
+], Trazabilidad.prototype, "participantes", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'boolean', nullable: true }),
+    __metadata("design:type", Boolean)
+], Trazabilidad.prototype, "se_dio_reunion", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'text', nullable: true }),
+    __metadata("design:type", String)
+], Trazabilidad.prototype, "resultados_reunion", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'boolean', default: false }),
+    __metadata("design:type", Boolean)
+], Trazabilidad.prototype, "pasa_embudo_ventas", void 0);
 __decorate([
     (0, typeorm_1.Column)({ type: 'date', nullable: true }),
     __metadata("design:type", Date)
-], Trazabilidad.prototype, "fecha_inicio", void 0);
+], Trazabilidad.prototype, "fecha_inicio_etapa", void 0);
 __decorate([
     (0, typeorm_1.Column)({ type: 'varchar', length: 255, nullable: true }),
     __metadata("design:type", String)
@@ -96,6 +116,31 @@ __decorate([
     __metadata("design:type", String)
 ], Trazabilidad.prototype, "tipo_oportunidad", void 0);
 __decorate([
+    (0, typeorm_1.Column)({
+        type: 'varchar',
+        length: 50,
+        nullable: true,
+        enum: [
+            'Prospección', 'Calificación', 'Detección de necesidades', 'Presentación de solución',
+            'Manejo de objeciones', 'Presentación de propuesta', 'Negociación', 'Firma de contrato',
+            'Venta ganada', 'Venta perdida', 'Venta suspendida'
+        ]
+    }),
+    __metadata("design:type", String)
+], Trazabilidad.prototype, "etapa_oportunidad", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'text', nullable: true }),
+    __metadata("design:type", String)
+], Trazabilidad.prototype, "producto_ofrecido", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'date', nullable: true }),
+    __metadata("design:type", Date)
+], Trazabilidad.prototype, "fecha_registro_oportunidad", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'date', nullable: true }),
+    __metadata("design:type", Date)
+], Trazabilidad.prototype, "fecha_cierre_esperado", void 0);
+__decorate([
     (0, typeorm_1.Column)({ type: 'decimal', precision: 15, scale: 2, nullable: true }),
     __metadata("design:type", Number)
 ], Trazabilidad.prototype, "monto_total_sin_imp", void 0);
@@ -104,13 +149,9 @@ __decorate([
     __metadata("design:type", Number)
 ], Trazabilidad.prototype, "probabilidad_cierre", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'date', nullable: true }),
-    __metadata("design:type", Date)
-], Trazabilidad.prototype, "fecha_cierre", void 0);
-__decorate([
     (0, typeorm_1.Column)({ type: 'decimal', precision: 15, scale: 2, nullable: true }),
     __metadata("design:type", Number)
-], Trazabilidad.prototype, "monto_cierre", void 0);
+], Trazabilidad.prototype, "monto_cierre_final", void 0);
 __decorate([
     (0, typeorm_1.Column)({ type: 'text', nullable: true }),
     __metadata("design:type", String)

@@ -5,14 +5,19 @@ export declare class TrazabilidadService {
     constructor(trazabilidadRepository: Repository<Trazabilidad>);
     getTrazabilidad(filters?: any): Promise<Trazabilidad[]>;
     getDashboardTrazabilidad(): Promise<{
-        pipeline_ventas: any;
+        etapa1_generacion: any;
+        etapa2_embudo: any;
+        kpis_semanales: any;
         dashboard_ejecutivas: any;
         estadisticas: {
             total_gestiones: number;
-            revenue_total: any;
+            revenue_total: number;
             gestiones_por_tipo: any[];
             oportunidades_por_etapa: any[];
+            por_etapa: any;
         };
     }>;
     createTrazabilidad(data: any): Promise<Trazabilidad>;
+    updateTrazabilidad(id: number, data: any): Promise<Trazabilidad>;
+    getEstadisticasPorEtapa(filters?: any): Promise<any>;
 }

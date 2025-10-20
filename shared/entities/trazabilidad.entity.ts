@@ -26,18 +26,22 @@ export class Trazabilidad {
   @JoinColumn({ name: 'id_contacto' })
   persona_contacto: PersonaContacto;
 
+  // ETAPA 1: GENERACIÓN DE LA OPORTUNIDAD
   @Column({ type: 'date', nullable: true })
   fecha_agregado_base: Date;
 
   @Column({ 
     type: 'varchar', 
     length: 50,
-    enum: ['Llamada', 'WhatsApp', 'Email', 'LinkedIn', 'Reunión presencial', 'Otro']
+    enum: ['Llamada telefónica', 'Chat de Whatsapp', 'Correo electrónico', 'Contacto por linkedin', 'Reunión presencial', 'Otro']
   })
   tipo_contacto: string;
 
   @Column({ type: 'timestamp' })
   fecha_contacto: Date;
+
+  @Column({ type: 'timestamp', nullable: true })
+  fecha_respuesta: Date;
 
   @Column({ 
     type: 'varchar', 
@@ -46,19 +50,31 @@ export class Trazabilidad {
   })
   resultado_contacto: string;
 
-  @Column({ 
-    type: 'varchar', 
-    length: 50,
-    enum: [
-      'Prospección', 'Calificación', 'Detección de necesidades', 'Presentación de solución',
-      'Manejo de objeciones', 'Presentación de propuesta', 'Negociación', 'Firma de contrato',
-      'Venta ganada', 'Venta perdida', 'Venta suspendida'
-    ]
-  })
-  etapa_oportunidad: string;
+  @Column({ type: 'text', nullable: true })
+  informacion_importante: string;
 
+  // Campos de Reunión (Etapa 1)
+  @Column({ type: 'boolean', default: false })
+  reunion_agendada: boolean;
+
+  @Column({ type: 'timestamp', nullable: true })
+  fecha_reunion: Date;
+
+  @Column({ type: 'text', nullable: true })
+  participantes: string;
+
+  @Column({ type: 'boolean', nullable: true })
+  se_dio_reunion: boolean;
+
+  @Column({ type: 'text', nullable: true })
+  resultados_reunion: string;
+
+  @Column({ type: 'boolean', default: false })
+  pasa_embudo_ventas: boolean;
+
+  // ETAPA 2: GESTIÓN DE LA OPORTUNIDAD
   @Column({ type: 'date', nullable: true })
-  fecha_inicio: Date;
+  fecha_inicio_etapa: Date;
 
   @Column({ type: 'varchar', length: 255, nullable: true })
   nombre_oportunidad: string;
@@ -71,17 +87,35 @@ export class Trazabilidad {
   })
   tipo_oportunidad: string;
 
+  @Column({ 
+    type: 'varchar', 
+    length: 50,
+    nullable: true,
+    enum: [
+      'Prospección', 'Calificación', 'Detección de necesidades', 'Presentación de solución',
+      'Manejo de objeciones', 'Presentación de propuesta', 'Negociación', 'Firma de contrato',
+      'Venta ganada', 'Venta perdida', 'Venta suspendida'
+    ]
+  })
+  etapa_oportunidad: string;
+
+  @Column({ type: 'text', nullable: true })
+  producto_ofrecido: string;
+
+  @Column({ type: 'date', nullable: true })
+  fecha_registro_oportunidad: Date;
+
+  @Column({ type: 'date', nullable: true })
+  fecha_cierre_esperado: Date;
+
   @Column({ type: 'decimal', precision: 15, scale: 2, nullable: true })
   monto_total_sin_imp: number;
 
   @Column({ type: 'int', nullable: true })
   probabilidad_cierre: number; // 0-100
 
-  @Column({ type: 'date', nullable: true })
-  fecha_cierre: Date;
-
   @Column({ type: 'decimal', precision: 15, scale: 2, nullable: true })
-  monto_cierre: number;
+  monto_cierre_final: number;
 
   @Column({ type: 'text', nullable: true })
   observaciones: string;

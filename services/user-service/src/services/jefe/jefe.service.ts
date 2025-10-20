@@ -74,7 +74,7 @@ export class JefeService {
       console.log('✅ [JefeService] Jefe ENCONTRADO:', {
         id_jefe: jefe.id_jefe,
         nombre_completo: jefe.nombre_completo,
-        correo: jefe.correo,
+        email: jefe.correo,
         telefono: jefe.telefono,
         fecha_creacion: jefe.fecha_creacion
       });
