@@ -1,153 +1,193 @@
 "use strict";
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
     if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
-var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function (o) {
-            var ar = [];
-            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-            return ar;
-        };
-        return ownKeys(o);
-    };
-    return function (mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        __setModuleDefault(result, mod);
-        return result;
-    };
-})();
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var __param = (this && this.__param) || function (paramIndex, decorator) {
+    return function (target, key) { decorator(target, key, paramIndex); }
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.JefeService = void 0;
 const common_1 = require("@nestjs/common");
-const database_1 = require("../../../../../shared/utils/database");
-const bcrypt = __importStar(require("bcryptjs"));
+const typeorm_1 = require("@nestjs/typeorm");
+const typeorm_2 = require("typeorm");
+const Jefe_entity_1 = require("../../../../../shared/entities/Jefe.entity");
+const EmpresaProveedora_entity_1 = require("../../../../../shared/entities/EmpresaProveedora.entity");
+const Ejecutiva_entity_1 = require("../../../../../shared/entities/Ejecutiva.entity");
+const ClienteFinal_entity_1 = require("../../../../../shared/entities/ClienteFinal.entity");
+const Trazabilidad_entity_1 = require("../../../../../shared/entities/Trazabilidad.entity");
 let JefeService = class JefeService {
-    constructor() {
-        this.userId = 12;
+    constructor(jefeRepository, empresaRepository, ejecutivaRepository, clienteRepository, trazabilidadRepository) {
+        this.jefeRepository = jefeRepository;
+        this.empresaRepository = empresaRepository;
+        this.ejecutivaRepository = ejecutivaRepository;
+        this.clienteRepository = clienteRepository;
+        this.trazabilidadRepository = trazabilidadRepository;
     }
-    async getPerfil() {
-        const result = await database_1.sql.query(`SELECT 
-         id_usuario,
-         nombre,
-         apellido,
-         email,
-         telefono,
-         activo,
-         fecha_creacion,
-         ultima_conexion,
-         intentos_fallidos,
-         bloqueado_hasta,
-         ip_bloqueada
-       FROM usuarios
-       WHERE id_usuario = $1 AND rol = 'jefe'`, [this.userId]);
-        if (result.rows.length === 0) {
-            throw new common_1.HttpException('Usuario no encontrado', common_1.HttpStatus.NOT_FOUND);
+    async getPerfil(userId) {
+        console.log('🔐 [JefeService] === INICIANDO getPerfil ===');
+        console.log('🔐 [JefeService] userId recibido:', userId);
+        console.log('🔐 [JefeService] Tipo de userId:', typeof userId);
+        try {
+            console.log('🔐 [JefeService] jefeRepository:', this.jefeRepository ? 'DEFINIDO' : 'NO DEFINIDO');
+            const todosJefes = await this.jefeRepository.find();
+            console.log('🔐 [JefeService] Todos los jefes en BD:', todosJefes);
+            console.log('🔐 [JefeService] Cantidad de jefes:', todosJefes.length);
+            console.log('🔐 [JefeService] Buscando jefe con id_jefe:', userId);
+            const jefe = await this.jefeRepository.findOne({
+                where: { id_jefe: userId }
+            });
+            console.log('🔐 [JefeService] Resultado de findOne:', jefe);
+            if (!jefe) {
+                console.log('❌ [JefeService] Jefe NO encontrado para id:', userId);
+                const jefeComoString = await this.jefeRepository.findOne({
+                    where: { id_jefe: userId.toString() }
+                });
+                console.log('🔐 [JefeService] Búsqueda con string:', jefeComoString);
+                return null;
+            }
+            console.log('✅ [JefeService] Jefe ENCONTRADO:', {
+                id_jefe: jefe.id_jefe,
+                nombre_completo: jefe.nombre_completo,
+                correo: jefe.correo,
+                telefono: jefe.telefono,
+                fecha_creacion: jefe.fecha_creacion
+            });
+            const nombreParts = jefe.nombre_completo.split(' ');
+            const perfilData = {
+                id_jefe: jefe.id_jefe,
+                dni: jefe.dni,
+                nombre_completo: jefe.nombre_completo,
+                email: jefe.correo,
+                telefono: jefe.telefono,
+                linkedin: jefe.linkedin,
+                rol: jefe.rol,
+                fecha_creacion: jefe.fecha_creacion,
+                fecha_actualizacion: jefe.fecha_actualizacion
+            };
+            console.log('✅ [JefeService] Perfil formateado:', perfilData);
+            return perfilData;
         }
-        return result.rows[0];
+        catch (error) {
+            console.error('❌ [JefeService] ERROR en getPerfil:', error);
+            console.error('❌ [JefeService] Stack trace:', error.stack);
+            throw new common_1.HttpException('Error al obtener perfil del jefe', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
-    async updatePerfil(data) {
-        const { nombre, apellido, email, telefono, activo, bloqueado_hasta, ip_bloqueada } = data;
-        if (!nombre || !apellido || !email) {
-            throw new common_1.HttpException('Nombre, apellido y email son requeridos', common_1.HttpStatus.BAD_REQUEST);
-        }
-        const result = await database_1.sql.query(`UPDATE usuarios
-       SET 
-         nombre = $1,
-         apellido = $2,
-         email = $3,
-         telefono = $4,
-         activo = $5,
-         bloqueado_hasta = $6,
-         ip_bloqueada = $7
-       WHERE id_usuario = $8 AND rol = 'jefe'
-       RETURNING *`, [nombre, apellido, email, telefono || null, activo ?? true, bloqueado_hasta || null, ip_bloqueada || null, this.userId]);
-        if (result.rows.length === 0) {
+    async updatePerfil(userId, data) {
+        const { nombre_completo, telefono, linkedin } = data;
+        const result = await this.jefeRepository.update({ id_jefe: userId }, {
+            nombre_completo: nombre_completo,
+            telefono: telefono,
+            linkedin: linkedin,
+            fecha_actualizacion: new Date()
+        });
+        if (result.affected === 0) {
             throw new common_1.HttpException('No se pudo actualizar el perfil', common_1.HttpStatus.BAD_REQUEST);
         }
-        return { message: "Perfil actualizado exitosamente", usuario: result.rows[0] };
+        return await this.jefeRepository.findOne({ where: { id_jefe: userId } });
     }
-    async updatePassword(password_actual, password_nueva) {
+    async updatePassword(userId, password_actual, password_nueva) {
         if (!password_actual || !password_nueva) {
             throw new common_1.HttpException('Contraseña actual y nueva son requeridas', common_1.HttpStatus.BAD_REQUEST);
         }
-        if (password_nueva.length < 6) {
-            throw new common_1.HttpException('La contraseña debe tener al menos 6 caracteres', common_1.HttpStatus.BAD_REQUEST);
+        const jefe = await this.jefeRepository.findOne({
+            where: { id_jefe: userId }
+        });
+        if (!jefe) {
+            throw new common_1.HttpException('Jefe no encontrado', common_1.HttpStatus.NOT_FOUND);
         }
-        const userResult = await database_1.sql.query(`SELECT password_hash
-       FROM usuarios
-       WHERE id_usuario = $1 AND rol = 'jefe'`, [this.userId]);
-        if (userResult.rows.length === 0) {
-            throw new common_1.HttpException('Usuario no encontrado', common_1.HttpStatus.NOT_FOUND);
-        }
-        const currentHash = userResult.rows[0].password_hash;
-        const isValidPassword = await bcrypt.compare(password_actual, currentHash);
+        const bcrypt = require('bcryptjs');
+        const isValidPassword = await bcrypt.compare(password_actual, jefe.contraseña);
         if (!isValidPassword) {
             throw new common_1.HttpException('Contraseña actual incorrecta', common_1.HttpStatus.UNAUTHORIZED);
         }
         const hashedPassword = await bcrypt.hash(password_nueva, 10);
-        await database_1.sql.query(`UPDATE usuarios
-       SET password_hash = $1
-       WHERE id_usuario = $2 AND rol = 'jefe'`, [hashedPassword, this.userId]);
+        await this.jefeRepository.update({ id_jefe: userId }, {
+            contraseña: hashedPassword,
+            fecha_actualizacion: new Date()
+        });
         return { message: "Contraseña actualizada exitosamente" };
     }
     async getStats() {
-        const empresasResult = await database_1.sql.query('SELECT COUNT(*) as total FROM public.empresa_proveedora WHERE activo = true');
-        const ejecutivasResult = await database_1.sql.query("SELECT COUNT(*) as total FROM public.usuarios WHERE rol = 'ejecutiva' AND activo = true");
-        const clientesResult = await database_1.sql.query("SELECT COUNT(*) as total FROM public.cliente_empresa WHERE estado = 'activo'");
-        const actividadesResult = await database_1.sql.query("SELECT COUNT(*) as total FROM public.trazabilidad WHERE fecha_actividad >= DATE_TRUNC('month', CURRENT_DATE)");
-        const trazabilidadEstadoResult = await database_1.sql.query("SELECT estado, COUNT(*) as total FROM public.trazabilidad GROUP BY estado");
-        const actividadesPorEjecutivaResult = await database_1.sql.query(`SELECT 
-        u.nombre || ' ' || u.apellido as ejecutiva,
-        COUNT(t.id_trazabilidad) as total_actividades
-      FROM public.usuarios u
-      LEFT JOIN public.trazabilidad t ON u.id_usuario = t.id_ejecutiva
-      WHERE u.rol = 'ejecutiva' AND u.activo = true
-      GROUP BY u.id_usuario, u.nombre, u.apellido
-      ORDER BY total_actividades DESC
-      LIMIT 5`);
-        const clientesPorEmpresaResult = await database_1.sql.query(`SELECT 
-        ep.nombre_empresa,
-        COUNT(ce.id_cliente) as total_clientes
-      FROM public.empresa_proveedora ep
-      LEFT JOIN public.cliente_empresa ce ON ep.id_empresa = ce.id_empresa
-      WHERE ep.activo = true
-      GROUP BY ep.id_empresa, ep.nombre_empresa
-      ORDER BY total_clientes DESC`);
-        return {
-            totalEmpresas: Number(empresasResult.rows[0].total),
-            totalEjecutivas: Number(ejecutivasResult.rows[0].total),
-            totalClientes: Number(clientesResult.rows[0].total),
-            actividadesMes: Number(actividadesResult.rows[0].total),
-            trazabilidadPorEstado: trazabilidadEstadoResult.rows,
-            actividadesPorEjecutiva: actividadesPorEjecutivaResult.rows,
-            clientesPorEmpresa: clientesPorEmpresaResult.rows,
-        };
+        try {
+            console.log('📊 Obteniendo estadísticas para jefe...');
+            const [totalEmpresas, totalEjecutivas, totalClientes, clientesEsteMes, actividadesEsteMes, pipelineData, dashboardData] = await Promise.all([
+                this.empresaRepository.count({ where: { estado: 'Activo' } }),
+                this.ejecutivaRepository.count({ where: { estado_ejecutiva: 'Activo' } }),
+                this.clienteRepository.count(),
+                this.getClientesNuevosMes(),
+                this.getActividadesMes(),
+                this.trazabilidadRepository.query('SELECT * FROM vista_pipeline_ventas'),
+                this.trazabilidadRepository.query('SELECT * FROM vista_dashboard_ejecutiva')
+            ]);
+            const revenueTotal = pipelineData.reduce((sum, item) => {
+                return sum + (Number(item.monto_total_sin_imp) || 0);
+            }, 0);
+            const ventasGanadas = pipelineData.filter((item) => item.etapa_oportunidad === 'Venta ganada').length;
+            const tasaConversion = totalClientes > 0
+                ? ((ventasGanadas / totalClientes) * 100).toFixed(1) + '%'
+                : '0%';
+            const stats = {
+                totalEmpresas,
+                totalEjecutivas,
+                totalClientes,
+                clientesEsteMes,
+                revenueTotal,
+                pipelineOportunidades: pipelineData.length,
+                dashboardEjecutivas: dashboardData,
+                kpis: {
+                    tasaConversion,
+                    clientesNuevosMes: clientesEsteMes,
+                    actividadesMes: actividadesEsteMes
+                }
+            };
+            console.log('✅ Estadísticas obtenidas:', stats);
+            return stats;
+        }
+        catch (error) {
+            console.error('❌ Error en getStats:', error);
+            throw new common_1.HttpException('Error al obtener estadísticas del sistema', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+    async getClientesNuevosMes() {
+        const startOfMonth = new Date();
+        startOfMonth.setDate(1);
+        startOfMonth.setHours(0, 0, 0, 0);
+        return await this.clienteRepository.count({
+            where: {
+                fecha_creacion: (0, typeorm_2.MoreThanOrEqual)(startOfMonth)
+            }
+        });
+    }
+    async getActividadesMes() {
+        const startOfMonth = new Date();
+        startOfMonth.setDate(1);
+        startOfMonth.setHours(0, 0, 0, 0);
+        return await this.trazabilidadRepository.count({
+            where: {
+                fecha_contacto: (0, typeorm_2.MoreThanOrEqual)(startOfMonth)
+            }
+        });
     }
 };
 exports.JefeService = JefeService;
 exports.JefeService = JefeService = __decorate([
-    (0, common_1.Injectable)()
+    (0, common_1.Injectable)(),
+    __param(0, (0, typeorm_1.InjectRepository)(Jefe_entity_1.Jefe)),
+    __param(1, (0, typeorm_1.InjectRepository)(EmpresaProveedora_entity_1.EmpresaProveedora)),
+    __param(2, (0, typeorm_1.InjectRepository)(Ejecutiva_entity_1.Ejecutiva)),
+    __param(3, (0, typeorm_1.InjectRepository)(ClienteFinal_entity_1.ClienteFinal)),
+    __param(4, (0, typeorm_1.InjectRepository)(Trazabilidad_entity_1.Trazabilidad)),
+    __metadata("design:paramtypes", [typeorm_2.Repository,
+        typeorm_2.Repository,
+        typeorm_2.Repository,
+        typeorm_2.Repository,
+        typeorm_2.Repository])
 ], JefeService);
 //# sourceMappingURL=jefe.service.js.map

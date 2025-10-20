@@ -32,6 +32,8 @@ let EmpresasController = class EmpresasController {
             return await this.empresasService.createEmpresa(body);
         }
         catch (error) {
+            if (error instanceof common_1.HttpException)
+                throw error;
             throw new common_1.HttpException('Error al crear empresa', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
@@ -48,6 +50,9 @@ let EmpresasController = class EmpresasController {
                 throw error;
             throw new common_1.HttpException('Error al actualizar estado de empresa', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
         }
+    }
+    async updateEmpresa(id, data) {
+        return this.empresasService.updateEmpresa(Number.parseInt(id), data);
     }
     async getEmpresaEjecutivas(id) {
         try {
@@ -76,6 +81,8 @@ let EmpresasController = class EmpresasController {
             return await this.empresasService.removeEjecutivaFromEmpresa(parseInt(id), parseInt(ejecutivaId));
         }
         catch (error) {
+            if (error instanceof common_1.HttpException)
+                throw error;
             throw new common_1.HttpException('Error al remover ejecutiva', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
@@ -102,6 +109,14 @@ __decorate([
     __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", Promise)
 ], EmpresasController.prototype, "updateEmpresaEstado", null);
+__decorate([
+    (0, common_1.Put)(':id'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", Promise)
+], EmpresasController.prototype, "updateEmpresa", null);
 __decorate([
     (0, common_1.Get)(':id/ejecutivas'),
     __param(0, (0, common_1.Param)('id')),

@@ -1,18 +1,3 @@
-// import { Module } from '@nestjs/common';
-// import { ConfigModule } from '@nestjs/config';
-// import { HealthController } from './src/controllers/health.controller';
-
-// @Module({
-//   imports: [
-//     ConfigModule.forRoot({
-//       isGlobal: true,
-//     }),
-//   ],
-//   controllers: [HealthController],
-//   providers: [],
-// })
-// export class AppModule {}
-
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { HttpModule } from '@nestjs/axios';

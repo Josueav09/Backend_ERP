@@ -2,10 +2,43 @@ import { ClientesService } from '../../services/jefe/clientes.service';
 export declare class ClientesController {
     private readonly clientesService;
     constructor(clientesService: ClientesService);
-    getClientes(): Promise<any[]>;
-    getCliente(id: string): Promise<any>;
-    createCliente(body: any): Promise<any>;
-    updateCliente(id: string, body: any): Promise<any>;
+    getClientes(): Promise<{
+        total_actividades: number;
+        ultima_actividad: Date;
+        ejecutiva_asignada: string;
+        empresa_proveedora: string;
+        id_cliente_final: number;
+        ruc: string;
+        razon_social: string;
+        pagina_web: string;
+        correo: string;
+        telefono: string;
+        pais: string;
+        departamento: string;
+        provincia: string;
+        direccion: string;
+        linkedin: string;
+        grupo_economico: string;
+        rubro: string;
+        sub_rubro: string;
+        tamanio_empresa: string;
+        facturacion_anual: number;
+        cantidad_empleados: number;
+        logo: string;
+        ejecutiva: import("shared/entities/Ejecutiva.entity").Ejecutiva;
+        personas_contacto: import("shared/entities/PersonaContacto.entity").PersonaContacto[];
+        trazabilidades: import("shared/entities/Trazabilidad.entity").Trazabilidad[];
+        fecha_creacion: Date;
+        fecha_actualizacion: Date;
+    }[]>;
+    getCliente(id: string): Promise<{
+        cliente: import("shared/entities/ClienteFinal.entity").ClienteFinal;
+        actividades_recientes: import("shared/entities/Trazabilidad.entity").Trazabilidad[];
+        total_actividades: number;
+        personas_contacto: import("shared/entities/PersonaContacto.entity").PersonaContacto[];
+    }>;
+    createCliente(body: any): Promise<import("shared/entities/ClienteFinal.entity").ClienteFinal>;
+    updateCliente(id: string, body: any): Promise<import("shared/entities/ClienteFinal.entity").ClienteFinal>;
     deleteCliente(id: string): Promise<{
         message: string;
     }>;

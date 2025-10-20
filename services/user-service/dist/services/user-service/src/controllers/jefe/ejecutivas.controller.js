@@ -43,16 +43,16 @@ let EjecutivasController = class EjecutivasController {
     }
     async createEjecutiva(body) {
         try {
-            const { nombre, apellido, email, telefono, password } = body;
-            if (!nombre || !apellido || !email || !password) {
-                throw new common_1.HttpException('Faltan campos requeridos', common_1.HttpStatus.BAD_REQUEST);
+            const { dni, nombre_completo, correo, contraseña, telefono } = body;
+            if (!dni || !nombre_completo || !correo || !contraseña) {
+                throw new common_1.HttpException('DNI, nombre completo, correo y contraseña son requeridos', common_1.HttpStatus.BAD_REQUEST);
             }
             return await this.ejecutivasService.createEjecutiva(body);
         }
         catch (error) {
             if (error instanceof common_1.HttpException)
                 throw error;
-            throw new common_1.HttpException('Error al crear ejecutiva', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
+            throw new common_1.HttpException('Error al crear ejecutiva', error);
         }
     }
     async updateEjecutiva(id, body) {

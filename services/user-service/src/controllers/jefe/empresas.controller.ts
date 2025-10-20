@@ -1,9 +1,9 @@
-import { Controller, Get, Post, Patch, Param, Body, HttpException, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Param, Body, HttpException, HttpStatus, Put } from '@nestjs/common';
 import { EmpresasService } from '../../services/jefe/empresas.service';
 
-@Controller('empresas')
+@Controller('empresas') // ✅ Cambiar el controlador para usar prefijo jefe
 export class EmpresasController {
-  constructor(private readonly empresasService: EmpresasService) {}
+  constructor(private readonly empresasService: EmpresasService) { }
 
   @Get()
   async getEmpresas() {
@@ -19,6 +19,7 @@ export class EmpresasController {
     try {
       return await this.empresasService.createEmpresa(body);
     } catch (error) {
+      if (error instanceof HttpException) throw error;
       throw new HttpException('Error al crear empresa', HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
@@ -35,6 +36,15 @@ export class EmpresasController {
       if (error instanceof HttpException) throw error;
       throw new HttpException('Error al actualizar estado de empresa', HttpStatus.INTERNAL_SERVER_ERROR);
     }
+  }
+
+  // En EmpresasController.ts - agregar este endpoint
+  @Put(':id')
+  async updateEmpresa(
+    @Param('id') id: string,
+    @Body() data: any
+  ) {
+    return this.empresasService.updateEmpresa(Number.parseInt(id), data);
   }
 
   @Get(':id/ejecutivas')
@@ -65,6 +75,7 @@ export class EmpresasController {
     try {
       return await this.empresasService.removeEjecutivaFromEmpresa(parseInt(id), parseInt(ejecutivaId));
     } catch (error) {
+      if (error instanceof HttpException) throw error;
       throw new HttpException('Error al remover ejecutiva', HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }

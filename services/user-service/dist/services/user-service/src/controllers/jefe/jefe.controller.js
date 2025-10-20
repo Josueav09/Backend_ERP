@@ -14,31 +14,35 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.JefeController = void 0;
 const common_1 = require("@nestjs/common");
+const common_2 = require("@nestjs/common");
 const jefe_service_1 = require("../../services/jefe/jefe.service");
+const jwt_auth_guard_1 = require("../../../../../shared/guards/jwt-auth.guard");
 let JefeController = class JefeController {
     constructor(jefeService) {
         this.jefeService = jefeService;
     }
-    async getPerfil() {
-        try {
-            return await this.jefeService.getPerfil();
-        }
-        catch (error) {
-            throw new common_1.HttpException('Error al obtener perfil', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
-        }
+    async getPerfil(req) {
+        console.log('🔐 Headers:', req.headers);
+        console.log('🔐 Authorization:', req.headers.authorization);
+        console.log('🔐 User completo:', req.user);
+        const userId = req.user.id_jefe;
+        console.log('🔐 [JefeController] User ID:', userId);
+        return await this.jefeService.getPerfil(userId);
     }
-    async updatePerfil(body) {
+    async updatePerfil(req, body) {
         try {
-            return await this.jefeService.updatePerfil(body);
+            const userId = req.user.id_jefe;
+            return await this.jefeService.updatePerfil(userId, body);
         }
         catch (error) {
             throw new common_1.HttpException('Error al actualizar perfil', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
-    async updatePassword(body) {
+    async updatePassword(req, body) {
         try {
+            const userId = req.user.id_jefe;
             const { password_actual, password_nueva } = body;
-            return await this.jefeService.updatePassword(password_actual, password_nueva);
+            return await this.jefeService.updatePassword(userId, password_actual, password_nueva);
         }
         catch (error) {
             if (error instanceof common_1.HttpException)
@@ -46,11 +50,16 @@ let JefeController = class JefeController {
             throw new common_1.HttpException('Error al actualizar contraseña', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
-    async getStats() {
+    async getStats(req) {
+        console.log('🔐 [JefeController] Headers:', req.headers);
+        console.log('🔐 [JefeController] User:', req.user);
+        console.log('🔐 [JefeController] Authorization:', req.headers.authorization);
+        console.log('🔐 User para stats:', req.user);
         try {
             return await this.jefeService.getStats();
         }
         catch (error) {
+            const e = error;
             throw new common_1.HttpException('Error al obtener estadísticas', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
@@ -58,28 +67,36 @@ let JefeController = class JefeController {
 exports.JefeController = JefeController;
 __decorate([
     (0, common_1.Get)('perfil'),
+    (0, common_2.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    __param(0, (0, common_1.Request)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", []),
+    __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", Promise)
 ], JefeController.prototype, "getPerfil", null);
 __decorate([
     (0, common_1.Put)('perfil'),
-    __param(0, (0, common_1.Body)()),
+    (0, common_2.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    __param(0, (0, common_1.Request)()),
+    __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object]),
+    __metadata("design:paramtypes", [Object, Object]),
     __metadata("design:returntype", Promise)
 ], JefeController.prototype, "updatePerfil", null);
 __decorate([
     (0, common_1.Put)('password'),
-    __param(0, (0, common_1.Body)()),
+    (0, common_2.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    __param(0, (0, common_1.Request)()),
+    __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object]),
+    __metadata("design:paramtypes", [Object, Object]),
     __metadata("design:returntype", Promise)
 ], JefeController.prototype, "updatePassword", null);
 __decorate([
     (0, common_1.Get)('stats'),
+    (0, common_2.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    __param(0, (0, common_1.Request)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", []),
+    __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", Promise)
 ], JefeController.prototype, "getStats", null);
 exports.JefeController = JefeController = __decorate([

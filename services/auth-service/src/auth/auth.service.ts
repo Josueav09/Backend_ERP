@@ -1,111 +1,119 @@
-
 // backend/services/auth-service/src/auth/auth.service.ts
 import { Injectable, UnauthorizedException, BadRequestException, HttpException, HttpStatus } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
-import { User } from '../users/entities/users.entity';
+
+// ✅ USAR SOLO LAS ENTIDADES DEL ESQUEMA ORIGINAL
+import { Jefe } from '../../../../shared/entities/Jefe.entity';
+import { EmpresaProveedora } from '../../../../shared/entities/EmpresaProveedora.entity';
+import { Ejecutiva } from '../../../../shared/entities/Ejecutiva.entity';
+
 import { LoginDto } from './dto/login.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
 import { EmailService } from '../email/email.service';
 
 @Injectable()
 export class AuthService {
-  // 🔹 Map para códigos captcha temporales
   private captchaMap = new Map<string, string>();
-
-  // 🔹 Map para códigos de verificación por email
   private tempEmailCodes = new Map<string, string>();
- 
-  // 🔹 Intentos fallidos
   private userAttempts = new Map<string, { count: number; lastAttempt: number }>();
   private ipAttempts = new Map<string, { count: number; lastAttempt: number }>();
 
   private readonly MAX_USER_ATTEMPTS = 7;
   private readonly MAX_IP_ATTEMPTS = 5;
-  private readonly BLOCK_DURATION = 30 * 60 * 1000; // 30 min
-  private readonly CAPTCHA_EXPIRY = 5 * 60 * 1000; // 5 min
+  private readonly BLOCK_DURATION = 30 * 60 * 1000;
+  private readonly CAPTCHA_EXPIRY = 5 * 60 * 1000;
 
   constructor(
-    @InjectRepository(User)
-    private userRepository: Repository<User>,
+
+    // ✅ SOLO los repositorios del esquema original
+    @InjectRepository(Jefe)
+    private jefeRepository: Repository<Jefe>,
+
+    @InjectRepository(EmpresaProveedora)
+    private empresaRepository: Repository<EmpresaProveedora>,
+
+    @InjectRepository(Ejecutiva)
+    private ejecutivaRepository: Repository<Ejecutiva>,
+
     private jwtService: JwtService,
     private emailService: EmailService,
-  ) {}
 
-  /**
-   * 🎲 Generar captcha
-   */
-  generateCaptcha() {
-    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-    let result = "";
-    for (let i = 0; i < 6; i++) {
-      result += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    
-    // Token único con timestamp
-    const token = Math.random().toString(36).substring(2) + Date.now().toString(36);
-    this.captchaMap.set(token, result);
-    
-    // ✅ Auto-expirar captcha en 5 minutos
-    setTimeout(() => {
-      this.captchaMap.delete(token);
-    }, this.CAPTCHA_EXPIRY);
-    
-    console.log(`🔐 Captcha generado: ${result} (token: ${token})`);
-    return { captchaText: result, captchaToken: token };
+  ) {
+    // En tu auth.service.ts - agregar esto en el constructor
+    console.log('🔍 DATABASE CONNECTION DEBUG:');
+    console.log('DB_HOST:', process.env.DB_HOST);
+    console.log('DB_DATABASE:', process.env.DB_DATABASE);
+    console.log('DB_USER:', process.env.DB_USERNAME);
   }
 
   /**
-   * ✅ Validar captcha
-   */
-  private validateCaptcha(token: string, userInput: string) {
-    const expected = this.captchaMap.get(token);
-    
-    if (!expected) {
-      throw new BadRequestException('Captcha expirado o inválido. Genere uno nuevo.');
-    }
-    
-    if (expected.toUpperCase() !== userInput.toUpperCase()) {
-      this.captchaMap.delete(token); // eliminar si es incorrecto
-      throw new BadRequestException('Captcha incorrecto. Intente nuevamente.');
-    }
-    
-    // ✅ Eliminar captcha después de uso exitoso (solo se puede usar una vez)
-    this.captchaMap.delete(token);
-    console.log(`✅ Captcha validado correctamente`);
-  }
-
-  /**
-   * 🔐 LOGIN: Validar usuario, password y enviar código 2FA
+   * 🔐 LOGIN: Buscar usuario en JEFE, EMPRESA_PROVEEDORA o EJECUTIVA
    */
   async login(loginDto: LoginDto, clientIp: string) {
-    
     const { email, password, captchaToken, captchaResponse } = loginDto;
 
     // 1️⃣ Validar captcha
     if (!captchaToken || !captchaResponse) {
       throw new BadRequestException('Por favor complete el captcha');
     }
-    
     this.validateCaptcha(captchaToken, captchaResponse);
 
-    // 2️⃣ Verificar intentos fallidos (usuario e IP)
+    // 2️⃣ Verificar intentos fallidos
     this.checkBlockedAttempts(email, clientIp);
 
-    // 3️⃣ Buscar usuario activo
-    const user = await this.userRepository.findOne({
-      where: { email, activo: true },
-    });
+    // 3️⃣ 🔍 BUSCAR USUARIO EN LAS TABLAS CORRECTAS
+    let user: any = null;
+    let userType = '';
+
+    // Buscar en JEFE
+    user = await this.jefeRepository.findOne({ where: { correo: email } });
+    if (user) {
+      userType = 'jefe';
+      // ✅ ACTUALIZAR: Usar el rol real de la base de datos
+      user.rol = user.rol || 'jefe'; // Si no tiene rol, default 'jefe'
+      console.log('🔐 Login - Rol del usuario en BD:', user.rol); // Debug
+
+    } else {
+      // Buscar en EMPRESA_PROVEEDORA
+      user = await this.empresaRepository.findOne({
+        where: {
+          correo: email,
+          estado: 'Activo'
+        }
+      });
+      if (user) {
+        userType = 'empresa';
+        user.rol = 'empresa';
+      } else {
+        // Buscar en EJECUTIVA
+        user = await this.ejecutivaRepository.findOne({
+          where: {
+            correo: email,
+            estado_ejecutiva: 'Activo'
+          }
+        });
+        if (user) {
+          userType = 'ejecutiva';
+          user.rol = 'ejecutiva';
+        }
+      }
+    }
 
     if (!user) {
       this.recordFailedAttempt(email, clientIp);
       throw new UnauthorizedException('Usuario no encontrado o inactivo');
     }
 
-    // 4️⃣ Verificar contraseña
-    const validPassword = await bcrypt.compare(password, user.password_hash);
+    // 4️⃣ 🔐 VERIFICAR CONTRASEÑA
+    const validPassword = await bcrypt.compare(password, user.contraseña);
+    // Agrega esto temporalmente en tu auth.service.ts para debug
+    console.log('🔐 Password debug:');
+    console.log('Input password:', password);
+    console.log('Stored hash:', user.contraseña);
+    console.log('Comparison result:', validPassword);
     if (!validPassword) {
       this.recordFailedAttempt(email, clientIp);
       const remaining = this.getRemainingAttempts(email, clientIp);
@@ -114,22 +122,20 @@ export class AuthService {
       );
     }
 
-    // 5️⃣ Limpiar intentos fallidos
+    // 5️⃣ ✅ Limpiar intentos fallidos
     this.clearFailedAttempts(email, clientIp);
 
-    // 6️⃣ Generar código temporal de 6 dígitos
+    // 6️⃣ 📧 Generar y enviar código 2FA
     const code = Math.floor(100000 + Math.random() * 900000).toString();
-    this.tempEmailCodes.set(user.email, code);
+    this.tempEmailCodes.set(email, code);
 
-    // ✅ Auto-expirar código en 5 minutos
     setTimeout(() => {
-      this.tempEmailCodes.delete(user.email);
+      this.tempEmailCodes.delete(email);
     }, this.CAPTCHA_EXPIRY);
 
-    // 7️⃣ Enviar código por email
     try {
-      await this.emailService.sendVerificationCode(user.email, code);
-      console.log(`✅ Código enviado a ${user.email}: ${code}`);
+      await this.emailService.sendVerificationCode(email, code);
+      console.log(`✅ Código enviado a ${email}: ${code}`);
     } catch (error) {
       console.error('❌ Error enviando email:', error);
       throw new HttpException(
@@ -138,26 +144,108 @@ export class AuthService {
       );
     }
 
-    // 8️⃣ Retornar respuesta indicando que requiere verificación
+    // 7️⃣ 📝 Retornar respuesta
     return {
       success: true,
       requiresEmailVerification: true,
-      email: user.email,
-      userId: user.id_usuario,
+      email: email,
+      userId: this.getUserId(user, userType),
       rol: user.rol,
-      name: `${user.nombre} ${user.apellido}`.trim(),
+      name: user.nombre_completo,
+      userType: userType,
     };
   }
 
   /**
-   * ✉️ VERIFY EMAIL: Validar código 2FA y generar JWT
+   * ✉️ VERIFY EMAIL
    */
+  // async verifyEmailCode(verifyDto: VerifyEmailDto) {
+  //   const { email, code } = verifyDto;
+
+  //   // 1️⃣ Verificar código temporal
+  //   const expectedCode = this.tempEmailCodes.get(email);
+  //   if (!expectedCode || expectedCode !== code) {
+  //     throw new UnauthorizedException('Código inválido o expirado');
+  //   }
+
+  //   // 2️⃣ Eliminar código temporal
+  //   this.tempEmailCodes.delete(email);
+
+  //   // 3️⃣ 🔍 Buscar usuario en las tablas correctas
+  //   let user: any = null;
+  //   let userType = '';
+
+  //   user = await this.jefeRepository.findOne({ where: { correo: email } });
+  //   if (user) {
+  //     userType = 'jefe';
+  //     // ✅ ACTUALIZAR: Usar el rol real
+  //     user.rol = user.rol || 'jefe';
+  //         console.log('🔐 Login - Rol del usuario en BD:', user.rol); // Debug
+
+  //   } else {
+  //     user = await this.empresaRepository.findOne({
+  //       where: {
+  //         correo: email,
+  //         estado: 'Activo'
+  //       }
+  //     });
+  //     if (user) {
+  //       userType = 'empresa';
+  //     } else {
+  //       user = await this.ejecutivaRepository.findOne({
+  //         where: {
+  //           correo: email,
+  //           estado_ejecutiva: 'Activo'
+  //         }
+  //       });
+  //       if (user) {
+  //         userType = 'ejecutiva';
+  //       }
+  //     }
+  //   }
+
+  //   if (!user) {
+  //     throw new UnauthorizedException('Usuario no encontrado');
+  //   }
+
+  //   // 4️⃣ 📅 Actualizar última conexión
+  //   user.fecha_actualizacion = new Date();
+
+  //   if (userType === 'jefe') {
+  //     await this.jefeRepository.save(user);
+  //   } else if (userType === 'empresa') {
+  //     await this.empresaRepository.save(user);
+  //   } else if (userType === 'ejecutiva') {
+  //     await this.ejecutivaRepository.save(user);
+  //   }
+
+  //   // 5️⃣ 🔐 Generar JWT
+  //   const payload = {
+  //     sub: this.getUserId(user, userType),
+  //     email: email,
+  //     rol: user.rol, // jefe, empresa, ejecutiva
+  //     userType: userType,
+  //   };
+
+  //   const accessToken = this.jwtService.sign(payload);
+
+  //   // 6️⃣ 📤 Retornar respuesta
+  //   return {
+  //     success: true,
+  //     userId: payload.sub,
+  //     email: email,
+  //     rol: user.rol,
+  //     name: user.nombre_completo,
+  //     userType: userType,
+  //     accessToken,
+  //   };
+  // }
+
   async verifyEmailCode(verifyDto: VerifyEmailDto) {
     const { email, code } = verifyDto;
 
     // 1️⃣ Verificar código temporal
     const expectedCode = this.tempEmailCodes.get(email);
-
     if (!expectedCode || expectedCode !== code) {
       throw new UnauthorizedException('Código inválido o expirado');
     }
@@ -165,41 +253,112 @@ export class AuthService {
     // 2️⃣ Eliminar código temporal
     this.tempEmailCodes.delete(email);
 
-    // 3️⃣ Buscar usuario
-    const user = await this.userRepository.findOne({
-      where: { email, activo: true },
-    });
+    // 3️⃣ 🔍 Buscar usuario en las tablas correctas
+    let user: any = null;
+    let userType = '';
+
+    user = await this.jefeRepository.findOne({ where: { correo: email } });
+    if (user) {
+      userType = 'jefe';
+      // ✅ Asegurar que tenemos el rol correcto
+      user.rol = user.rol || 'jefe';
+    } else {
+      user = await this.empresaRepository.findOne({
+        where: {
+          correo: email,
+          estado: 'Activo'
+        }
+      });
+      if (user) {
+        userType = 'empresa';
+        user.rol = 'empresa';
+      } else {
+        user = await this.ejecutivaRepository.findOne({
+          where: {
+            correo: email,
+            estado_ejecutiva: 'Activo'
+          }
+        });
+        if (user) {
+          userType = 'ejecutiva';
+          user.rol = 'ejecutiva';
+        }
+      }
+    }
 
     if (!user) {
       throw new UnauthorizedException('Usuario no encontrado');
     }
 
-    // 4️⃣ Actualizar última conexión
-    user.ultima_conexion = new Date();
-    await this.userRepository.save(user);
+    // 4️⃣ 📅 Actualizar última conexión
+    user.fecha_actualizacion = new Date();
 
-    // 5️⃣ Generar JWT
+    if (userType === 'jefe') {
+      await this.jefeRepository.save(user);
+    } else if (userType === 'empresa') {
+      await this.empresaRepository.save(user);
+    } else if (userType === 'ejecutiva') {
+      await this.ejecutivaRepository.save(user);
+    }
+
+    // 5️⃣ 🔐 Generar JWT CORREGIDO
     const payload = {
-      sub: user.id_usuario,
-      email: user.email,
-      rol: user.rol,
+      sub: this.getUserId(user, userType),
+      email: email,
+      rol: user.rol, // ✅ CORREGIDO: Usar el rol REAL de la BD
+      userType: userType,
     };
+
+    console.log('🔐 JWT Payload generado:', payload); // Debug
+
     const accessToken = this.jwtService.sign(payload);
 
-    // 6️⃣ Retornar respuesta con token
-    return {
+    // 6️⃣ 📤 Retornar respuesta CORREGIDA
+    const response = {
       success: true,
-      userId: user.id_usuario,
-      email: user.email,
-      rol: user.rol,
-      name: `${user.nombre} ${user.apellido}`.trim(),
+      userId: payload.sub,
+      email: email,
+      rol: user.rol, // ✅ CORREGIDO: Usar el rol REAL
+      name: user.nombre_completo,
+      userType: userType,
       accessToken,
     };
+
+    console.log('📤 Respuesta verifyEmail:', response); // Debug
+
+    return response;
   }
 
   /**
-   * 🚫 Verificar si el usuario o IP está bloqueado
+   * 🔍 Obtener ID según el tipo de usuario
    */
+  private getUserId(user: any, userType: string): number {
+    switch (userType) {
+      case 'jefe': return user.id_jefe;
+      case 'empresa': return user.id_empresa_prov;
+      case 'ejecutiva': return user.id_ejecutiva;
+      default: return 0;
+    }
+  }
+
+  // ... (tus otros métodos de captcha e intentos se mantienen igual)
+  private validateCaptcha(token: string, userInput: string) {
+    const expected = this.captchaMap.get(token);
+
+    if (!expected) {
+      throw new BadRequestException('Captcha expirado o inválido. Genere uno nuevo.');
+    }
+
+    if (expected.toUpperCase() !== userInput.toUpperCase()) {
+      this.captchaMap.delete(token); // eliminar si es incorrecto
+      throw new BadRequestException('Captcha incorrecto. Intente nuevamente.');
+    }
+
+    // ✅ Eliminar captcha después de uso exitoso (solo se puede usar una vez)
+    this.captchaMap.delete(token);
+    console.log(`✅ Captcha validado correctamente`);
+  }
+
   private checkBlockedAttempts(email: string, ip: string) {
     const now = Date.now();
     const userAttempt = this.userAttempts.get(email);
@@ -231,9 +390,6 @@ export class AuthService {
     }
   }
 
-  /**
-   * 📝 Registrar intento fallido
-   */
   private recordFailedAttempt(email: string, ip: string) {
     const now = Date.now();
 
@@ -250,17 +406,11 @@ export class AuthService {
     this.ipAttempts.set(ip, ipAttempt);
   }
 
-  /**
-   * ✅ Limpiar intentos fallidos tras login exitoso
-   */
   private clearFailedAttempts(email: string, ip: string) {
     this.userAttempts.delete(email);
     this.ipAttempts.delete(ip);
   }
 
-  /**
-   * 📊 Obtener intentos restantes
-   */
   private getRemainingAttempts(email: string, ip: string) {
     const userCount = this.userAttempts.get(email)?.count || 0;
     const ipCount = this.ipAttempts.get(ip)?.count || 0;
@@ -270,4 +420,28 @@ export class AuthService {
       ip: this.MAX_IP_ATTEMPTS - ipCount,
     };
   }
+
+  /**
+  //    * 🎲 Generar captcha
+  //    */
+  generateCaptcha() {
+    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    let result = "";
+    for (let i = 0; i < 6; i++) {
+      result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+
+    // Token único con timestamp
+    const token = Math.random().toString(36).substring(2) + Date.now().toString(36);
+    this.captchaMap.set(token, result);
+
+    // ✅ Auto-expirar captcha en 5 minutos
+    setTimeout(() => {
+      this.captchaMap.delete(token);
+    }, this.CAPTCHA_EXPIRY);
+
+    console.log(`🔐 Captcha generado: ${result} (token: ${token})`);
+    return { captchaText: result, captchaToken: token };
+  }
+
 }

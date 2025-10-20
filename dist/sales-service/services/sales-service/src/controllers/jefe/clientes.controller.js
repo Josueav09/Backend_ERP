@@ -41,9 +41,15 @@ let ClientesController = class ClientesController {
     }
     async createCliente(body) {
         try {
+            const { razon_social, id_ejecutiva } = body;
+            if (!razon_social) {
+                throw new common_1.HttpException('Razón social es requerida', common_1.HttpStatus.BAD_REQUEST);
+            }
             return await this.clientesService.createCliente(body);
         }
         catch (error) {
+            if (error instanceof common_1.HttpException)
+                throw error;
             throw new common_1.HttpException('Error al crear cliente', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
@@ -56,19 +62,20 @@ let ClientesController = class ClientesController {
             return result;
         }
         catch (error) {
+            if (error instanceof common_1.HttpException)
+                throw error;
             throw new common_1.HttpException('Error al actualizar cliente', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
     async deleteCliente(id) {
         try {
             const result = await this.clientesService.deleteCliente(parseInt(id));
-            if (!result) {
-                throw new common_1.HttpException('Cliente no encontrado', common_1.HttpStatus.NOT_FOUND);
-            }
-            return { message: "Cliente desactivado exitosamente" };
+            return result;
         }
         catch (error) {
-            throw new common_1.HttpException('Error al desactivar cliente', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
+            if (error instanceof common_1.HttpException)
+                throw error;
+            throw new common_1.HttpException('Error al eliminar cliente', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 };

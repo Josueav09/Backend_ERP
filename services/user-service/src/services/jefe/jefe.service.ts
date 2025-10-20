@@ -1,157 +1,247 @@
 import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
-import { sql } from '../../../../../shared/utils/database';
-import * as bcrypt from 'bcryptjs';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository, MoreThanOrEqual } from 'typeorm'; // ✅ Importar MoreThanOrEqual
+import { Jefe } from '../../../../../shared/entities/Jefe.entity';
+import { EmpresaProveedora } from '../../../../../shared/entities/EmpresaProveedora.entity';
+import { Ejecutiva } from '../../../../../shared/entities/Ejecutiva.entity';
+import { ClienteFinal } from '../../../../../shared/entities/ClienteFinal.entity';
+import { Trazabilidad } from '../../../../../shared/entities/Trazabilidad.entity';
 
 @Injectable()
 export class JefeService {
-  private readonly userId = 12; // TODO: Reemplazar con ID real desde sesión
+  constructor(
+    @InjectRepository(Jefe)
+    private jefeRepository: Repository<Jefe>,
 
-  async getPerfil() {
-    const result = await sql.query(
-      `SELECT 
-         id_usuario,
-         nombre,
-         apellido,
-         email,
-         telefono,
-         activo,
-         fecha_creacion,
-         ultima_conexion,
-         intentos_fallidos,
-         bloqueado_hasta,
-         ip_bloqueada
-       FROM usuarios
-       WHERE id_usuario = $1 AND rol = 'jefe'`,
-      [this.userId]
-    );
+    @InjectRepository(EmpresaProveedora)
+    private empresaRepository: Repository<EmpresaProveedora>,
 
-    if (result.rows.length === 0) {
-      throw new HttpException('Usuario no encontrado', HttpStatus.NOT_FOUND);
+    @InjectRepository(Ejecutiva)
+    private ejecutivaRepository: Repository<Ejecutiva>,
+
+    @InjectRepository(ClienteFinal)
+    private clienteRepository: Repository<ClienteFinal>,
+
+    @InjectRepository(Trazabilidad)
+    private trazabilidadRepository: Repository<Trazabilidad>,
+  ) { }
+
+  // async getPerfil(userId: number) {
+  //   const jefe = await this.jefeRepository.findOne({ 
+  //     where: { id_jefe: userId } 
+  //   });
+
+  //   if (!jefe) {
+  //     throw new HttpException('Jefe no encontrado', HttpStatus.NOT_FOUND);
+  //   }
+
+  //   return jefe;
+  // }
+  async getPerfil(userId: number) {
+    console.log('🔐 [JefeService] === INICIANDO getPerfil ===');
+    console.log('🔐 [JefeService] userId recibido:', userId);
+    console.log('🔐 [JefeService] Tipo de userId:', typeof userId);
+
+    try {
+      // ✅ VERIFICAR SI EL REPOSITORIO ESTÁ CONECTADO
+      console.log('🔐 [JefeService] jefeRepository:', this.jefeRepository ? 'DEFINIDO' : 'NO DEFINIDO');
+
+      // ✅ VERIFICAR TODOS LOS JEFES EN LA BD
+      const todosJefes = await this.jefeRepository.find();
+      console.log('🔐 [JefeService] Todos los jefes en BD:', todosJefes);
+      console.log('🔐 [JefeService] Cantidad de jefes:', todosJefes.length);
+
+      // ✅ BUSCAR JEFE ESPECÍFICO
+      console.log('🔐 [JefeService] Buscando jefe con id_jefe:', userId);
+      const jefe = await this.jefeRepository.findOne({
+        where: { id_jefe: userId }
+      });
+
+      console.log('🔐 [JefeService] Resultado de findOne:', jefe);
+
+      if (!jefe) {
+        console.log('❌ [JefeService] Jefe NO encontrado para id:', userId);
+
+        // Verificar si hay algún problema con el tipo de dato
+        const jefeComoString = await this.jefeRepository.findOne({
+          where: { id_jefe: userId.toString() as any }
+        });
+        console.log('🔐 [JefeService] Búsqueda con string:', jefeComoString);
+
+        return null;
+      }
+
+      console.log('✅ [JefeService] Jefe ENCONTRADO:', {
+        id_jefe: jefe.id_jefe,
+        nombre_completo: jefe.nombre_completo,
+        correo: jefe.correo,
+        telefono: jefe.telefono,
+        fecha_creacion: jefe.fecha_creacion
+      });
+
+      // ✅ FORMATEAR DATOS PARA EL FRONTEND
+      const nombreParts = jefe.nombre_completo.split(' ');
+      const perfilData = {
+        id_jefe: jefe.id_jefe,
+        dni: jefe.dni,
+        nombre_completo: jefe.nombre_completo, // ✅ NO dividir el nombre
+        email: jefe.correo,
+        telefono: jefe.telefono,
+        linkedin: jefe.linkedin,
+        rol: jefe.rol, // ✅ INCLUIR EL ROL
+        fecha_creacion: jefe.fecha_creacion,
+        fecha_actualizacion: jefe.fecha_actualizacion
+      };
+
+      console.log('✅ [JefeService] Perfil formateado:', perfilData);
+      return perfilData;
+
+    } catch (error) {
+      console.error('❌ [JefeService] ERROR en getPerfil:', error);
+      console.error('❌ [JefeService] Stack trace:', error.stack);
+      throw new HttpException(
+        'Error al obtener perfil del jefe',
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
     }
-
-    return result.rows[0];
   }
 
-  async updatePerfil(data: any) {
-    const { nombre, apellido, email, telefono, activo, bloqueado_hasta, ip_bloqueada } = data;
+  async updatePerfil(userId: number, data: any) {
+    const { nombre_completo, telefono, linkedin } = data;
 
-    if (!nombre || !apellido || !email) {
-      throw new HttpException('Nombre, apellido y email son requeridos', HttpStatus.BAD_REQUEST);
-    }
-
-    const result = await sql.query(
-      `UPDATE usuarios
-       SET 
-         nombre = $1,
-         apellido = $2,
-         email = $3,
-         telefono = $4,
-         activo = $5,
-         bloqueado_hasta = $6,
-         ip_bloqueada = $7
-       WHERE id_usuario = $8 AND rol = 'jefe'
-       RETURNING *`,
-      [nombre, apellido, email, telefono || null, activo ?? true, bloqueado_hasta || null, ip_bloqueada || null, this.userId]
+    const result = await this.jefeRepository.update(
+      { id_jefe: userId },
+      {
+        nombre_completo: nombre_completo,
+        telefono: telefono,
+        linkedin: linkedin,
+        fecha_actualizacion: new Date()
+      }
     );
 
-    if (result.rows.length === 0) {
+    if (result.affected === 0) {
       throw new HttpException('No se pudo actualizar el perfil', HttpStatus.BAD_REQUEST);
     }
 
-    return { message: "Perfil actualizado exitosamente", usuario: result.rows[0] };
+    return await this.jefeRepository.findOne({ where: { id_jefe: userId } });
   }
 
-  async updatePassword(password_actual: string, password_nueva: string) {
+  async updatePassword(userId: number, password_actual: string, password_nueva: string) {
     if (!password_actual || !password_nueva) {
       throw new HttpException('Contraseña actual y nueva son requeridas', HttpStatus.BAD_REQUEST);
     }
 
-    if (password_nueva.length < 6) {
-      throw new HttpException('La contraseña debe tener al menos 6 caracteres', HttpStatus.BAD_REQUEST);
+    const jefe = await this.jefeRepository.findOne({
+      where: { id_jefe: userId }
+    });
+
+    if (!jefe) {
+      throw new HttpException('Jefe no encontrado', HttpStatus.NOT_FOUND);
     }
 
-    const userResult = await sql.query(
-      `SELECT password_hash
-       FROM usuarios
-       WHERE id_usuario = $1 AND rol = 'jefe'`,
-      [this.userId]
-    );
-
-    if (userResult.rows.length === 0) {
-      throw new HttpException('Usuario no encontrado', HttpStatus.NOT_FOUND);
-    }
-
-    const currentHash = userResult.rows[0].password_hash;
-
-    const isValidPassword = await bcrypt.compare(password_actual, currentHash);
+    // Verificar contraseña actual
+    const bcrypt = require('bcryptjs');
+    const isValidPassword = await bcrypt.compare(password_actual, jefe.contraseña);
     if (!isValidPassword) {
       throw new HttpException('Contraseña actual incorrecta', HttpStatus.UNAUTHORIZED);
     }
 
+    // Hashear nueva contraseña
     const hashedPassword = await bcrypt.hash(password_nueva, 10);
 
-    await sql.query(
-      `UPDATE usuarios
-       SET password_hash = $1
-       WHERE id_usuario = $2 AND rol = 'jefe'`,
-      [hashedPassword, this.userId]
+    await this.jefeRepository.update(
+      { id_jefe: userId },
+      {
+        contraseña: hashedPassword,
+        fecha_actualizacion: new Date()
+      }
     );
 
     return { message: "Contraseña actualizada exitosamente" };
   }
 
   async getStats() {
-    const empresasResult = await sql.query(
-      'SELECT COUNT(*) as total FROM public.empresa_proveedora WHERE activo = true'
-    );
+    try {
+      console.log('📊 Obteniendo estadísticas para jefe...');
 
-    const ejecutivasResult = await sql.query(
-      "SELECT COUNT(*) as total FROM public.usuarios WHERE rol = 'ejecutiva' AND activo = true"
-    );
+      const [
+        totalEmpresas,
+        totalEjecutivas,
+        totalClientes,
+        clientesEsteMes,
+        actividadesEsteMes,
+        pipelineData,
+        dashboardData
+      ] = await Promise.all([
+        this.empresaRepository.count({ where: { estado: 'Activo' } }),
+        this.ejecutivaRepository.count({ where: { estado_ejecutiva: 'Activo' } }),
+        this.clienteRepository.count(),
+        this.getClientesNuevosMes(), // ✅ Ya corregido
+        this.getActividadesMes(),    // ✅ Ya corregido
+        this.trazabilidadRepository.query('SELECT * FROM vista_pipeline_ventas'),
+        this.trazabilidadRepository.query('SELECT * FROM vista_dashboard_ejecutiva')
+      ]);
 
-    const clientesResult = await sql.query(
-      "SELECT COUNT(*) as total FROM public.cliente_empresa WHERE estado = 'activo'"
-    );
+      // Calcular revenue total y tasa de conversión
+      const revenueTotal = pipelineData.reduce((sum: number, item: any) => {
+        return sum + (Number(item.monto_total_sin_imp) || 0);
+      }, 0);
 
-    const actividadesResult = await sql.query(
-      "SELECT COUNT(*) as total FROM public.trazabilidad WHERE fecha_actividad >= DATE_TRUNC('month', CURRENT_DATE)"
-    );
+      // Calcular tasa de conversión real
+      const ventasGanadas = pipelineData.filter((item: any) =>
+        item.etapa_oportunidad === 'Venta ganada'
+      ).length;
+      const tasaConversion = totalClientes > 0
+        ? ((ventasGanadas / totalClientes) * 100).toFixed(1) + '%'
+        : '0%';
 
-    const trazabilidadEstadoResult = await sql.query(
-      "SELECT estado, COUNT(*) as total FROM public.trazabilidad GROUP BY estado"
-    );
+      const stats = {
+        totalEmpresas,
+        totalEjecutivas,
+        totalClientes,
+        clientesEsteMes,
+        revenueTotal,
+        pipelineOportunidades: pipelineData.length,
+        dashboardEjecutivas: dashboardData,
+        kpis: {
+          tasaConversion,
+          clientesNuevosMes: clientesEsteMes,
+          actividadesMes: actividadesEsteMes
+        }
+      };
 
-    const actividadesPorEjecutivaResult = await sql.query(
-      `SELECT 
-        u.nombre || ' ' || u.apellido as ejecutiva,
-        COUNT(t.id_trazabilidad) as total_actividades
-      FROM public.usuarios u
-      LEFT JOIN public.trazabilidad t ON u.id_usuario = t.id_ejecutiva
-      WHERE u.rol = 'ejecutiva' AND u.activo = true
-      GROUP BY u.id_usuario, u.nombre, u.apellido
-      ORDER BY total_actividades DESC
-      LIMIT 5`
-    );
+      console.log('✅ Estadísticas obtenidas:', stats);
+      return stats;
 
-    const clientesPorEmpresaResult = await sql.query(
-      `SELECT 
-        ep.nombre_empresa,
-        COUNT(ce.id_cliente) as total_clientes
-      FROM public.empresa_proveedora ep
-      LEFT JOIN public.cliente_empresa ce ON ep.id_empresa = ce.id_empresa
-      WHERE ep.activo = true
-      GROUP BY ep.id_empresa, ep.nombre_empresa
-      ORDER BY total_clientes DESC`
-    );
+    } catch (error) {
+      console.error('❌ Error en getStats:', error);
+      throw new HttpException('Error al obtener estadísticas del sistema', HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
 
-    return {
-      totalEmpresas: Number(empresasResult.rows[0].total),
-      totalEjecutivas: Number(ejecutivasResult.rows[0].total),
-      totalClientes: Number(clientesResult.rows[0].total),
-      actividadesMes: Number(actividadesResult.rows[0].total),
-      trazabilidadPorEstado: trazabilidadEstadoResult.rows,
-      actividadesPorEjecutiva: actividadesPorEjecutivaResult.rows,
-      clientesPorEmpresa: clientesPorEmpresaResult.rows,
-    };
+  private async getClientesNuevosMes(): Promise<number> {
+    const startOfMonth = new Date();
+    startOfMonth.setDate(1);
+    startOfMonth.setHours(0, 0, 0, 0);
+
+    // ✅ CORREGIDO: Usar MoreThanOrEqual de TypeORM
+    return await this.clienteRepository.count({
+      where: {
+        fecha_creacion: MoreThanOrEqual(startOfMonth)
+      }
+    });
+  }
+
+  private async getActividadesMes(): Promise<number> {
+    const startOfMonth = new Date();
+    startOfMonth.setDate(1);
+    startOfMonth.setHours(0, 0, 0, 0);
+
+    // ✅ CORREGIDO: Usar MoreThanOrEqual de TypeORM
+    return await this.trazabilidadRepository.count({
+      where: {
+        fecha_contacto: MoreThanOrEqual(startOfMonth)
+      }
+    });
   }
 }

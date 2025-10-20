@@ -4,21 +4,32 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+
+// ✅ IMPORTAR LAS ENTIDADES
+import { Jefe } from '../../../../shared/entities/Jefe.entity';
+import { EmpresaProveedora } from '../../../../shared/entities/EmpresaProveedora.entity';
+import { Ejecutiva } from '../../../../shared/entities/Ejecutiva.entity';
+
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
-import { User } from '../users/entities/users.entity';
 import { EmailModule } from '../email/email.module';
 import { JwtStrategy } from '../strategies/jwt.strategy';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([User]),
+    // ✅ REGISTRAR TODAS LAS ENTIDADES QUE SE USAN
+    TypeOrmModule.forFeature([
+      Jefe,
+      EmpresaProveedora, 
+      Ejecutiva
+    ]),
+    
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
-        secret: configService.get('JWT_SECRET') || 'your-secret-key-change-in-production',
+        secret: configService.get('JWT_SECRET'),
         signOptions: { expiresIn: '24h' },
       }),
     }),

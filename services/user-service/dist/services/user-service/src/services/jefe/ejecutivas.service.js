@@ -1,134 +1,175 @@
 "use strict";
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
     if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
-var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function (o) {
-            var ar = [];
-            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-            return ar;
-        };
-        return ownKeys(o);
-    };
-    return function (mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        __setModuleDefault(result, mod);
-        return result;
-    };
-})();
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var __param = (this && this.__param) || function (paramIndex, decorator) {
+    return function (target, key) { decorator(target, key, paramIndex); }
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.EjecutivasService = void 0;
 const common_1 = require("@nestjs/common");
-const database_1 = require("../../../../../shared/utils/database");
-const bcrypt = __importStar(require("bcryptjs"));
+const typeorm_1 = require("@nestjs/typeorm");
+const typeorm_2 = require("typeorm");
+const Ejecutiva_entity_1 = require("../../../../../shared/entities/Ejecutiva.entity");
+const EmpresaProveedora_entity_1 = require("../../../../../shared/entities/EmpresaProveedora.entity");
+const ClienteFinal_entity_1 = require("../../../../../shared/entities/ClienteFinal.entity");
+const Trazabilidad_entity_1 = require("../../../../../shared/entities/Trazabilidad.entity");
+const Jefe_entity_1 = require("../../../../../shared/entities/Jefe.entity");
 let EjecutivasService = class EjecutivasService {
+    constructor(ejecutivaRepository, empresaRepository, clienteRepository, trazabilidadRepository, jefeRepository) {
+        this.ejecutivaRepository = ejecutivaRepository;
+        this.empresaRepository = empresaRepository;
+        this.clienteRepository = clienteRepository;
+        this.trazabilidadRepository = trazabilidadRepository;
+        this.jefeRepository = jefeRepository;
+    }
     async getEjecutivas() {
-        const result = await database_1.sql.query(`
-      SELECT 
-        u.*,
-        COUNT(DISTINCT ee.id_empresa) as total_empresas,
-        COUNT(DISTINCT ce.id_cliente) as total_clientes,
-        COUNT(DISTINCT t.id_trazabilidad) as total_actividades
-      FROM public.usuarios u
-      LEFT JOIN public.empresa_ejecutiva ee ON u.id_usuario = ee.id_ejecutiva AND ee.activo = true
-      LEFT JOIN public.cliente_empresa ce ON u.id_usuario = ce.id_ejecutiva
-      LEFT JOIN public.trazabilidad t ON u.id_usuario = t.id_ejecutiva
-      WHERE u.rol = 'ejecutiva'
-      GROUP BY u.id_usuario
-      ORDER BY u.activo DESC, u.nombre
-    `);
-        return result.rows;
+        const ejecutivas = await this.ejecutivaRepository.find({
+            relations: ['empresa_proveedora'],
+            order: { estado_ejecutiva: 'DESC', nombre_completo: 'ASC' }
+        });
+        const ejecutivasConStats = await Promise.all(ejecutivas.map(async (ejecutiva) => {
+            const [totalClientes, totalActividades] = await Promise.all([
+                this.clienteRepository.count({
+                    where: { ejecutiva: { id_ejecutiva: ejecutiva.id_ejecutiva } }
+                }),
+                this.trazabilidadRepository.count({
+                    where: { ejecutiva: { id_ejecutiva: ejecutiva.id_ejecutiva } }
+                })
+            ]);
+            return {
+                ...ejecutiva,
+                total_clientes: totalClientes,
+                total_actividades: totalActividades,
+                empresa_asignada: ejecutiva.empresa_proveedora ? ejecutiva.empresa_proveedora.razon_social : 'Sin asignar'
+            };
+        }));
+        return ejecutivasConStats;
     }
     async getEjecutivaById(id) {
-        const result = await database_1.sql.query(`SELECT 
-        id_usuario, nombre, apellido, email, telefono, rol, activo
-      FROM public.usuarios 
-      WHERE id_usuario = $1 AND rol = 'ejecutiva'`, [id]);
-        if (result.rows.length === 0)
+        const ejecutiva = await this.ejecutivaRepository.findOne({
+            where: { id_ejecutiva: id },
+            relations: ['empresa_proveedora', 'clientes_finales']
+        });
+        if (!ejecutiva) {
             return null;
-        const ejecutiva = result.rows[0];
-        const empresasResult = await database_1.sql.query(`SELECT 
-        ep.id_empresa,
-        ep.nombre_empresa,
-        ep.rut,
-        ee.fecha_asignacion,
-        ee.activo as asignacion_activa
-      FROM public.empresa_ejecutiva ee
-      JOIN public.empresa_proveedora ep ON ee.id_empresa = ep.id_empresa
-      WHERE ee.id_ejecutiva = $1
-      ORDER BY ee.fecha_asignacion DESC`, [id]);
-        const clientesResult = await database_1.sql.query(`SELECT 
-        ce.id_cliente,
-        ce.nombre_cliente,
-        ce.rut_cliente,
-        ce.email,
-        ce.telefono,
-        ce.estado,
-        ep.nombre_empresa,
-        ce.fecha_registro
-      FROM public.cliente_empresa ce
-      JOIN public.empresa_proveedora ep ON ce.id_empresa = ep.id_empresa
-      WHERE ce.id_ejecutiva = $1
-      ORDER BY ce.fecha_registro DESC`, [id]);
+        }
+        const [totalActividades, actividadesRecientes] = await Promise.all([
+            this.trazabilidadRepository.count({
+                where: { ejecutiva: { id_ejecutiva: id } }
+            }),
+            this.trazabilidadRepository.find({
+                where: { ejecutiva: { id_ejecutiva: id } },
+                order: { fecha_contacto: 'DESC' },
+                take: 10,
+                relations: ['cliente_final', 'empresa_proveedora']
+            })
+        ]);
         return {
             ejecutiva,
-            empresas: empresasResult.rows,
-            clientes: clientesResult.rows,
+            estadisticas: {
+                total_clientes: ejecutiva.clientes_finales.length,
+                total_actividades: totalActividades,
+                actividades_recientes: actividadesRecientes
+            }
         };
     }
     async createEjecutiva(data) {
-        const { nombre, apellido, email, telefono, password } = data;
-        const existingUser = await database_1.sql.query(`SELECT id_usuario FROM public.usuarios WHERE email = $1`, [email]);
-        if (existingUser.rows.length > 0) {
-            throw new common_1.HttpException('El email ya está registrado', common_1.HttpStatus.BAD_REQUEST);
+        console.log('📥 Datos recibidos en backend:', data);
+        const { dni, nombre_completo, correo, contraseña, telefono, id_jefe } = data;
+        console.log('🔍 Buscando jefe con ID:', id_jefe);
+        let jefeAsignar;
+        if (id_jefe) {
+            jefeAsignar = await this.jefeRepository.findOne({
+                where: { id_jefe: id_jefe }
+            });
+            console.log('✅ Jefe encontrado:', jefeAsignar);
         }
-        const hashedPassword = await bcrypt.hash(password, 10);
-        const result = await database_1.sql.query(`INSERT INTO public.usuarios 
-        (nombre, apellido, email, telefono, password_hash, rol, activo)
-      VALUES ($1, $2, $3, $4, $5, 'ejecutiva', true)
-      RETURNING *`, [nombre, apellido, email, telefono || null, hashedPassword]);
-        return result.rows[0];
+        if (!jefeAsignar) {
+            console.log('⚠️  No se encontró jefe específico, buscando primero disponible...');
+            jefeAsignar = await this.jefeRepository.findOne({
+                order: { id_jefe: 'ASC' }
+            });
+            console.log('✅ Primer jefe disponible:', jefeAsignar);
+        }
+        if (!jefeAsignar) {
+            console.error('❌ No hay jefes en el sistema');
+            throw new common_1.HttpException('No hay jefes disponibles en el sistema', common_1.HttpStatus.BAD_REQUEST);
+        }
+        const existingDni = await this.ejecutivaRepository.findOne({
+            where: { dni }
+        });
+        if (existingDni) {
+            throw new common_1.HttpException('Ya existe una ejecutiva con este DNI', common_1.HttpStatus.BAD_REQUEST);
+        }
+        const existingEmail = await this.ejecutivaRepository.findOne({
+            where: { correo }
+        });
+        if (existingEmail) {
+            throw new common_1.HttpException('Ya existe una ejecutiva con este email', common_1.HttpStatus.BAD_REQUEST);
+        }
+        const bcrypt = require('bcryptjs');
+        const hashedPassword = await bcrypt.hash(contraseña, 10);
+        const nuevaEjecutiva = this.ejecutivaRepository.create({
+            dni,
+            nombre_completo,
+            correo,
+            contraseña: hashedPassword,
+            telefono: telefono || null,
+            estado_ejecutiva: 'Activo',
+            jefe: jefeAsignar,
+        });
+        console.log('Nueva Ejecutiva:', nuevaEjecutiva, 'Jefe asignado:', jefeAsignar);
+        return await this.ejecutivaRepository.save(nuevaEjecutiva);
     }
     async updateEjecutiva(id, data) {
-        const { nombre, apellido, email, telefono, activo } = data;
-        const result = await database_1.sql.query(`UPDATE public.usuarios 
-       SET nombre = $1, apellido = $2, email = $3, telefono = $4, activo = $5
-       WHERE id_usuario = $6 AND rol = 'ejecutiva'
-       RETURNING *`, [nombre, apellido, email, telefono, activo, id]);
-        return result.rows[0] || null;
+        const ejecutiva = await this.ejecutivaRepository.findOne({
+            where: { id_ejecutiva: id }
+        });
+        if (!ejecutiva) {
+            return null;
+        }
+        if (data.nombre_completo)
+            ejecutiva.nombre_completo = data.nombre_completo;
+        if (data.telefono !== undefined)
+            ejecutiva.telefono = data.telefono;
+        if (data.linkedin !== undefined)
+            ejecutiva.linkedin = data.linkedin;
+        if (data.estado_ejecutiva)
+            ejecutiva.estado_ejecutiva = data.estado_ejecutiva;
+        ejecutiva.fecha_actualizacion = new Date();
+        return await this.ejecutivaRepository.save(ejecutiva);
     }
     async deleteEjecutiva(id) {
-        const result = await database_1.sql.query(`UPDATE public.usuarios 
-       SET activo = false
-       WHERE id_usuario = $1 AND rol = 'ejecutiva'
-       RETURNING *`, [id]);
-        return result.rows[0] || null;
+        const ejecutiva = await this.ejecutivaRepository.findOne({
+            where: { id_ejecutiva: id }
+        });
+        if (!ejecutiva) {
+            return null;
+        }
+        ejecutiva.estado_ejecutiva = 'Inactivo';
+        ejecutiva.fecha_actualizacion = new Date();
+        return await this.ejecutivaRepository.save(ejecutiva);
     }
 };
 exports.EjecutivasService = EjecutivasService;
 exports.EjecutivasService = EjecutivasService = __decorate([
-    (0, common_1.Injectable)()
+    (0, common_1.Injectable)(),
+    __param(0, (0, typeorm_1.InjectRepository)(Ejecutiva_entity_1.Ejecutiva)),
+    __param(1, (0, typeorm_1.InjectRepository)(EmpresaProveedora_entity_1.EmpresaProveedora)),
+    __param(2, (0, typeorm_1.InjectRepository)(ClienteFinal_entity_1.ClienteFinal)),
+    __param(3, (0, typeorm_1.InjectRepository)(Trazabilidad_entity_1.Trazabilidad)),
+    __param(4, (0, typeorm_1.InjectRepository)(Jefe_entity_1.Jefe)),
+    __metadata("design:paramtypes", [typeorm_2.Repository,
+        typeorm_2.Repository,
+        typeorm_2.Repository,
+        typeorm_2.Repository,
+        typeorm_2.Repository])
 ], EjecutivasService);
 //# sourceMappingURL=ejecutivas.service.js.map

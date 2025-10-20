@@ -31,16 +31,16 @@ export class EjecutivasController {
   @Post()
   async createEjecutiva(@Body() body: any) {
     try {
-      const { nombre, apellido, email, telefono, password } = body;
+      const { dni, nombre_completo, correo, contraseña, telefono } = body;
 
-      if (!nombre || !apellido || !email || !password) {
-        throw new HttpException('Faltan campos requeridos', HttpStatus.BAD_REQUEST);
+      if (!dni || !nombre_completo || !correo || !contraseña) {
+        throw new HttpException('DNI, nombre completo, correo y contraseña son requeridos', HttpStatus.BAD_REQUEST);
       }
 
       return await this.ejecutivasService.createEjecutiva(body);
     } catch (error) {
       if (error instanceof HttpException) throw error;
-      throw new HttpException('Error al crear ejecutiva', HttpStatus.INTERNAL_SERVER_ERROR);
+      throw new HttpException('Error al crear ejecutiva', error);
     }
   }
 

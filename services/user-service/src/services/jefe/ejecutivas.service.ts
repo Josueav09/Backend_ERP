@@ -1,126 +1,191 @@
 import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
-import { sql } from '../../../../../shared/utils/database';
-import * as bcrypt from 'bcryptjs';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { Ejecutiva } from '../../../../../shared/entities/Ejecutiva.entity';
+import { EmpresaProveedora } from '../../../../../shared/entities/EmpresaProveedora.entity';
+import { ClienteFinal } from '../../../../../shared/entities/ClienteFinal.entity';
+import { Trazabilidad } from '../../../../../shared/entities/Trazabilidad.entity';
+import { Jefe } from 'shared/entities/Jefe.entity';
 
 @Injectable()
 export class EjecutivasService {
+  constructor(
+    @InjectRepository(Ejecutiva)
+    private ejecutivaRepository: Repository<Ejecutiva>,
+
+    @InjectRepository(EmpresaProveedora)
+    private empresaRepository: Repository<EmpresaProveedora>,
+
+    @InjectRepository(ClienteFinal)
+    private clienteRepository: Repository<ClienteFinal>,
+
+    @InjectRepository(Trazabilidad)
+    private trazabilidadRepository: Repository<Trazabilidad>,
+
+    @InjectRepository(Jefe)
+    private jefeRepository: Repository<Jefe>,
+  ) { }
+
   async getEjecutivas() {
-    const result = await sql.query(`
-      SELECT 
-        u.*,
-        COUNT(DISTINCT ee.id_empresa) as total_empresas,
-        COUNT(DISTINCT ce.id_cliente) as total_clientes,
-        COUNT(DISTINCT t.id_trazabilidad) as total_actividades
-      FROM public.usuarios u
-      LEFT JOIN public.empresa_ejecutiva ee ON u.id_usuario = ee.id_ejecutiva AND ee.activo = true
-      LEFT JOIN public.cliente_empresa ce ON u.id_usuario = ce.id_ejecutiva
-      LEFT JOIN public.trazabilidad t ON u.id_usuario = t.id_ejecutiva
-      WHERE u.rol = 'ejecutiva'
-      GROUP BY u.id_usuario
-      ORDER BY u.activo DESC, u.nombre
-    `);
-    return result.rows;
+    const ejecutivas = await this.ejecutivaRepository.find({
+      relations: ['empresa_proveedora'],
+      order: { estado_ejecutiva: 'DESC', nombre_completo: 'ASC' }
+    });
+
+    // Enriquecer con estadísticas
+    const ejecutivasConStats = await Promise.all(
+      ejecutivas.map(async (ejecutiva) => {
+        const [totalClientes, totalActividades] = await Promise.all([
+          this.clienteRepository.count({
+            where: { ejecutiva: { id_ejecutiva: ejecutiva.id_ejecutiva } }
+          }),
+          this.trazabilidadRepository.count({
+            where: { ejecutiva: { id_ejecutiva: ejecutiva.id_ejecutiva } }
+          })
+        ]);
+
+        return {
+          ...ejecutiva,
+          total_clientes: totalClientes,
+          total_actividades: totalActividades,
+          empresa_asignada: ejecutiva.empresa_proveedora ? ejecutiva.empresa_proveedora.razon_social : 'Sin asignar'
+        };
+      })
+    );
+
+    return ejecutivasConStats;
   }
 
   async getEjecutivaById(id: number) {
-    const result = await sql.query(
-      `SELECT 
-        id_usuario, nombre, apellido, email, telefono, rol, activo
-      FROM public.usuarios 
-      WHERE id_usuario = $1 AND rol = 'ejecutiva'`,
-      [id]
-    );
+    const ejecutiva = await this.ejecutivaRepository.findOne({
+      where: { id_ejecutiva: id },
+      relations: ['empresa_proveedora', 'clientes_finales']
+    });
 
-    if (result.rows.length === 0) return null;
+    if (!ejecutiva) {
+      return null;
+    }
 
-    const ejecutiva = result.rows[0];
-
-    const empresasResult = await sql.query(
-      `SELECT 
-        ep.id_empresa,
-        ep.nombre_empresa,
-        ep.rut,
-        ee.fecha_asignacion,
-        ee.activo as asignacion_activa
-      FROM public.empresa_ejecutiva ee
-      JOIN public.empresa_proveedora ep ON ee.id_empresa = ep.id_empresa
-      WHERE ee.id_ejecutiva = $1
-      ORDER BY ee.fecha_asignacion DESC`,
-      [id]
-    );
-
-    const clientesResult = await sql.query(
-      `SELECT 
-        ce.id_cliente,
-        ce.nombre_cliente,
-        ce.rut_cliente,
-        ce.email,
-        ce.telefono,
-        ce.estado,
-        ep.nombre_empresa,
-        ce.fecha_registro
-      FROM public.cliente_empresa ce
-      JOIN public.empresa_proveedora ep ON ce.id_empresa = ep.id_empresa
-      WHERE ce.id_ejecutiva = $1
-      ORDER BY ce.fecha_registro DESC`,
-      [id]
-    );
+    // Obtener estadísticas adicionales
+    const [totalActividades, actividadesRecientes] = await Promise.all([
+      this.trazabilidadRepository.count({
+        where: { ejecutiva: { id_ejecutiva: id } }
+      }),
+      this.trazabilidadRepository.find({
+        where: { ejecutiva: { id_ejecutiva: id } },
+        order: { fecha_contacto: 'DESC' },
+        take: 10,
+        relations: ['cliente_final', 'empresa_proveedora']
+      })
+    ]);
 
     return {
       ejecutiva,
-      empresas: empresasResult.rows,
-      clientes: clientesResult.rows,
+      estadisticas: {
+        total_clientes: ejecutiva.clientes_finales.length,
+        total_actividades: totalActividades,
+        actividades_recientes: actividadesRecientes
+      }
     };
   }
 
   async createEjecutiva(data: any) {
-    const { nombre, apellido, email, telefono, password } = data;
+    console.log('📥 Datos recibidos en backend:', data);
+    const { dni, nombre_completo, correo, contraseña, telefono, id_jefe } = data;
 
-    const existingUser = await sql.query(
-      `SELECT id_usuario FROM public.usuarios WHERE email = $1`,
-      [email]
-    );
+    console.log('🔍 Buscando jefe con ID:', id_jefe);
 
-    if (existingUser.rows.length > 0) {
-      throw new HttpException('El email ya está registrado', HttpStatus.BAD_REQUEST);
+    let jefeAsignar;
+
+    if (id_jefe) {
+      // Usar el id_jefe que viene del frontend
+      jefeAsignar = await this.jefeRepository.findOne({
+        where: { id_jefe: id_jefe }
+      });
+      console.log('✅ Jefe encontrado:', jefeAsignar);
+    }
+    if (!jefeAsignar) {
+      console.log('⚠️  No se encontró jefe específico, buscando primero disponible...');
+      jefeAsignar = await this.jefeRepository.findOne({
+        order: { id_jefe: 'ASC' }
+      });
+      console.log('✅ Primer jefe disponible:', jefeAsignar);
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+    if (!jefeAsignar) {
+      console.error('❌ No hay jefes en el sistema');
+      throw new HttpException('No hay jefes disponibles en el sistema', HttpStatus.BAD_REQUEST);
+    }
 
-    const result = await sql.query(
-      `INSERT INTO public.usuarios 
-        (nombre, apellido, email, telefono, password_hash, rol, activo)
-      VALUES ($1, $2, $3, $4, $5, 'ejecutiva', true)
-      RETURNING *`,
-      [nombre, apellido, email, telefono || null, hashedPassword]
-    );
 
-    return result.rows[0];
+    // Verificar DNI único
+    const existingDni = await this.ejecutivaRepository.findOne({
+      where: { dni }
+    });
+
+    if (existingDni) {
+      throw new HttpException('Ya existe una ejecutiva con este DNI', HttpStatus.BAD_REQUEST);
+    }
+
+    // Verificar email único
+    const existingEmail = await this.ejecutivaRepository.findOne({
+      where: { correo }
+    });
+
+    if (existingEmail) {
+      throw new HttpException('Ya existe una ejecutiva con este email', HttpStatus.BAD_REQUEST);
+    }
+
+    // Hashear contraseña
+    const bcrypt = require('bcryptjs');
+    const hashedPassword = await bcrypt.hash(contraseña, 10);
+
+    const nuevaEjecutiva = this.ejecutivaRepository.create({
+      dni,
+      nombre_completo,
+      correo,
+      contraseña: hashedPassword,
+      telefono: telefono || null,
+      estado_ejecutiva: 'Activo',
+      jefe: jefeAsignar,
+
+    });
+    console.log('Nueva Ejecutiva:', nuevaEjecutiva, 'Jefe asignado:', jefeAsignar);
+    return await this.ejecutivaRepository.save(nuevaEjecutiva);
   }
 
   async updateEjecutiva(id: number, data: any) {
-    const { nombre, apellido, email, telefono, activo } = data;
+    const ejecutiva = await this.ejecutivaRepository.findOne({
+      where: { id_ejecutiva: id }
+    });
 
-    const result = await sql.query(
-      `UPDATE public.usuarios 
-       SET nombre = $1, apellido = $2, email = $3, telefono = $4, activo = $5
-       WHERE id_usuario = $6 AND rol = 'ejecutiva'
-       RETURNING *`,
-      [nombre, apellido, email, telefono, activo, id]
-    );
+    if (!ejecutiva) {
+      return null;
+    }
 
-    return result.rows[0] || null;
+    // Actualizar campos
+    if (data.nombre_completo) ejecutiva.nombre_completo = data.nombre_completo;
+    if (data.telefono !== undefined) ejecutiva.telefono = data.telefono;
+    if (data.linkedin !== undefined) ejecutiva.linkedin = data.linkedin;
+    if (data.estado_ejecutiva) ejecutiva.estado_ejecutiva = data.estado_ejecutiva;
+
+    ejecutiva.fecha_actualizacion = new Date();
+
+    return await this.ejecutivaRepository.save(ejecutiva);
   }
 
   async deleteEjecutiva(id: number) {
-    const result = await sql.query(
-      `UPDATE public.usuarios 
-       SET activo = false
-       WHERE id_usuario = $1 AND rol = 'ejecutiva'
-       RETURNING *`,
-      [id]
-    );
+    const ejecutiva = await this.ejecutivaRepository.findOne({
+      where: { id_ejecutiva: id }
+    });
 
-    return result.rows[0] || null;
+    if (!ejecutiva) {
+      return null;
+    }
+
+    ejecutiva.estado_ejecutiva = 'Inactivo';
+    ejecutiva.fecha_actualizacion = new Date();
+
+    return await this.ejecutivaRepository.save(ejecutiva);
   }
 }
