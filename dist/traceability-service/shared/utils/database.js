@@ -5,8 +5,8 @@ const pg_1 = require("pg");
 exports.pool = new pg_1.Pool({
     user: process.env.DB_USER || 'postgres',
     host: process.env.DB_HOST || 'localhost',
-    database: process.env.DB_NAME || 'infogrowvia2',
-    password: process.env.DB_PASSWORD || 'josue12345',
+    database: process.env.DB_NAME || 'infogrowviadb',
+    password: process.env.DB_PASSWORD || '428800',
     port: parseInt(process.env.DB_PORT || '5432'),
 });
 exports.sql = {
