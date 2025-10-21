@@ -40,6 +40,10 @@ export class Ejecutiva {
   @JoinColumn({ name: 'id_jefe' })
   jefe: Jefe;
 
+    // ✅ RELACIÓN CON EMPRESA PROVEEDORA (FALTABA EL CAMPO id_empresa_prov)
+  @Column({ type: 'int', nullable: true })
+  id_empresa_prov: number;
+
   @ManyToOne(() => EmpresaProveedora, empresa => empresa.ejecutivas, { nullable: true })
   @JoinColumn({ name: 'id_empresa_prov' })
   empresa_proveedora: EmpresaProveedora;
@@ -49,6 +53,9 @@ export class Ejecutiva {
 
   @OneToMany(() => Trazabilidad, trazabilidad => trazabilidad.ejecutiva)
   trazabilidades: Trazabilidad[];
+
+  @OneToMany(() => EmpresaProveedora, empresa => empresa.ejecutiva_registro)
+  empresas_registradas: EmpresaProveedora[];
 
   @CreateDateColumn()
   fecha_creacion: Date;

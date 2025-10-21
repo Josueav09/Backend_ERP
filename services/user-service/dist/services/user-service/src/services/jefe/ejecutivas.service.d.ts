@@ -24,9 +24,11 @@ export declare class EjecutivasService {
         linkedin: string;
         estado_ejecutiva: string;
         jefe: Jefe;
+        id_empresa_prov: number;
         empresa_proveedora: EmpresaProveedora;
         clientes_finales: ClienteFinal[];
         trazabilidades: Trazabilidad[];
+        empresas_registradas: EmpresaProveedora[];
         fecha_creacion: Date;
         fecha_actualizacion: Date;
     }[]>;

@@ -1,6 +1,7 @@
 import { Ejecutiva } from './Ejecutiva.entity';
 import { PersonaContacto } from './PersonaContacto.entity';
 import { Trazabilidad } from './Trazabilidad.entity';
+import { EmpresaProveedora } from './EmpresaProveedora.entity';
 export declare class ClienteFinal {
     id_cliente_final: number;
     ruc: string;
@@ -20,6 +21,10 @@ export declare class ClienteFinal {
     facturacion_anual: number;
     cantidad_empleados: number;
     logo: string;
+    estado: string;
+    id_empresa_prov: number;
+    empresa_proveedora: EmpresaProveedora;
+    id_ejecutiva: number;
     ejecutiva: Ejecutiva;
     personas_contacto: PersonaContacto[];
     trazabilidades: Trazabilidad[];

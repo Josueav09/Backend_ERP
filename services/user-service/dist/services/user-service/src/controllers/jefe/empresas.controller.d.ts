@@ -25,10 +25,12 @@ export declare class EmpresasController {
         cantidad_empleados: number;
         logo: string;
         estado: string;
+        ejecutiva_registro: import("shared/entities/Ejecutiva.entity").Ejecutiva;
         fecha_creacion: Date;
         fecha_actualizacion: Date;
         ejecutivas: import("shared/entities/Ejecutiva.entity").Ejecutiva[];
         trazabilidades: import("shared/entities/Trazabilidad.entity").Trazabilidad[];
+        clientes_finales: import("shared/entities/ClienteFinal.entity").ClienteFinal[];
     }[]>;
     createEmpresa(body: any): Promise<import("shared/entities/EmpresaProveedora.entity").EmpresaProveedora>;
     updateEmpresaEstado(id: string, body: any): Promise<{
@@ -48,9 +50,11 @@ export declare class EmpresasController {
             linkedin: string;
             estado_ejecutiva: string;
             jefe: import("shared/entities/Jefe.entity").Jefe;
+            id_empresa_prov: number;
             empresa_proveedora: import("shared/entities/EmpresaProveedora.entity").EmpresaProveedora;
             clientes_finales: import("shared/entities/ClienteFinal.entity").ClienteFinal[];
             trazabilidades: import("shared/entities/Trazabilidad.entity").Trazabilidad[];
+            empresas_registradas: import("shared/entities/EmpresaProveedora.entity").EmpresaProveedora[];
             fecha_creacion: Date;
             fecha_actualizacion: Date;
         }[];
@@ -74,9 +78,11 @@ export declare class EmpresasController {
         cantidad_empleados: number;
         logo: string;
         estado: string;
+        ejecutiva_registro: import("shared/entities/Ejecutiva.entity").Ejecutiva;
         fecha_creacion: Date;
         fecha_actualizacion: Date;
         trazabilidades: import("shared/entities/Trazabilidad.entity").Trazabilidad[];
+        clientes_finales: import("shared/entities/ClienteFinal.entity").ClienteFinal[];
     }>;
     addEjecutivaToEmpresa(id: string, body: any): Promise<{
         message: string;

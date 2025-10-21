@@ -93,12 +93,14 @@ console.log('🔧 Env file exists:', fs.existsSync(envPath));
   controllers: [
     AuditController, 
     TrazabilidadController,
+    EjecutivaTraceabilityController
   ],
   providers: [
     JwtStrategy,
     JwtAuthGuard,
     AuditService, 
-    TrazabilidadService
+    TrazabilidadService,
+    EjecutivaTraceabilityService
   ],
 })
 export class AppModule {}

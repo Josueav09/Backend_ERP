@@ -30,10 +30,12 @@ export declare class EmpresasService {
         cantidad_empleados: number;
         logo: string;
         estado: string;
+        ejecutiva_registro: Ejecutiva;
         fecha_creacion: Date;
         fecha_actualizacion: Date;
         ejecutivas: Ejecutiva[];
         trazabilidades: import("shared/entities/Trazabilidad.entity").Trazabilidad[];
+        clientes_finales: ClienteFinal[];
     }[]>;
     createEmpresa(data: any): Promise<EmpresaProveedora>;
     updateEmpresaEstado(empresaId: number, activo: boolean): Promise<{
@@ -53,9 +55,11 @@ export declare class EmpresasService {
             linkedin: string;
             estado_ejecutiva: string;
             jefe: import("shared/entities/Jefe.entity").Jefe;
+            id_empresa_prov: number;
             empresa_proveedora: EmpresaProveedora;
             clientes_finales: ClienteFinal[];
             trazabilidades: import("shared/entities/Trazabilidad.entity").Trazabilidad[];
+            empresas_registradas: EmpresaProveedora[];
             fecha_creacion: Date;
             fecha_actualizacion: Date;
         }[];
@@ -79,9 +83,11 @@ export declare class EmpresasService {
         cantidad_empleados: number;
         logo: string;
         estado: string;
+        ejecutiva_registro: Ejecutiva;
         fecha_creacion: Date;
         fecha_actualizacion: Date;
         trazabilidades: import("shared/entities/Trazabilidad.entity").Trazabilidad[];
+        clientes_finales: ClienteFinal[];
     }>;
     addEjecutivaToEmpresa(empresaId: number, ejecutivaId: number): Promise<{
         message: string;

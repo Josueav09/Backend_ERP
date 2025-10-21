@@ -13,6 +13,7 @@ exports.EmpresaProveedora = void 0;
 const typeorm_1 = require("typeorm");
 const Ejecutiva_entity_1 = require("./Ejecutiva.entity");
 const Trazabilidad_entity_1 = require("./Trazabilidad.entity");
+const ClienteFinal_entity_1 = require("./ClienteFinal.entity");
 let EmpresaProveedora = class EmpresaProveedora {
 };
 exports.EmpresaProveedora = EmpresaProveedora;
@@ -107,6 +108,11 @@ __decorate([
     __metadata("design:type", String)
 ], EmpresaProveedora.prototype, "estado", void 0);
 __decorate([
+    (0, typeorm_1.ManyToOne)(() => Ejecutiva_entity_1.Ejecutiva, { nullable: true }),
+    (0, typeorm_1.JoinColumn)({ name: 'id_ejecutiva_registro' }),
+    __metadata("design:type", Ejecutiva_entity_1.Ejecutiva)
+], EmpresaProveedora.prototype, "ejecutiva_registro", void 0);
+__decorate([
     (0, typeorm_1.CreateDateColumn)(),
     __metadata("design:type", Date)
 ], EmpresaProveedora.prototype, "fecha_creacion", void 0);
@@ -122,6 +128,10 @@ __decorate([
     (0, typeorm_1.OneToMany)(() => Trazabilidad_entity_1.Trazabilidad, trazabilidad => trazabilidad.empresa_proveedora),
     __metadata("design:type", Array)
 ], EmpresaProveedora.prototype, "trazabilidades", void 0);
+__decorate([
+    (0, typeorm_1.OneToMany)(() => ClienteFinal_entity_1.ClienteFinal, clienteFinal => clienteFinal.empresa_proveedora),
+    __metadata("design:type", Array)
+], EmpresaProveedora.prototype, "clientes_finales", void 0);
 exports.EmpresaProveedora = EmpresaProveedora = __decorate([
     (0, typeorm_1.Entity)('empresa_proveedora')
 ], EmpresaProveedora);

@@ -19,6 +19,10 @@ const auth_controller_1 = require("./auth.controller");
 const auth_service_1 = require("./auth.service");
 const email_module_1 = require("../email/email.module");
 const jwt_strategy_1 = require("../strategies/jwt.strategy");
+const ClienteFinal_entity_1 = require("../../../../shared/entities/ClienteFinal.entity");
+const PersonaContacto_entity_1 = require("../../../../shared/entities/PersonaContacto.entity");
+const Trazabilidad_entity_1 = require("../../../../shared/entities/Trazabilidad.entity");
+const AuditoriaCambios_entity_1 = require("../../../../shared/entities/AuditoriaCambios.entity");
 let AuthModule = class AuthModule {
 };
 exports.AuthModule = AuthModule;
@@ -26,9 +30,13 @@ exports.AuthModule = AuthModule = __decorate([
     (0, common_1.Module)({
         imports: [
             typeorm_1.TypeOrmModule.forFeature([
+                Trazabilidad_entity_1.Trazabilidad,
+                ClienteFinal_entity_1.ClienteFinal,
                 Jefe_entity_1.Jefe,
                 EmpresaProveedora_entity_1.EmpresaProveedora,
-                Ejecutiva_entity_1.Ejecutiva
+                Ejecutiva_entity_1.Ejecutiva,
+                PersonaContacto_entity_1.PersonaContacto,
+                AuditoriaCambios_entity_1.AuditoriaCambios
             ]),
             passport_1.PassportModule.register({ defaultStrategy: 'jwt' }),
             jwt_1.JwtModule.registerAsync({

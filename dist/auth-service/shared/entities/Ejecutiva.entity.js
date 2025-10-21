@@ -61,6 +61,10 @@ __decorate([
     __metadata("design:type", Jefe_entity_1.Jefe)
 ], Ejecutiva.prototype, "jefe", void 0);
 __decorate([
+    (0, typeorm_1.Column)({ type: 'int', nullable: true }),
+    __metadata("design:type", Number)
+], Ejecutiva.prototype, "id_empresa_prov", void 0);
+__decorate([
     (0, typeorm_1.ManyToOne)(() => EmpresaProveedora_entity_1.EmpresaProveedora, empresa => empresa.ejecutivas, { nullable: true }),
     (0, typeorm_1.JoinColumn)({ name: 'id_empresa_prov' }),
     __metadata("design:type", EmpresaProveedora_entity_1.EmpresaProveedora)
@@ -73,6 +77,10 @@ __decorate([
     (0, typeorm_1.OneToMany)(() => Trazabilidad_entity_1.Trazabilidad, trazabilidad => trazabilidad.ejecutiva),
     __metadata("design:type", Array)
 ], Ejecutiva.prototype, "trazabilidades", void 0);
+__decorate([
+    (0, typeorm_1.OneToMany)(() => EmpresaProveedora_entity_1.EmpresaProveedora, empresa => empresa.ejecutiva_registro),
+    __metadata("design:type", Array)
+], Ejecutiva.prototype, "empresas_registradas", void 0);
 __decorate([
     (0, typeorm_1.CreateDateColumn)(),
     __metadata("design:type", Date)

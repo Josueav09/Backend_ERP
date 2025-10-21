@@ -1,5 +1,6 @@
 import { Ejecutiva } from './Ejecutiva.entity';
 import { Trazabilidad } from './Trazabilidad.entity';
+import { ClienteFinal } from './ClienteFinal.entity';
 export declare class EmpresaProveedora {
     id_empresa_prov: number;
     ruc: string;
@@ -21,8 +22,10 @@ export declare class EmpresaProveedora {
     cantidad_empleados: number;
     logo: string;
     estado: string;
+    ejecutiva_registro: Ejecutiva;
     fecha_creacion: Date;
     fecha_actualizacion: Date;
     ejecutivas: Ejecutiva[];
     trazabilidades: Trazabilidad[];
+    clientes_finales: ClienteFinal[];
 }

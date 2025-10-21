@@ -15,9 +15,11 @@ export declare class EjecutivasController {
         linkedin: string;
         estado_ejecutiva: string;
         jefe: import("shared/entities/Jefe.entity").Jefe;
+        id_empresa_prov: number;
         empresa_proveedora: import("shared/entities/EmpresaProveedora.entity").EmpresaProveedora;
         clientes_finales: import("shared/entities/ClienteFinal.entity").ClienteFinal[];
         trazabilidades: import("shared/entities/Trazabilidad.entity").Trazabilidad[];
+        empresas_registradas: import("shared/entities/EmpresaProveedora.entity").EmpresaProveedora[];
         fecha_creacion: Date;
         fecha_actualizacion: Date;
     }[]>;

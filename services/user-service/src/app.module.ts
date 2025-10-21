@@ -22,6 +22,7 @@ import { EmpresaProveedora } from '../../../shared/entities/EmpresaProveedora.en
 import { ClienteFinal } from '../../../shared/entities/ClienteFinal.entity';
 import { PersonaContacto } from '../../../shared/entities/PersonaContacto.entity'; // ✅ AGREGAR
 import { Trazabilidad } from '../../../shared/entities/Trazabilidad.entity';
+import { AuditoriaCambios } from '../../../shared/entities/AuditoriaCambios.entity';
 import { JwtModule } from '@nestjs/jwt';
 
 import { JwtAuthGuard } from '../../../shared/guards/jwt-auth.guard'; // ← AJUSTA RUTA
@@ -82,18 +83,20 @@ console.log('🔧 Env file exists:', fs.existsSync(envPath));
     }),
 
     TypeOrmModule.forFeature([
+      Trazabilidad,    // ✅ Asegurar que está incluida
+      ClienteFinal,       // ✅ Asegurar que está incluida
       Jefe,
+      EmpresaProveedora, 
       Ejecutiva,
-      EmpresaProveedora,
-      ClienteFinal,
       PersonaContacto,
-      Trazabilidad
+      AuditoriaCambios
     ]),
   ],
   controllers: [
     EjecutivasController,
     EmpresasController,
-    JefeController
+    JefeController,
+    EjecutivaController,
   ],
   providers: [
     JefeService,
@@ -101,6 +104,7 @@ console.log('🔧 Env file exists:', fs.existsSync(envPath));
     JwtAuthGuard,
     EjecutivasService,
     EmpresasService,
+    EjecutivaService
 
   ],
 })

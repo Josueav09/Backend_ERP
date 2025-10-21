@@ -1,10 +1,21 @@
 // backend_ERP/shared/entities/ClienteFinal.entity.ts
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany, JoinColumn, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { 
+  Entity, 
+  PrimaryGeneratedColumn, 
+  Column, 
+  ManyToOne, 
+  OneToMany, 
+  JoinColumn, 
+  CreateDateColumn, 
+  UpdateDateColumn 
+} from 'typeorm';
 import { Ejecutiva } from './Ejecutiva.entity';
 import { PersonaContacto } from './PersonaContacto.entity';
 import { Trazabilidad } from './Trazabilidad.entity';
+import { EmpresaProveedora } from './EmpresaProveedora.entity';
 
-@Entity('cliente_final')
+
+@Entity('cliente_final') // ✅ Nombre en mayúsculas
 export class ClienteFinal {
   @PrimaryGeneratedColumn()
   id_cliente_final: number;
@@ -64,6 +75,26 @@ export class ClienteFinal {
 
   @Column({ type: 'varchar', length: 255, nullable: true })
   logo: string;
+
+    @Column({ 
+    type: 'varchar', 
+    length: 20, 
+    default: 'Activo',
+    enum: ['Activo', 'Inactivo']
+  })
+  estado: string;
+
+  // ✅ RELACIÓN CON EMPRESA PROVEEDORA (FALTABA)
+  @Column({ type: 'int' })
+  id_empresa_prov: number;
+
+  @ManyToOne(() => EmpresaProveedora, empresa => empresa.clientes_finales)
+  @JoinColumn({ name: 'id_empresa_prov' })
+  empresa_proveedora: EmpresaProveedora;
+
+  // ✅ RELACIÓN CON EJECUTIVA (CORREGIR nombre de columna)
+  @Column({ type: 'int' })
+  id_ejecutiva: number;
 
   @ManyToOne(() => Ejecutiva, ejecutiva => ejecutiva.clientes_finales)
   @JoinColumn({ name: 'id_ejecutiva' })

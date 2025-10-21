@@ -1,9 +1,19 @@
 // backend_ERP/shared/entities/EmpresaProveedora.entity.ts
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { 
+  Entity, 
+  PrimaryGeneratedColumn, 
+  Column, 
+  OneToMany, 
+  CreateDateColumn, 
+  UpdateDateColumn,
+  ManyToOne,
+  JoinColumn 
+} from 'typeorm';
 import { Ejecutiva } from './Ejecutiva.entity';
 import { Trazabilidad } from './Trazabilidad.entity';
+import { ClienteFinal } from './ClienteFinal.entity';
 
-@Entity('empresa_proveedora')
+@Entity('empresa_proveedora') // ✅ Nombre en mayúsculas
 export class EmpresaProveedora {
   @PrimaryGeneratedColumn()
   id_empresa_prov: number;
@@ -67,6 +77,7 @@ export class EmpresaProveedora {
   @Column({ type: 'varchar', length: 255, nullable: true })
   logo: string;
 
+
   @Column({ 
     type: 'varchar', 
     length: 20, 
@@ -75,15 +86,24 @@ export class EmpresaProveedora {
   })
   estado: string;
 
+
+  @ManyToOne(() => Ejecutiva, { nullable: true })
+  @JoinColumn({ name: 'id_ejecutiva_registro' })
+  ejecutiva_registro: Ejecutiva;
+
   @CreateDateColumn()
   fecha_creacion: Date;
 
   @UpdateDateColumn()
   fecha_actualizacion: Date;
 
+  // Relaciones
   @OneToMany(() => Ejecutiva, ejecutiva => ejecutiva.empresa_proveedora)
   ejecutivas: Ejecutiva[];
 
   @OneToMany(() => Trazabilidad, trazabilidad => trazabilidad.empresa_proveedora)
   trazabilidades: Trazabilidad[];
+
+  @OneToMany(() => ClienteFinal, clienteFinal => clienteFinal.empresa_proveedora)
+  clientes_finales: ClienteFinal[];
 }

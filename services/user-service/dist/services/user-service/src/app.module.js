@@ -51,12 +51,15 @@ const jefe_controller_1 = require("./controllers/jefe/jefe.controller");
 const ejecutivas_service_1 = require("./services/jefe/ejecutivas.service");
 const empresas_service_1 = require("./services/jefe/empresas.service");
 const jefe_service_1 = require("./services/jefe/jefe.service");
+const ejecutiva_controller_1 = require("./controllers/ejecutiva/ejecutiva.controller");
+const ejecutiva_service_1 = require("./services/ejecutiva/ejecutiva.service");
 const Jefe_entity_1 = require("../../../shared/entities/Jefe.entity");
 const Ejecutiva_entity_1 = require("../../../shared/entities/Ejecutiva.entity");
 const EmpresaProveedora_entity_1 = require("../../../shared/entities/EmpresaProveedora.entity");
 const ClienteFinal_entity_1 = require("../../../shared/entities/ClienteFinal.entity");
 const PersonaContacto_entity_1 = require("../../../shared/entities/PersonaContacto.entity");
 const Trazabilidad_entity_1 = require("../../../shared/entities/Trazabilidad.entity");
+const AuditoriaCambios_entity_1 = require("../../../shared/entities/AuditoriaCambios.entity");
 const jwt_1 = require("@nestjs/jwt");
 const jwt_auth_guard_1 = require("../../../shared/guards/jwt-auth.guard");
 const jwt_strategy_1 = require("../../../shared/strategies/jwt.strategy");
@@ -113,18 +116,20 @@ exports.AppModule = AppModule = __decorate([
                 },
             }),
             typeorm_1.TypeOrmModule.forFeature([
-                Jefe_entity_1.Jefe,
-                Ejecutiva_entity_1.Ejecutiva,
-                EmpresaProveedora_entity_1.EmpresaProveedora,
+                Trazabilidad_entity_1.Trazabilidad,
                 ClienteFinal_entity_1.ClienteFinal,
+                Jefe_entity_1.Jefe,
+                EmpresaProveedora_entity_1.EmpresaProveedora,
+                Ejecutiva_entity_1.Ejecutiva,
                 PersonaContacto_entity_1.PersonaContacto,
-                Trazabilidad_entity_1.Trazabilidad
+                AuditoriaCambios_entity_1.AuditoriaCambios
             ]),
         ],
         controllers: [
             ejecutivas_controller_1.EjecutivasController,
             empresas_controller_1.EmpresasController,
-            jefe_controller_1.JefeController
+            jefe_controller_1.JefeController,
+            ejecutiva_controller_1.EjecutivaController,
         ],
         providers: [
             jefe_service_1.JefeService,
@@ -132,6 +137,7 @@ exports.AppModule = AppModule = __decorate([
             jwt_auth_guard_1.JwtAuthGuard,
             ejecutivas_service_1.EjecutivasService,
             empresas_service_1.EmpresasService,
+            ejecutiva_service_1.EjecutivaService
         ],
     })
 ], AppModule);

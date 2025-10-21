@@ -14,14 +14,22 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { EmailModule } from '../email/email.module';
 import { JwtStrategy } from '../strategies/jwt.strategy';
+import { ClienteFinal } from 'shared/entities/ClienteFinal.entity';
+import { PersonaContacto } from 'shared/entities/PersonaContacto.entity';
+import { Trazabilidad } from 'shared/entities/Trazabilidad.entity';
+import { AuditoriaCambios } from 'shared/entities/AuditoriaCambios.entity';
 
 @Module({
   imports: [
     // ✅ REGISTRAR TODAS LAS ENTIDADES QUE SE USAN
     TypeOrmModule.forFeature([
+      Trazabilidad,    // ✅ Asegurar que está incluida
+      ClienteFinal,       // ✅ Asegurar que está incluida
       Jefe,
       EmpresaProveedora, 
-      Ejecutiva
+      Ejecutiva,
+      PersonaContacto,
+      AuditoriaCambios
     ]),
     
     PassportModule.register({ defaultStrategy: 'jwt' }),

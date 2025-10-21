@@ -403,8 +403,13 @@ export class EjecutivaService {
               fecha: ultimaActividad.fecha_contacto,
               tipo: ultimaActividad.tipo_contacto,
               resultado: ultimaActividad.resultado_contacto,
-              contacto: ultimaActividad.contacto?.nombre_completo
+              persona_contacto: ultimaActividad.persona_contacto ? {
+                id: ultimaActividad.persona_contacto.id_contacto,
+                nombre_completo: ultimaActividad.persona_contacto.nombre_completo,
+                email: ultimaActividad.persona_contacto.correo,
+                telefono: ultimaActividad.persona_contacto.telefono
             } : null
+          } : null
           };
         })
       );
@@ -474,7 +479,7 @@ export class EjecutivaService {
           etapa_oportunidad: Not(In(['Venta ganada', 'Venta perdida', 'Venta suspendida'])),
           nombre_oportunidad: Not(IsNull())
         },
-        relations: ['cliente_final', 'contacto', 'empresa_proveedora'],
+        relations: ['cliente_final', 'persona_contacto', 'empresa_proveedora'],
         order: { fecha_cierre_esperado: 'ASC' }
       });
 
@@ -518,7 +523,7 @@ export class EjecutivaService {
         where: {
           ejecutiva: { id_ejecutiva: id }
         },
-        relations: ['cliente_final', 'contacto', 'empresa_proveedora'],
+        relations: ['cliente_final', 'persona_contacto', 'empresa_proveedora'],
         order: { fecha_contacto: 'DESC' },
         take: limit
       });
@@ -529,10 +534,17 @@ export class EjecutivaService {
         tipo_contacto: actividad.tipo_contacto,
         resultado: actividad.resultado_contacto,
         cliente: actividad.cliente_final?.razon_social,
-        contacto: actividad.contacto?.nombre_completo,
+        persona_contacto: actividad.persona_contacto ? {
+          id: actividad.persona_contacto.id_contacto,
+          nombre_completo: actividad.persona_contacto.nombre_completo,
+          email: actividad.persona_contacto?.correo || null,
+          telefono: actividad.persona_contacto?.telefono || null
+        } : null,
         oportunidad: actividad.nombre_oportunidad,
         etapa: actividad.etapa_oportunidad,
-        observaciones: actividad.observaciones?.substring(0, 100) + (actividad.observaciones?.length > 100 ? '...' : '')
+        observaciones: actividad.observaciones
+          ? actividad.observaciones.substring(0, 100) + (actividad.observaciones.length > 100 ? '...' : '')
+          : null
       }));
     } catch (error) {
       console.error('Error en getActividadesRecientes:', error);

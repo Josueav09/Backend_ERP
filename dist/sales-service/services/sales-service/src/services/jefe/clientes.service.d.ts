@@ -34,6 +34,9 @@ export declare class ClientesService {
         facturacion_anual: number;
         cantidad_empleados: number;
         logo: string;
+        estado: string;
+        id_empresa_prov: number;
+        id_ejecutiva: number;
         ejecutiva: Ejecutiva;
         personas_contacto: PersonaContacto[];
         trazabilidades: Trazabilidad[];

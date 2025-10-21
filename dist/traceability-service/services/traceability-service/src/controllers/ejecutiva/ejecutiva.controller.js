@@ -33,25 +33,64 @@ let EjecutivaTraceabilityController = class EjecutivaTraceabilityController {
         }
     }
     async createTrazabilidad(body) {
-        const { id_ejecutiva, id_empresa, id_cliente, tipo_actividad, descripcion, estado, notas } = body;
-        if (!id_ejecutiva || !id_empresa) {
-            throw new common_1.HttpException('Ejecutiva y empresa requeridos', common_1.HttpStatus.BAD_REQUEST);
+        const { id_ejecutiva, id_empresa_prov, id_cliente_final, id_contacto, tipo_contacto, fecha_contacto, resultado_contacto } = body;
+        if (!id_ejecutiva || !id_empresa_prov || !id_cliente_final || !id_contacto) {
+            throw new common_1.HttpException('Ejecutiva, empresa, cliente y contacto requeridos', common_1.HttpStatus.BAD_REQUEST);
         }
         try {
             return await this.ejecutivaTraceabilityService.createTrazabilidad({
                 id_ejecutiva,
-                id_empresa,
-                id_cliente,
-                tipo_actividad,
-                descripcion,
-                estado,
-                notas,
+                id_empresa_prov,
+                id_cliente_final,
+                id_contacto,
+                tipo_contacto,
+                fecha_contacto: fecha_contacto ? new Date(fecha_contacto) : new Date(),
+                resultado_contacto,
+                informacion_importante: body.informacion_importante,
+                reunion_agendada: body.reunion_agendada,
+                fecha_reunion: body.fecha_reunion ? new Date(body.fecha_reunion) : undefined,
+                participantes: body.participantes,
+                se_dio_reunion: body.se_dio_reunion,
+                resultados_reunion: body.resultados_reunion,
+                pasa_embudo_ventas: body.pasa_embudo_ventas,
+                nombre_oportunidad: body.nombre_oportunidad,
+                etapa_oportunidad: body.etapa_oportunidad,
+                producto_ofrecido: body.producto_ofrecido,
+                monto_total_sin_imp: body.monto_total_sin_imp,
+                probabilidad_cierre: body.probabilidad_cierre,
+                observaciones: body.observaciones
             });
         }
         catch (error) {
             if (error instanceof common_1.HttpException)
                 throw error;
             throw new common_1.HttpException('Error al crear trazabilidad', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+    async getPipeline(ejecutivaId) {
+        if (!ejecutivaId) {
+            throw new common_1.HttpException('ID de ejecutiva requerido', common_1.HttpStatus.BAD_REQUEST);
+        }
+        try {
+            return await this.ejecutivaTraceabilityService.getPipeline(ejecutivaId);
+        }
+        catch (error) {
+            if (error instanceof common_1.HttpException)
+                throw error;
+            throw new common_1.HttpException('Error al obtener pipeline', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+    async getActividadesRecientes(ejecutivaId, limit = '10') {
+        if (!ejecutivaId) {
+            throw new common_1.HttpException('ID de ejecutiva requerido', common_1.HttpStatus.BAD_REQUEST);
+        }
+        try {
+            return await this.ejecutivaTraceabilityService.getActividadesRecientes(ejecutivaId, parseInt(limit));
+        }
+        catch (error) {
+            if (error instanceof common_1.HttpException)
+                throw error;
+            throw new common_1.HttpException('Error al obtener actividades', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 };
@@ -70,6 +109,21 @@ __decorate([
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", Promise)
 ], EjecutivaTraceabilityController.prototype, "createTrazabilidad", null);
+__decorate([
+    (0, common_1.Get)('pipeline'),
+    __param(0, (0, common_1.Query)('ejecutivaId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], EjecutivaTraceabilityController.prototype, "getPipeline", null);
+__decorate([
+    (0, common_1.Get)('actividades'),
+    __param(0, (0, common_1.Query)('ejecutivaId')),
+    __param(1, (0, common_1.Query)('limit')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:returntype", Promise)
+], EjecutivaTraceabilityController.prototype, "getActividadesRecientes", null);
 exports.EjecutivaTraceabilityController = EjecutivaTraceabilityController = __decorate([
     (0, common_1.Controller)('ejecutiva'),
     __metadata("design:paramtypes", [ejecutiva_service_1.EjecutivaTraceabilityService])

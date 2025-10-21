@@ -46,17 +46,20 @@ let EjecutivaController = class EjecutivaController {
         }
     }
     async createEmpresa(body) {
-        const { nombre_empresa, rut, direccion, telefono, email_contacto, ejecutivaId } = body;
+        const { razon_social, ruc, direccion, telefono, correo, ejecutivaId } = body;
         if (!ejecutivaId) {
             throw new common_1.HttpException('ID de ejecutiva requerido', common_1.HttpStatus.BAD_REQUEST);
         }
+        if (!razon_social || !ruc || !correo) {
+            throw new common_1.HttpException('Razón social, RUC y correo son requeridos', common_1.HttpStatus.BAD_REQUEST);
+        }
         try {
             return await this.ejecutivaService.createEmpresa({
-                nombre_empresa,
-                rut,
+                razon_social,
+                ruc,
                 direccion,
                 telefono,
-                email_contacto,
+                correo,
                 ejecutivaId
             });
         }
@@ -80,25 +83,54 @@ let EjecutivaController = class EjecutivaController {
         }
     }
     async createCliente(body) {
-        const { id_empresa, id_ejecutiva, nombre_cliente, rut_cliente, direccion, telefono, email } = body;
+        const { id_empresa, id_ejecutiva, razon_social, ruc, direccion, telefono, correo } = body;
         if (!id_empresa || !id_ejecutiva) {
             throw new common_1.HttpException('Empresa y ejecutiva requeridos', common_1.HttpStatus.BAD_REQUEST);
+        }
+        if (!razon_social || !ruc) {
+            throw new common_1.HttpException('Razón social y RUC son requeridos', common_1.HttpStatus.BAD_REQUEST);
         }
         try {
             return await this.ejecutivaService.createCliente({
                 id_empresa,
                 id_ejecutiva,
-                nombre_cliente,
-                rut_cliente,
+                razon_social,
+                ruc,
                 direccion,
                 telefono,
-                email
+                correo
             });
         }
         catch (error) {
             if (error instanceof common_1.HttpException)
                 throw error;
             throw new common_1.HttpException('Error al crear cliente', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+    async getPipeline(ejecutivaId) {
+        if (!ejecutivaId) {
+            throw new common_1.HttpException('ID de ejecutiva requerido', common_1.HttpStatus.BAD_REQUEST);
+        }
+        try {
+            return await this.ejecutivaService.getPipeline(ejecutivaId);
+        }
+        catch (error) {
+            if (error instanceof common_1.HttpException)
+                throw error;
+            throw new common_1.HttpException('Error al obtener pipeline', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+    async getActividadesRecientes(ejecutivaId, limit = '10') {
+        if (!ejecutivaId) {
+            throw new common_1.HttpException('ID de ejecutiva requerido', common_1.HttpStatus.BAD_REQUEST);
+        }
+        try {
+            return await this.ejecutivaService.getActividadesRecientes(ejecutivaId, parseInt(limit));
+        }
+        catch (error) {
+            if (error instanceof common_1.HttpException)
+                throw error;
+            throw new common_1.HttpException('Error al obtener actividades', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 };
@@ -138,6 +170,21 @@ __decorate([
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", Promise)
 ], EjecutivaController.prototype, "createCliente", null);
+__decorate([
+    (0, common_1.Get)('pipeline'),
+    __param(0, (0, common_1.Query)('ejecutivaId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], EjecutivaController.prototype, "getPipeline", null);
+__decorate([
+    (0, common_1.Get)('actividades'),
+    __param(0, (0, common_1.Query)('ejecutivaId')),
+    __param(1, (0, common_1.Query)('limit')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:returntype", Promise)
+], EjecutivaController.prototype, "getActividadesRecientes", null);
 exports.EjecutivaController = EjecutivaController = __decorate([
     (0, common_1.Controller)('ejecutiva'),
     __metadata("design:paramtypes", [ejecutiva_service_1.EjecutivaService])

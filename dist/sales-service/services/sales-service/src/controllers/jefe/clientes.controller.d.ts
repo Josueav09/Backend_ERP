@@ -25,6 +25,9 @@ export declare class ClientesController {
         facturacion_anual: number;
         cantidad_empleados: number;
         logo: string;
+        estado: string;
+        id_empresa_prov: number;
+        id_ejecutiva: number;
         ejecutiva: import("shared/entities/Ejecutiva.entity").Ejecutiva;
         personas_contacto: import("shared/entities/PersonaContacto.entity").PersonaContacto[];
         trazabilidades: import("shared/entities/Trazabilidad.entity").Trazabilidad[];
