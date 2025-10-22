@@ -31,9 +31,10 @@ export declare class JefeService {
         totalEjecutivas: number;
         totalClientes: number;
         clientesEsteMes: number;
-        revenueTotal: any;
-        pipelineOportunidades: any;
-        dashboardEjecutivas: any;
+        revenueTotal: number;
+        pipelineOportunidades: number;
+        ventasGanadas: number;
+        dashboardEjecutivas: any[];
         kpis: {
             tasaConversion: string;
             clientesNuevosMes: number;
@@ -42,4 +43,38 @@ export declare class JefeService {
     }>;
     private getClientesNuevosMes;
     private getActividadesMes;
+    getClientes(): Promise<{
+        id_cliente_final: any;
+        ruc: any;
+        razon_social: any;
+        pagina_web: any;
+        correo: any;
+        telefono: any;
+        pais: any;
+        departamento: any;
+        provincia: any;
+        direccion: any;
+        linkedin: any;
+        grupo_economico: any;
+        rubro: any;
+        sub_rubro: any;
+        tamanio_empresa: any;
+        facturacion_anual: number;
+        cantidad_empleados: any;
+        logo: any;
+        id_ejecutiva: any;
+        ejecutiva_nombre: any;
+        id_empresa_prov: any;
+        empresa_nombre: any;
+        fecha_creacion: any;
+        fecha_actualizacion: any;
+        total_actividades: number;
+        estado: any;
+    }[]>;
+    getClienteById(id: number): Promise<ClienteFinal>;
+    createCliente(data: any): Promise<ClienteFinal>;
+    updateCliente(id: number, data: any): Promise<ClienteFinal>;
+    deleteCliente(id: number): Promise<{
+        message: string;
+    }>;
 }

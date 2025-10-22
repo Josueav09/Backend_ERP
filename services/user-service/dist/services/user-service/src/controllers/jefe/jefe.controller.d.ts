@@ -22,9 +22,10 @@ export declare class JefeController {
         totalEjecutivas: number;
         totalClientes: number;
         clientesEsteMes: number;
-        revenueTotal: any;
-        pipelineOportunidades: any;
-        dashboardEjecutivas: any;
+        revenueTotal: number;
+        pipelineOportunidades: number;
+        ventasGanadas: number;
+        dashboardEjecutivas: any[];
         kpis: {
             tasaConversion: string;
             clientesNuevosMes: number;

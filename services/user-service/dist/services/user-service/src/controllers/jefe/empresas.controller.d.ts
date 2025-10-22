@@ -33,68 +33,40 @@ export declare class EmpresasController {
         trazabilidades: import("shared/entities/Trazabilidad.entity").Trazabilidad[];
         clientes_finales: import("shared/entities/ClienteFinal.entity").ClienteFinal[];
     }[]>;
+    getEmpresaEjecutivas(id: string): Promise<{
+        id_empresa_prov: number;
+        razon_social: string;
+        ruc: string;
+        ejecutivas: {
+            id_usuario: number;
+            nombre: string;
+            apellido: string;
+            email: string;
+            fecha_asignacion: Date;
+            activo: boolean;
+            total_clientes: number;
+        }[];
+    }>;
     createEmpresa(body: any): Promise<import("shared/entities/EmpresaProveedora.entity").EmpresaProveedora>;
+    updateEmpresa(id: string, data: any): Promise<import("shared/entities/EmpresaProveedora.entity").EmpresaProveedora>;
     updateEmpresaEstado(id: string, body: any): Promise<{
         empresa: import("shared/entities/EmpresaProveedora.entity").EmpresaProveedora;
         message: string;
     }>;
-    updateEmpresa(id: string, data: any): Promise<import("shared/entities/EmpresaProveedora.entity").EmpresaProveedora>;
-    getEmpresaEjecutivas(id: string): Promise<{
-        ejecutivas: {
-            total_clientes: number;
-            id_ejecutiva: number;
-            dni: string;
-            nombre_completo: string;
-            correo: string;
-            contraseña: string;
-            telefono: string;
-            linkedin: string;
-            estado_ejecutiva: string;
-            jefe: import("shared/entities/Jefe.entity").Jefe;
-            id_empresa_prov: number;
-            empresa_proveedora: import("shared/entities/EmpresaProveedora.entity").EmpresaProveedora;
-            clientes_finales: import("shared/entities/ClienteFinal.entity").ClienteFinal[];
-            trazabilidades: import("shared/entities/Trazabilidad.entity").Trazabilidad[];
-            empresas_registradas: import("shared/entities/EmpresaProveedora.entity").EmpresaProveedora[];
-            fecha_creacion: Date;
-            fecha_actualizacion: Date;
-        }[];
-        id_empresa_prov: number;
-        ruc: string;
-        razon_social: string;
-        pagina_web: string;
-        correo: string;
-        contraseña: string;
-        telefono: string;
-        pais: string;
-        departamento: string;
-        provincia: string;
-        direccion: string;
-        linkedin: string;
-        grupo_economico: string;
-        rubro: string;
-        sub_rubro: string;
-        tamanio_empresa: string;
-        facturacion_anual: number;
-        cantidad_empleados: number;
-        logo: string;
-        estado: string;
-        id_ejecutiva_registro: number;
-        ejecutiva_registro: import("shared/entities/Ejecutiva.entity").Ejecutiva;
-        fecha_creacion: Date;
-        fecha_actualizacion: Date;
-        trazabilidades: import("shared/entities/Trazabilidad.entity").Trazabilidad[];
-        clientes_finales: import("shared/entities/ClienteFinal.entity").ClienteFinal[];
-    }>;
-    addEjecutivaToEmpresa(id: string, body: any): Promise<{
+    addEjecutivaToEmpresa(empresaId: string, ejecutivaId: string): Promise<{
         message: string;
         ejecutiva: {
             id_ejecutiva: number;
             nombre_completo: string;
             correo: string;
+            empresa: string;
         };
     }>;
-    removeEjecutivaFromEmpresa(id: string, ejecutivaId: string): Promise<{
+    removeEjecutivaFromEmpresa(empresaId: string, ejecutivaId: string): Promise<{
         message: string;
+        ejecutiva: {
+            id_ejecutiva: number;
+            nombre_completo: string;
+        };
     }>;
 }

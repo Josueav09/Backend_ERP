@@ -55,7 +55,7 @@ let EjecutivasService = class EjecutivasService {
     async getEjecutivaById(id) {
         const ejecutiva = await this.ejecutivaRepository.findOne({
             where: { id_ejecutiva: id },
-            relations: ['empresa_proveedora', 'clientes_finales']
+            relations: ['empresa_proveedora', 'clientes_finales', 'clientes_finales.empresa_proveedora']
         });
         if (!ejecutiva) {
             return null;
@@ -68,16 +68,39 @@ let EjecutivasService = class EjecutivasService {
                 where: { ejecutiva: { id_ejecutiva: id } },
                 order: { fecha_contacto: 'DESC' },
                 take: 10,
-                relations: ['cliente_final', 'empresa_proveedora']
+                relations: ['cliente_final']
             })
         ]);
+        const empresasAsociadas = ejecutiva.empresa_proveedora ? [{
+                id_empresa: ejecutiva.empresa_proveedora.id_empresa_prov,
+                nombre_empresa: ejecutiva.empresa_proveedora.razon_social,
+                rut: ejecutiva.empresa_proveedora.ruc,
+                fecha_asignacion: ejecutiva.fecha_creacion,
+                asignacion_activa: true
+            }] : [];
+        const clientesAsignados = ejecutiva.clientes_finales.map(cliente => ({
+            id_cliente: cliente.id_cliente_final,
+            nombre_cliente: cliente.razon_social,
+            rut_cliente: cliente.ruc,
+            email: cliente.correo,
+            telefono: cliente.telefono,
+            estado: cliente.estado || 'activo',
+            nombre_empresa: cliente.empresa_proveedora?.razon_social || 'N/A',
+            fecha_registro: cliente.fecha_creacion
+        }));
         return {
-            ejecutiva,
+            ejecutiva: {
+                ...ejecutiva,
+                empresa_asignada: ejecutiva.empresa_proveedora ? ejecutiva.empresa_proveedora.razon_social : 'Sin asignar',
+                empresa_nombre: ejecutiva.empresa_proveedora ? ejecutiva.empresa_proveedora.razon_social : 'Sin asignar'
+            },
             estadisticas: {
                 total_clientes: ejecutiva.clientes_finales.length,
                 total_actividades: totalActividades,
                 actividades_recientes: actividadesRecientes
-            }
+            },
+            empresas: empresasAsociadas,
+            clientes: clientesAsignados
         };
     }
     async createEjecutiva(data) {
@@ -156,6 +179,32 @@ let EjecutivasService = class EjecutivasService {
         ejecutiva.estado_ejecutiva = 'Inactivo';
         ejecutiva.fecha_actualizacion = new Date();
         return await this.ejecutivaRepository.save(ejecutiva);
+    }
+    async getEjecutivasDisponibles() {
+        console.log('🔍 [EjecutivasService] Buscando ejecutivas disponibles...');
+        const ejecutivasDisponibles = await this.ejecutivaRepository.find({
+            where: {
+                estado_ejecutiva: 'Activo',
+                empresa_proveedora: (0, typeorm_2.IsNull)()
+            },
+            relations: ['jefe'],
+            order: { nombre_completo: 'ASC' }
+        });
+        console.log('✅ [EjecutivasService] Ejecutivas disponibles:', ejecutivasDisponibles.length);
+        return ejecutivasDisponibles.map(ej => {
+            const nombreParts = ej.nombre_completo.split(' ');
+            return {
+                id_usuario: ej.id_ejecutiva,
+                nombre: nombreParts[0] || '',
+                apellido: nombreParts.slice(1).join(' ') || '',
+                email: ej.correo,
+                telefono: ej.telefono,
+                activo: ej.estado_ejecutiva === 'Activo',
+                total_empresas: 0,
+                total_clientes: 0,
+                total_actividades: 0
+            };
+        });
     }
 };
 exports.EjecutivasService = EjecutivasService;

@@ -33,14 +33,61 @@ export declare class EjecutivasService {
         fecha_actualizacion: Date;
     }[]>;
     getEjecutivaById(id: number): Promise<{
-        ejecutiva: Ejecutiva;
+        ejecutiva: {
+            empresa_asignada: string;
+            empresa_nombre: string;
+            id_ejecutiva: number;
+            dni: string;
+            nombre_completo: string;
+            correo: string;
+            contraseña: string;
+            telefono: string;
+            linkedin: string;
+            estado_ejecutiva: string;
+            jefe: Jefe;
+            id_empresa_prov: number;
+            empresa_proveedora: EmpresaProveedora;
+            clientes_finales: ClienteFinal[];
+            trazabilidades: Trazabilidad[];
+            empresas_registradas: EmpresaProveedora[];
+            fecha_creacion: Date;
+            fecha_actualizacion: Date;
+        };
         estadisticas: {
             total_clientes: number;
             total_actividades: number;
             actividades_recientes: Trazabilidad[];
         };
+        empresas: {
+            id_empresa: number;
+            nombre_empresa: string;
+            rut: string;
+            fecha_asignacion: Date;
+            asignacion_activa: boolean;
+        }[];
+        clientes: {
+            id_cliente: number;
+            nombre_cliente: string;
+            rut_cliente: string;
+            email: string;
+            telefono: string;
+            estado: string;
+            nombre_empresa: string;
+            fecha_registro: Date;
+        }[];
     }>;
     createEjecutiva(data: any): Promise<Ejecutiva>;
     updateEjecutiva(id: number, data: any): Promise<Ejecutiva>;
     deleteEjecutiva(id: number): Promise<Ejecutiva>;
+    getEjecutivasDisponibles(): Promise<{
+        id_usuario: number;
+        nombre: string;
+        apellido: string;
+        email: string;
+        telefono: string;
+        activo: boolean;
+        total_empresas: number;
+        total_clientes: number;
+        total_actividades: number;
+    }[]>;
 }

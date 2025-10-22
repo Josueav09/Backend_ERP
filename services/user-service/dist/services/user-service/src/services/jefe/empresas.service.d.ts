@@ -45,51 +45,18 @@ export declare class EmpresasService {
     }>;
     updateEmpresa(empresaId: number, data: any): Promise<EmpresaProveedora>;
     getEmpresaEjecutivas(empresaId: number): Promise<{
-        ejecutivas: {
-            total_clientes: number;
-            id_ejecutiva: number;
-            dni: string;
-            nombre_completo: string;
-            correo: string;
-            contraseña: string;
-            telefono: string;
-            linkedin: string;
-            estado_ejecutiva: string;
-            jefe: import("shared/entities/Jefe.entity").Jefe;
-            id_empresa_prov: number;
-            empresa_proveedora: EmpresaProveedora;
-            clientes_finales: ClienteFinal[];
-            trazabilidades: import("shared/entities/Trazabilidad.entity").Trazabilidad[];
-            empresas_registradas: EmpresaProveedora[];
-            fecha_creacion: Date;
-            fecha_actualizacion: Date;
-        }[];
         id_empresa_prov: number;
-        ruc: string;
         razon_social: string;
-        pagina_web: string;
-        correo: string;
-        contraseña: string;
-        telefono: string;
-        pais: string;
-        departamento: string;
-        provincia: string;
-        direccion: string;
-        linkedin: string;
-        grupo_economico: string;
-        rubro: string;
-        sub_rubro: string;
-        tamanio_empresa: string;
-        facturacion_anual: number;
-        cantidad_empleados: number;
-        logo: string;
-        estado: string;
-        id_ejecutiva_registro: number;
-        ejecutiva_registro: Ejecutiva;
-        fecha_creacion: Date;
-        fecha_actualizacion: Date;
-        trazabilidades: import("shared/entities/Trazabilidad.entity").Trazabilidad[];
-        clientes_finales: ClienteFinal[];
+        ruc: string;
+        ejecutivas: {
+            id_usuario: number;
+            nombre: string;
+            apellido: string;
+            email: string;
+            fecha_asignacion: Date;
+            activo: boolean;
+            total_clientes: number;
+        }[];
     }>;
     addEjecutivaToEmpresa(empresaId: number, ejecutivaId: number): Promise<{
         message: string;
@@ -97,9 +64,14 @@ export declare class EmpresasService {
             id_ejecutiva: number;
             nombre_completo: string;
             correo: string;
+            empresa: string;
         };
     }>;
     removeEjecutivaFromEmpresa(empresaId: number, ejecutivaId: number): Promise<{
         message: string;
+        ejecutiva: {
+            id_ejecutiva: number;
+            nombre_completo: string;
+        };
     }>;
 }

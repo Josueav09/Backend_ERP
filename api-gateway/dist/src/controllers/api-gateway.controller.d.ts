@@ -32,6 +32,15 @@ export declare class ApiGatewayController {
     getJefeTrazabilidad(empresaId?: string, ejecutivaId?: string, clienteId?: string, fechaInicio?: string, fechaFin?: string, req?: Request): Promise<any>;
     getJefeTrazabilidadDashboard(req: Request): Promise<any>;
     createJefeTrazabilidad(body: any, req: Request): Promise<any>;
+    getTrazabilidadKPIs(ejecutivaId?: string, empresaId?: string, clienteId?: string, fechaDesde?: string, fechaHasta?: string, req?: Request): Promise<any>;
+    getTrazabilidadEtapa1(ejecutivaId?: string, empresaId?: string, clienteId?: string, resultadoContacto?: string, tipoContacto?: string, fechaDesde?: string, fechaHasta?: string, page?: string, limit?: string, req?: Request): Promise<any>;
+    getTrazabilidadEtapa2(ejecutivaId?: string, empresaId?: string, clienteId?: string, etapaOportunidad?: string, fechaDesde?: string, fechaHasta?: string, page?: string, limit?: string, req?: Request): Promise<any>;
+    getNuevosClientesKPIs(meses?: string, ejecutivaId?: string, req?: Request): Promise<any>;
+    getContactosPorTipoKPIs(ejecutivaId?: string, fechaDesde?: string, fechaHasta?: string, req?: Request): Promise<any>;
+    getMontosPorEtapaKPIs(ejecutivaId?: string, fechaDesde?: string, fechaHasta?: string, req?: Request): Promise<any>;
+    getTasaConversionKPIs(fechaDesde?: string, fechaHasta?: string, req?: Request): Promise<any>;
+    getTrazabilidadDetail(id: string, req?: Request): Promise<any>;
+    testTrazabilidadEndpoint(req?: Request): Promise<any>;
     getJefeAuditoria(fechaInicio?: string, fechaFin?: string, accion?: string, usuario?: string, req?: Request): Promise<any>;
     getJefeAuditoriaEstadisticas(req: Request): Promise<any>;
     getClienteDashboardStats(empresaId: string, req: Request): Promise<any>;

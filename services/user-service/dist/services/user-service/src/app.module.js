@@ -60,6 +60,10 @@ const ClienteFinal_entity_1 = require("../../../shared/entities/ClienteFinal.ent
 const PersonaContacto_entity_1 = require("../../../shared/entities/PersonaContacto.entity");
 const Trazabilidad_entity_1 = require("../../../shared/entities/Trazabilidad.entity");
 const AuditoriaCambios_entity_1 = require("../../../shared/entities/AuditoriaCambios.entity");
+const clienteFinal_controller_1 = require("./controllers/jefe/clienteFinal.controller");
+const trazabilidad_controller_1 = require("./controllers/jefe/trazabilidad.controller");
+const clientes_service_1 = require("./services/jefe/clientes.service");
+const trazabilidad_service_1 = require("./services/jefe/trazabilidad.service");
 const jwt_1 = require("@nestjs/jwt");
 const jwt_auth_guard_1 = require("../../../shared/guards/jwt-auth.guard");
 const jwt_strategy_1 = require("../../../shared/strategies/jwt.strategy");
@@ -130,6 +134,8 @@ exports.AppModule = AppModule = __decorate([
             empresas_controller_1.EmpresasController,
             jefe_controller_1.JefeController,
             ejecutiva_controller_1.EjecutivaController,
+            clienteFinal_controller_1.ClientesController,
+            trazabilidad_controller_1.TrazabilidadController,
         ],
         providers: [
             jefe_service_1.JefeService,
@@ -137,7 +143,9 @@ exports.AppModule = AppModule = __decorate([
             jwt_auth_guard_1.JwtAuthGuard,
             ejecutivas_service_1.EjecutivasService,
             empresas_service_1.EmpresasService,
-            ejecutiva_service_1.EjecutivaService
+            ejecutiva_service_1.EjecutivaService,
+            clientes_service_1.ClientesService,
+            trazabilidad_service_1.TrazabilidadService,
         ],
     })
 ], AppModule);

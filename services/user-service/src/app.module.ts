@@ -10,8 +10,8 @@ import { JefeController } from './controllers/jefe/jefe.controller';
 import { EjecutivasService } from './services/jefe/ejecutivas.service';
 import { EmpresasService } from './services/jefe/empresas.service';
 import { JefeService } from './services/jefe/jefe.service';
-import { ClienteDashboardController } from './controllers/cliente/dashboard.controller';
-import { ClienteDashboardService } from './services/cliente/dashboard.service';
+// import { ClienteDashboardController } from './controllers/cliente/dashboard.controller';
+// import { ClienteDashboardService } from './services/cliente/dashboard.service';
 import { EjecutivaController } from './controllers/ejecutiva/ejecutiva.controller';
 import { EjecutivaService } from './services/ejecutiva/ejecutiva.service';
 
@@ -23,6 +23,10 @@ import { ClienteFinal } from '../../../shared/entities/ClienteFinal.entity';
 import { PersonaContacto } from '../../../shared/entities/PersonaContacto.entity'; // ✅ AGREGAR
 import { Trazabilidad } from '../../../shared/entities/Trazabilidad.entity';
 import { AuditoriaCambios } from '../../../shared/entities/AuditoriaCambios.entity';
+import { ClientesController } from './controllers/jefe/clienteFinal.controller';
+import { TrazabilidadController } from './controllers/jefe/trazabilidad.controller';
+import { ClientesService } from './services/jefe/clientes.service';
+import { TrazabilidadService } from './services/jefe/trazabilidad.service';
 import { JwtModule } from '@nestjs/jwt';
 
 import { JwtAuthGuard } from '../../../shared/guards/jwt-auth.guard'; // ← AJUSTA RUTA
@@ -97,6 +101,8 @@ console.log('🔧 Env file exists:', fs.existsSync(envPath));
     EmpresasController,
     JefeController,
     EjecutivaController,
+    ClientesController,
+    TrazabilidadController,
   ],
   providers: [
     JefeService,
@@ -104,8 +110,9 @@ console.log('🔧 Env file exists:', fs.existsSync(envPath));
     JwtAuthGuard,
     EjecutivasService,
     EmpresasService,
-    EjecutivaService
-
+    EjecutivaService,
+    ClientesService,
+    TrazabilidadService,
   ],
 })
 export class AppModule { }
