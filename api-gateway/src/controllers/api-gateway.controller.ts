@@ -456,76 +456,6 @@ export class ApiGatewayController {
     }
   }
 
-  // 👔 =====================================================
-  // JEFE - TRAZABILIDAD (Traceability Service - Puerto 3007)
-  // =====================================================
-
-  // @Get('jefe/trazabilidad')
-  // async getJefeTrazabilidad(
-  //   @Query('empresa') empresaId?: string,
-  //   @Query('ejecutiva') ejecutivaId?: string,
-  //   @Query('cliente') clienteId?: string,
-  //   @Query('fechaInicio') fechaInicio?: string,
-  //   @Query('fechaFin') fechaFin?: string,
-  //   @Req() req?: Request
-  // ) {
-  //   try {
-  //     const headers = this.getHeadersWithAuth(req);
-  //     let url = 'http://localhost:3007/trazabilidad?';
-  //     if (empresaId) url += `empresa=${empresaId}&`;
-  //     if (ejecutivaId) url += `ejecutiva=${ejecutivaId}&`;
-  //     if (clienteId) url += `cliente=${clienteId}&`;
-  //     if (fechaInicio) url += `fechaInicio=${fechaInicio}&`;
-  //     if (fechaFin) url += `fechaFin=${fechaFin}&`;
-
-  //     const response = await firstValueFrom(
-  //       this.httpService.get(url, { headers })
-  //     );
-  //     return response.data;
-  //   } catch (error) {
-  //     throw new HttpException(
-  //       error.response?.data?.message || 'Error al obtener trazabilidad',
-  //       error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR
-  //     );
-  //   }
-  // }
-
-  // @Get('jefe/trazabilidad/dashboard')
-  // async getJefeTrazabilidadDashboard(@Req() req: Request) {
-  //   try {
-  //     const headers = this.getHeadersWithAuth(req);
-  //     const response = await firstValueFrom(
-  //       this.httpService.get('http://localhost:3007/trazabilidad/dashboard', { headers })
-  //     );
-  //     return response.data;
-  //   } catch (error) {
-  //     throw new HttpException(
-  //       error.response?.data?.message || 'Error al obtener dashboard de trazabilidad',
-  //       error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR
-  //     );
-  //   }
-  // }
-
-  // @Post('jefe/trazabilidad')
-  // async createJefeTrazabilidad(@Body() body: any, @Req() req: Request) {
-  //   try {
-  //     const headers = this.getHeadersWithAuth(req);
-  //     const response = await firstValueFrom(
-  //       this.httpService.post('http://localhost:3007/trazabilidad', body, { headers })
-  //     );
-  //     return response.data;
-  //   } catch (error) {
-  //     throw new HttpException(
-  //       error.response?.data?.message || 'Error al crear trazabilidad',
-  //       error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR
-  //     );
-  //   }
-  // }
-
-  // 👔 =====================================================
-  // JEFE - TRAZABILIDAD (Traceability Service - Puerto 3007)
-  // =====================================================
-
   @Get('jefe/trazabilidad')
   async getJefeTrazabilidad(
     @Query('empresa') empresaId?: string,
@@ -533,16 +463,26 @@ export class ApiGatewayController {
     @Query('cliente') clienteId?: string,
     @Query('fechaInicio') fechaInicio?: string,
     @Query('fechaFin') fechaFin?: string,
+    @Query('tipoContacto') tipoContacto?: string,
+    @Query('etapaOportunidad') etapaOportunidad?: string,
+    @Query('etapa') etapa?: string,
     @Req() req?: Request
   ) {
     try {
       const headers = this.getHeadersWithAuth(req);
-      let url = 'http://localhost:3002/trazabilidad?';
-      if (empresaId) url += `empresa=${empresaId}&`;
-      if (ejecutivaId) url += `ejecutiva=${ejecutivaId}&`;
-      if (clienteId) url += `cliente=${clienteId}&`;
-      if (fechaInicio) url += `fechaInicio=${fechaInicio}&`;
-      if (fechaFin) url += `fechaFin=${fechaFin}&`;
+      let url = 'http://localhost:3007/jefe/trazabilidad?';
+
+      const params = new URLSearchParams();
+      if (empresaId) params.append('empresa', empresaId);
+      if (ejecutivaId) params.append('ejecutiva', ejecutivaId);
+      if (clienteId) params.append('cliente', clienteId);
+      if (fechaInicio) params.append('fechaInicio', fechaInicio);
+      if (fechaFin) params.append('fechaFin', fechaFin);
+      if (tipoContacto) params.append('tipoContacto', tipoContacto);
+      if (etapaOportunidad) params.append('etapaOportunidad', etapaOportunidad);
+      if (etapa) params.append('etapa', etapa);
+
+      url += params.toString();
 
       const response = await firstValueFrom(
         this.httpService.get(url, { headers })
@@ -561,7 +501,7 @@ export class ApiGatewayController {
     try {
       const headers = this.getHeadersWithAuth(req);
       const response = await firstValueFrom(
-        this.httpService.get('http://localhost:3002/trazabilidad/dashboard', { headers })
+        this.httpService.get('http://localhost:3007/jefe/trazabilidad/dashboard', { headers })
       );
       return response.data;
     } catch (error) {
@@ -572,12 +512,39 @@ export class ApiGatewayController {
     }
   }
 
+  @Get('jefe/trazabilidad/estadisticas-etapas')
+  async getJefeEstadisticasEtapas(
+    @Query('empresa') empresaId?: string,
+    @Query('fechaInicio') fechaInicio?: string,
+    @Query('fechaFin') fechaFin?: string,
+    @Req() req?: Request
+  ) {
+    try {
+      const headers = this.getHeadersWithAuth(req);
+      let url = 'http://localhost:3007/jefe/trazabilidad/estadisticas-etapas?';
+
+      if (empresaId) url += `empresa=${empresaId}&`;
+      if (fechaInicio) url += `fechaInicio=${fechaInicio}&`;
+      if (fechaFin) url += `fechaFin=${fechaFin}&`;
+
+      const response = await firstValueFrom(
+        this.httpService.get(url, { headers })
+      );
+      return response.data;
+    } catch (error) {
+      throw new HttpException(
+        error.response?.data?.message || 'Error al obtener estadísticas por etapa',
+        error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
+
   @Post('jefe/trazabilidad')
   async createJefeTrazabilidad(@Body() body: any, @Req() req: Request) {
     try {
       const headers = this.getHeadersWithAuth(req);
       const response = await firstValueFrom(
-        this.httpService.post('http://localhost:3002/trazabilidad', body, { headers })
+        this.httpService.post('http://localhost:3007/jefe/trazabilidad', body, { headers })
       );
       return response.data;
     } catch (error) {
@@ -588,13 +555,32 @@ export class ApiGatewayController {
     }
   }
 
+  @Put('jefe/trazabilidad/:id')
+  async updateJefeTrazabilidad(
+    @Param('id') id: string,
+    @Body() body: any,
+    @Req() req: Request
+  ) {
+    try {
+      const headers = this.getHeadersWithAuth(req);
+      const response = await firstValueFrom(
+        this.httpService.put(`http://localhost:3007/jefe/trazabilidad/${id}`, body, { headers })
+      );
+      return response.data;
+    } catch (error) {
+      throw new HttpException(
+        error.response?.data?.message || 'Error al actualizar trazabilidad',
+        error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
 
-  // 👔 =====================================================
-  // JEFE - TRAZABILIDAD ENDPOINTS (Nuevos - Puerto 3007)
-  // =====================================================
+  // ============================================
+  // NUEVOS ENDPOINTS PARA KPIs Y GRÁFICOS
+  // ============================================
 
   @Get('jefe/trazabilidad/kpis')
-  async getTrazabilidadKPIs(
+  async getJefeTrazabilidadKPIs(
     @Query('ejecutivaId') ejecutivaId?: string,
     @Query('empresaId') empresaId?: string,
     @Query('clienteId') clienteId?: string,
@@ -602,27 +588,24 @@ export class ApiGatewayController {
     @Query('fechaHasta') fechaHasta?: string,
     @Req() req?: Request
   ) {
-    console.log('🔗 [API Gateway] GET /jefe/trazabilidad/kpis llamado con params:', {
-      ejecutivaId, empresaId, clienteId, fechaDesde, fechaHasta
-    });
-
     try {
       const headers = this.getHeadersWithAuth(req);
-      let url = 'http://localhost:3002/jefe/trazabilidad/kpis?';
-      if (ejecutivaId) url += `ejecutivaId=${ejecutivaId}&`;
-      if (empresaId) url += `empresaId=${empresaId}&`;
-      if (clienteId) url += `clienteId=${clienteId}&`;
-      if (fechaDesde) url += `fechaDesde=${fechaDesde}&`;
-      if (fechaHasta) url += `fechaHasta=${fechaHasta}&`;
+      let url = 'http://localhost:3007/jefe/trazabilidad/kpis?';
 
-      console.log('🔗 [API Gateway] URL destino:', url);
+      const params = new URLSearchParams();
+      if (ejecutivaId) params.append('ejecutivaId', ejecutivaId);
+      if (empresaId) params.append('empresaId', empresaId);
+      if (clienteId) params.append('clienteId', clienteId);
+      if (fechaDesde) params.append('fechaDesde', fechaDesde);
+      if (fechaHasta) params.append('fechaHasta', fechaHasta);
+
+      url += params.toString();
 
       const response = await firstValueFrom(
         this.httpService.get(url, { headers })
       );
       return response.data;
     } catch (error) {
-      console.error('❌ [API Gateway] Error en /kpis:', error.response?.data);
       throw new HttpException(
         error.response?.data?.message || 'Error al obtener KPIs de trazabilidad',
         error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR
@@ -630,8 +613,116 @@ export class ApiGatewayController {
     }
   }
 
+  @Get('jefe/trazabilidad/kpis/nuevos-clientes')
+  async getJefeTrazabilidadNuevosClientes(
+    @Query('meses') meses?: string,
+    @Query('ejecutivaId') ejecutivaId?: string,
+    @Req() req?: Request
+  ) {
+    try {
+      const headers = this.getHeadersWithAuth(req);
+      let url = 'http://localhost:3007/jefe/trazabilidad/kpis/nuevos-clientes?';
+
+      if (meses) url += `meses=${meses}&`;
+      if (ejecutivaId) url += `ejecutivaId=${ejecutivaId}&`;
+
+      const response = await firstValueFrom(
+        this.httpService.get(url, { headers })
+      );
+      return response.data;
+    } catch (error) {
+      throw new HttpException(
+        error.response?.data?.message || 'Error al obtener nuevos clientes',
+        error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
+
+  @Get('jefe/trazabilidad/kpis/contactos-por-tipo')
+  async getJefeTrazabilidadContactosPorTipo(
+    @Query('ejecutivaId') ejecutivaId?: string,
+    @Query('fechaDesde') fechaDesde?: string,
+    @Query('fechaHasta') fechaHasta?: string,
+    @Req() req?: Request
+  ) {
+    try {
+      const headers = this.getHeadersWithAuth(req);
+      let url = 'http://localhost:3007/jefe/trazabilidad/kpis/contactos-por-tipo?';
+
+      if (ejecutivaId) url += `ejecutivaId=${ejecutivaId}&`;
+      if (fechaDesde) url += `fechaDesde=${fechaDesde}&`;
+      if (fechaHasta) url += `fechaHasta=${fechaHasta}&`;
+
+      const response = await firstValueFrom(
+        this.httpService.get(url, { headers })
+      );
+      return response.data;
+    } catch (error) {
+      throw new HttpException(
+        error.response?.data?.message || 'Error al obtener contactos por tipo',
+        error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
+
+  @Get('jefe/trazabilidad/kpis/montos-por-etapa')
+  async getJefeTrazabilidadMontosPorEtapa(
+    @Query('ejecutivaId') ejecutivaId?: string,
+    @Query('fechaDesde') fechaDesde?: string,
+    @Query('fechaHasta') fechaHasta?: string,
+    @Req() req?: Request
+  ) {
+    try {
+      const headers = this.getHeadersWithAuth(req);
+      let url = 'http://localhost:3007/jefe/trazabilidad/kpis/montos-por-etapa?';
+
+      if (ejecutivaId) url += `ejecutivaId=${ejecutivaId}&`;
+      if (fechaDesde) url += `fechaDesde=${fechaDesde}&`;
+      if (fechaHasta) url += `fechaHasta=${fechaHasta}&`;
+
+      const response = await firstValueFrom(
+        this.httpService.get(url, { headers })
+      );
+      return response.data;
+    } catch (error) {
+      throw new HttpException(
+        error.response?.data?.message || 'Error al obtener montos por etapa',
+        error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
+
+  @Get('jefe/trazabilidad/kpis/tasa-conversion')
+  async getJefeTrazabilidadTasaConversion(
+    @Query('fechaDesde') fechaDesde?: string,
+    @Query('fechaHasta') fechaHasta?: string,
+    @Req() req?: Request
+  ) {
+    try {
+      const headers = this.getHeadersWithAuth(req);
+      let url = 'http://localhost:3007/jefe/trazabilidad/kpis/tasa-conversion?';
+
+      if (fechaDesde) url += `fechaDesde=${fechaDesde}&`;
+      if (fechaHasta) url += `fechaHasta=${fechaHasta}&`;
+
+      const response = await firstValueFrom(
+        this.httpService.get(url, { headers })
+      );
+      return response.data;
+    } catch (error) {
+      throw new HttpException(
+        error.response?.data?.message || 'Error al obtener tasa de conversión',
+        error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
+
+  // ============================================
+  // ENDPOINTS PARA ETAPAS
+  // ============================================
+
   @Get('jefe/trazabilidad/etapa1')
-  async getTrazabilidadEtapa1(
+  async getJefeTrazabilidadEtapa1(
     @Query('ejecutivaId') ejecutivaId?: string,
     @Query('empresaId') empresaId?: string,
     @Query('clienteId') clienteId?: string,
@@ -645,16 +736,20 @@ export class ApiGatewayController {
   ) {
     try {
       const headers = this.getHeadersWithAuth(req);
-      let url = 'http://localhost:3002/jefe/trazabilidad/etapa1?';
-      if (ejecutivaId) url += `ejecutivaId=${ejecutivaId}&`;
-      if (empresaId) url += `empresaId=${empresaId}&`;
-      if (clienteId) url += `clienteId=${clienteId}&`;
-      if (resultadoContacto) url += `resultadoContacto=${resultadoContacto}&`;
-      if (tipoContacto) url += `tipoContacto=${tipoContacto}&`;
-      if (fechaDesde) url += `fechaDesde=${fechaDesde}&`;
-      if (fechaHasta) url += `fechaHasta=${fechaHasta}&`;
-      if (page) url += `page=${page}&`;
-      if (limit) url += `limit=${limit}&`;
+      let url = 'http://localhost:3007/jefe/trazabilidad/etapa1?';
+
+      const params = new URLSearchParams();
+      if (ejecutivaId) params.append('ejecutivaId', ejecutivaId);
+      if (empresaId) params.append('empresaId', empresaId);
+      if (clienteId) params.append('clienteId', clienteId);
+      if (resultadoContacto) params.append('resultadoContacto', resultadoContacto);
+      if (tipoContacto) params.append('tipoContacto', tipoContacto);
+      if (fechaDesde) params.append('fechaDesde', fechaDesde);
+      if (fechaHasta) params.append('fechaHasta', fechaHasta);
+      if (page) params.append('page', page);
+      if (limit) params.append('limit', limit);
+
+      url += params.toString();
 
       const response = await firstValueFrom(
         this.httpService.get(url, { headers })
@@ -662,14 +757,14 @@ export class ApiGatewayController {
       return response.data;
     } catch (error) {
       throw new HttpException(
-        error.response?.data?.message || 'Error al obtener etapa 1 de trazabilidad',
+        error.response?.data?.message || 'Error al obtener datos de etapa 1',
         error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR
       );
     }
   }
 
   @Get('jefe/trazabilidad/etapa2')
-  async getTrazabilidadEtapa2(
+  async getJefeTrazabilidadEtapa2(
     @Query('ejecutivaId') ejecutivaId?: string,
     @Query('empresaId') empresaId?: string,
     @Query('clienteId') clienteId?: string,
@@ -682,15 +777,19 @@ export class ApiGatewayController {
   ) {
     try {
       const headers = this.getHeadersWithAuth(req);
-      let url = 'http://localhost:3002/jefe/trazabilidad/etapa2?';
-      if (ejecutivaId) url += `ejecutivaId=${ejecutivaId}&`;
-      if (empresaId) url += `empresaId=${empresaId}&`;
-      if (clienteId) url += `clienteId=${clienteId}&`;
-      if (etapaOportunidad) url += `etapaOportunidad=${etapaOportunidad}&`;
-      if (fechaDesde) url += `fechaDesde=${fechaDesde}&`;
-      if (fechaHasta) url += `fechaHasta=${fechaHasta}&`;
-      if (page) url += `page=${page}&`;
-      if (limit) url += `limit=${limit}&`;
+      let url = 'http://localhost:3007/jefe/trazabilidad/etapa2?';
+
+      const params = new URLSearchParams();
+      if (ejecutivaId) params.append('ejecutivaId', ejecutivaId);
+      if (empresaId) params.append('empresaId', empresaId);
+      if (clienteId) params.append('clienteId', clienteId);
+      if (etapaOportunidad) params.append('etapaOportunidad', etapaOportunidad);
+      if (fechaDesde) params.append('fechaDesde', fechaDesde);
+      if (fechaHasta) params.append('fechaHasta', fechaHasta);
+      if (page) params.append('page', page);
+      if (limit) params.append('limit', limit);
+
+      url += params.toString();
 
       const response = await firstValueFrom(
         this.httpService.get(url, { headers })
@@ -698,153 +797,32 @@ export class ApiGatewayController {
       return response.data;
     } catch (error) {
       throw new HttpException(
-        error.response?.data?.message || 'Error al obtener etapa 2 de trazabilidad',
+        error.response?.data?.message || 'Error al obtener datos de etapa 2',
         error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR
       );
     }
   }
 
-  @Get('jefe/trazabilidad/kpis/nuevos-clientes')
-  async getNuevosClientesKPIs(
-    @Query('meses') meses?: string,
-    @Query('ejecutivaId') ejecutivaId?: string,
-    @Req() req?: Request
-  ) {
+  // ============================================
+  // FILTER OPTIONS
+  // ============================================
+
+  @Get('jefe/trazabilidad/filter-options')
+  async getJefeTrazabilidadFilterOptions(@Req() req: Request) {
     try {
       const headers = this.getHeadersWithAuth(req);
-      let url = 'http://localhost:3002/jefe/trazabilidad/kpis/nuevos-clientes?';
-      if (meses) url += `meses=${meses}&`;
-      if (ejecutivaId) url += `ejecutivaId=${ejecutivaId}&`;
-
       const response = await firstValueFrom(
-        this.httpService.get(url, { headers })
+        this.httpService.get('http://localhost:3007/jefe/trazabilidad/filter-options', { headers })
       );
       return response.data;
     } catch (error) {
       throw new HttpException(
-        error.response?.data?.message || 'Error al obtener KPIs de nuevos clientes',
+        error.response?.data?.message || 'Error al obtener opciones de filtro',
         error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR
       );
     }
   }
 
-  @Get('jefe/trazabilidad/kpis/contactos-por-tipo')
-  async getContactosPorTipoKPIs(
-    @Query('ejecutivaId') ejecutivaId?: string,
-    @Query('fechaDesde') fechaDesde?: string,
-    @Query('fechaHasta') fechaHasta?: string,
-    @Req() req?: Request
-  ) {
-    try {
-      const headers = this.getHeadersWithAuth(req);
-      let url = 'http://localhost:3002/jefe/trazabilidad/kpis/contactos-por-tipo?';
-      if (ejecutivaId) url += `ejecutivaId=${ejecutivaId}&`;
-      if (fechaDesde) url += `fechaDesde=${fechaDesde}&`;
-      if (fechaHasta) url += `fechaHasta=${fechaHasta}&`;
-
-      const response = await firstValueFrom(
-        this.httpService.get(url, { headers })
-      );
-      return response.data;
-    } catch (error) {
-      throw new HttpException(
-        error.response?.data?.message || 'Error al obtener KPIs de contactos por tipo',
-        error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR
-      );
-    }
-  }
-
-  @Get('jefe/trazabilidad/kpis/montos-por-etapa')
-  async getMontosPorEtapaKPIs(
-    @Query('ejecutivaId') ejecutivaId?: string,
-    @Query('fechaDesde') fechaDesde?: string,
-    @Query('fechaHasta') fechaHasta?: string,
-    @Req() req?: Request
-  ) {
-    try {
-      const headers = this.getHeadersWithAuth(req);
-      let url = 'http://localhost:3002/jefe/trazabilidad/kpis/montos-por-etapa?';
-      if (ejecutivaId) url += `ejecutivaId=${ejecutivaId}&`;
-      if (fechaDesde) url += `fechaDesde=${fechaDesde}&`;
-      if (fechaHasta) url += `fechaHasta=${fechaHasta}&`;
-
-      const response = await firstValueFrom(
-        this.httpService.get(url, { headers })
-      );
-      return response.data;
-    } catch (error) {
-      throw new HttpException(
-        error.response?.data?.message || 'Error al obtener KPIs de montos por etapa',
-        error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR
-      );
-    }
-  }
-
-  @Get('jefe/trazabilidad/kpis/tasa-conversion')
-  async getTasaConversionKPIs(
-    @Query('fechaDesde') fechaDesde?: string,
-    @Query('fechaHasta') fechaHasta?: string,
-    @Req() req?: Request
-  ) {
-    try {
-      const headers = this.getHeadersWithAuth(req);
-      let url = 'http://localhost:3002/jefe/trazabilidad/kpis/tasa-conversion?';
-      if (fechaDesde) url += `fechaDesde=${fechaDesde}&`;
-      if (fechaHasta) url += `fechaHasta=${fechaHasta}&`;
-
-      const response = await firstValueFrom(
-        this.httpService.get(url, { headers })
-      );
-      return response.data;
-    } catch (error) {
-      throw new HttpException(
-        error.response?.data?.message || 'Error al obtener KPIs de tasa de conversión',
-        error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR
-      );
-    }
-  }
-
-  @Get('jefe/trazabilidad/:id')
-  async getTrazabilidadDetail(
-    @Param('id') id: string,
-    @Req() req?: Request
-  ) {
-    try {
-      const headers = this.getHeadersWithAuth(req);
-      const response = await firstValueFrom(
-        this.httpService.get(`http://localhost:3002/jefe/trazabilidad/${id}`, { headers })
-      );
-      return response.data;
-    } catch (error) {
-      throw new HttpException(
-        error.response?.data?.message || 'Error al obtener detalle de trazabilidad',
-        error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR
-      );
-    }
-  }
-
-  @Get('jefe/trazabilidad/test')
-  async testTrazabilidadEndpoint(@Req() req?: Request) {
-    console.log('🔗 [API Gateway] GET /jefe/trazabilidad/test llamado');
-    try {
-      const headers = this.getHeadersWithAuth(req);
-      const response = await firstValueFrom(
-        this.httpService.get('http://localhost:3002/jefe/trazabilidad/test', { headers })
-      );
-      return response.data;
-    } catch (error) {
-      console.error('❌ [API Gateway] Error en test:', error.response?.data);
-      throw new HttpException(
-        error.response?.data?.message || 'Error en test de trazabilidad',
-        error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR
-      );
-    }
-  }
-
-
-  // 👔 =====================================================
-  // JEFE - AUDITORÍA (Traceability Service - Puerto 3007)
-  // =====================================================
 
   @Get('jefe/auditoria')
   async getJefeAuditoria(

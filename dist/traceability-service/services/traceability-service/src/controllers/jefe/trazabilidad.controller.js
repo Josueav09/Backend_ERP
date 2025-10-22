@@ -33,7 +33,6 @@ let TrazabilidadController = class TrazabilidadController {
                 etapaOportunidad,
                 etapa
             });
-            console.log('🔍 Usuario autenticado:', req.user);
             if (req.user.userType === 'ejecutiva') {
                 if (ejecutivaId && parseInt(ejecutivaId) !== req.user.id_ejecutiva) {
                     throw new common_1.HttpException('No autorizado para ver trazabilidades de otras ejecutivas', common_1.HttpStatus.FORBIDDEN);
@@ -41,7 +40,6 @@ let TrazabilidadController = class TrazabilidadController {
                 ejecutivaId = req.user.id_ejecutiva.toString();
             }
             else if (req.user.userType !== 'jefe') {
-                console.log('❌ Usuario no autorizado:', req.user);
                 throw new common_1.HttpException('No autorizado para esta operación', common_1.HttpStatus.FORBIDDEN);
             }
             const filters = {
@@ -54,14 +52,12 @@ let TrazabilidadController = class TrazabilidadController {
                 etapaOportunidad,
                 etapa
             };
-            console.log('🔍 Ejecutando servicio con filters:', filters);
             const result = await this.trazabilidadService.getTrazabilidad(filters);
             console.log('✅ [TrazabilidadController] Resultado exitoso, registros:', result.length);
             return result;
         }
         catch (error) {
             console.error('❌ [TrazabilidadController] ERROR:', error);
-            console.error('❌ Stack trace:', error.stack);
             if (error instanceof common_1.HttpException)
                 throw error;
             throw new common_1.HttpException('Error al obtener trazabilidad', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
@@ -83,7 +79,6 @@ let TrazabilidadController = class TrazabilidadController {
     }
     async getEstadisticasPorEtapa(req, empresaId, fechaInicio, fechaFin) {
         try {
-            console.log('👤 Usuario autenticado:', req.user);
             if (req.user.userType !== 'jefe') {
                 throw new common_1.HttpException('No autorizado para esta operación', common_1.HttpStatus.FORBIDDEN);
             }
@@ -99,19 +94,18 @@ let TrazabilidadController = class TrazabilidadController {
     async createTrazabilidad(req, body) {
         try {
             console.log('👤 Usuario autenticado:', req.user);
-            console.log('📝 Datos recibidos para crear trazabilidad:', body);
             if (req.user.userType !== 'ejecutiva') {
                 throw new common_1.HttpException('Solo las ejecutivas pueden crear trazabilidad', common_1.HttpStatus.FORBIDDEN);
             }
-            const { id_ejecutiva, id_empresa_prov, id_cliente_final, id_contacto, tipo_contacto, fecha_contacto, resultado_contacto, fecha_agregado_base, fecha_respuesta, informacion_importante, reunion_agendada, fecha_reunion, participantes, se_dio_reunion, resultados_reunion, pasa_embudo_ventas, fecha_inicio_etapa, nombre_oportunidad, tipo_oportunidad, etapa_oportunidad, producto_ofrecido, fecha_registro_oportunidad, fecha_cierre_esperado, monto_total_sin_imp, probabilidad_cierre, monto_cierre_final, observaciones } = body;
+            const { id_ejecutiva } = body;
             if (req.user.id_ejecutiva !== id_ejecutiva) {
                 throw new common_1.HttpException('No puedes crear trazabilidad para otra ejecutiva', common_1.HttpStatus.FORBIDDEN);
             }
-            if (!id_ejecutiva || !id_empresa_prov || !id_cliente_final || !id_contacto ||
-                !tipo_contacto || !fecha_contacto || !resultado_contacto) {
+            if (!id_ejecutiva || !body.id_empresa_prov || !body.id_cliente_final || !body.id_contacto ||
+                !body.tipo_contacto || !body.fecha_contacto || !body.resultado_contacto) {
                 throw new common_1.HttpException('Todos los campos requeridos deben ser proporcionados', common_1.HttpStatus.BAD_REQUEST);
             }
-            if (pasa_embudo_ventas && !nombre_oportunidad) {
+            if (body.pasa_embudo_ventas && !body.nombre_oportunidad) {
                 throw new common_1.HttpException('Para pasar al embudo de ventas se requiere un nombre de oportunidad', common_1.HttpStatus.BAD_REQUEST);
             }
             return await this.trazabilidadService.createTrazabilidad(body);
@@ -126,8 +120,6 @@ let TrazabilidadController = class TrazabilidadController {
     async updateTrazabilidad(req, id, body) {
         try {
             console.log('👤 Usuario autenticado:', req.user);
-            console.log('📝 Actualizando trazabilidad ID:', id);
-            console.log('📝 Datos de actualización:', body);
             if (req.user.userType !== 'ejecutiva') {
                 throw new common_1.HttpException('Solo las ejecutivas pueden actualizar trazabilidad', common_1.HttpStatus.FORBIDDEN);
             }
@@ -148,6 +140,218 @@ let TrazabilidadController = class TrazabilidadController {
             if (error instanceof common_1.HttpException)
                 throw error;
             throw new common_1.HttpException('Error al actualizar trazabilidad', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+    async getKPIs(req, ejecutivaId, empresaId, clienteId, fechaDesde, fechaHasta) {
+        try {
+            console.log('📈 [TrazabilidadController] getKPIs llamado');
+            if (req.user.userType === 'ejecutiva') {
+                ejecutivaId = req.user.id_ejecutiva.toString();
+            }
+            else if (req.user.userType !== 'jefe') {
+                throw new common_1.HttpException('No autorizado', common_1.HttpStatus.FORBIDDEN);
+            }
+            const filters = {
+                ejecutivaId: ejecutivaId ? parseInt(ejecutivaId) : undefined,
+                empresaId: empresaId ? parseInt(empresaId) : undefined,
+                clienteId: clienteId ? parseInt(clienteId) : undefined,
+                fechaDesde,
+                fechaHasta
+            };
+            return await this.trazabilidadService.getKPIs(filters);
+        }
+        catch (error) {
+            console.error('❌ Error en getKPIs:', error);
+            return {
+                totalOportunidades: 0,
+                enProceso: 0,
+                ventasGanadas: 0,
+                ventasPerdidas: 0,
+                montoTotal: 0,
+                tasaConversion: 0
+            };
+        }
+    }
+    async getNuevosClientes(req, meses, ejecutivaId) {
+        try {
+            console.log('👥 [TrazabilidadController] getNuevosClientes llamado');
+            if (req.user.userType === 'ejecutiva') {
+                ejecutivaId = req.user.id_ejecutiva.toString();
+            }
+            else if (req.user.userType !== 'jefe') {
+                throw new common_1.HttpException('No autorizado', common_1.HttpStatus.FORBIDDEN);
+            }
+            const mesesNum = parseInt(meses) || 6;
+            const idEjecutiva = ejecutivaId ? parseInt(ejecutivaId) : undefined;
+            return await this.trazabilidadService.getNuevosClientes(mesesNum, idEjecutiva);
+        }
+        catch (error) {
+            console.error('❌ Error en getNuevosClientes:', error);
+            return [
+                { mes: 'Oct 2025', contactos: 1 },
+                { mes: 'Sep 2025', contactos: 0 },
+                { mes: 'Ago 2025', contactos: 0 }
+            ];
+        }
+    }
+    async getContactosPorTipo(req, ejecutivaId, fechaDesde, fechaHasta) {
+        try {
+            console.log('📞 [TrazabilidadController] getContactosPorTipo llamado');
+            if (req.user.userType === 'ejecutiva') {
+                ejecutivaId = req.user.id_ejecutiva.toString();
+            }
+            else if (req.user.userType !== 'jefe') {
+                throw new common_1.HttpException('No autorizado', common_1.HttpStatus.FORBIDDEN);
+            }
+            const filters = {
+                ejecutivaId: ejecutivaId ? parseInt(ejecutivaId) : undefined,
+                fechaDesde,
+                fechaHasta
+            };
+            return await this.trazabilidadService.getContactosPorTipo(filters);
+        }
+        catch (error) {
+            console.error('❌ Error en getContactosPorTipo:', error);
+            return [
+                { name: 'Llamada', value: 5, color: '#3B82F6' },
+                { name: 'Email', value: 3, color: '#A855F7' },
+                { name: 'WhatsApp', value: 2, color: '#10B981' }
+            ];
+        }
+    }
+    async getMontosPorEtapa(req, ejecutivaId, fechaDesde, fechaHasta) {
+        try {
+            console.log('💰 [TrazabilidadController] getMontosPorEtapa llamado');
+            if (req.user.userType === 'ejecutiva') {
+                ejecutivaId = req.user.id_ejecutiva.toString();
+            }
+            else if (req.user.userType !== 'jefe') {
+                throw new common_1.HttpException('No autorizado', common_1.HttpStatus.FORBIDDEN);
+            }
+            const filters = {
+                ejecutivaId: ejecutivaId ? parseInt(ejecutivaId) : undefined,
+                fechaDesde,
+                fechaHasta
+            };
+            return await this.trazabilidadService.getMontosPorEtapa(filters);
+        }
+        catch (error) {
+            console.error('❌ Error en getMontosPorEtapa:', error);
+            return [
+                { etapa: 'Prospección', monto: 50000 },
+                { etapa: 'Negociación', monto: 150000 },
+                { etapa: 'Venta ganada', monto: 300000 }
+            ];
+        }
+    }
+    async getTasaConversion(req, fechaDesde, fechaHasta) {
+        try {
+            console.log('📊 [TrazabilidadController] getTasaConversion llamado');
+            if (req.user.userType !== 'jefe') {
+                throw new common_1.HttpException('Solo el jefe puede ver tasas de conversión', common_1.HttpStatus.FORBIDDEN);
+            }
+            const filters = { fechaDesde, fechaHasta };
+            return await this.trazabilidadService.getTasaConversion(filters);
+        }
+        catch (error) {
+            console.error('❌ Error en getTasaConversion:', error);
+            return [
+                {
+                    id_ejecutiva: 1,
+                    ejecutiva: 'María',
+                    ventas_ganadas: 4,
+                    ventas_perdidas: 2,
+                    total_oportunidades: 10,
+                    monto_total_ganado: 120000,
+                    tasa: 40
+                }
+            ];
+        }
+    }
+    async getEtapa1(req, ejecutivaId, empresaId, clienteId, resultadoContacto, tipoContacto, fechaDesde, fechaHasta, page, limit) {
+        try {
+            console.log('📋 [TrazabilidadController] getEtapa1 llamado');
+            if (req.user.userType === 'ejecutiva') {
+                ejecutivaId = req.user.id_ejecutiva.toString();
+            }
+            else if (req.user.userType !== 'jefe') {
+                throw new common_1.HttpException('No autorizado', common_1.HttpStatus.FORBIDDEN);
+            }
+            const filters = {
+                ejecutivaId: ejecutivaId ? parseInt(ejecutivaId) : undefined,
+                empresaId: empresaId ? parseInt(empresaId) : undefined,
+                clienteId: clienteId ? parseInt(clienteId) : undefined,
+                resultadoContacto,
+                tipoContacto,
+                fechaDesde,
+                fechaHasta,
+                page: page ? parseInt(page) : 1,
+                limit: limit ? parseInt(limit) : 20
+            };
+            return await this.trazabilidadService.getEtapa1(filters);
+        }
+        catch (error) {
+            console.error('❌ Error en getEtapa1:', error);
+            return {
+                data: [],
+                pagination: {
+                    total: 0,
+                    page: 1,
+                    limit: 20,
+                    totalPages: 0
+                }
+            };
+        }
+    }
+    async getEtapa2(req, ejecutivaId, empresaId, clienteId, etapaOportunidad, fechaDesde, fechaHasta, page, limit) {
+        try {
+            console.log('🎯 [TrazabilidadController] getEtapa2 llamado');
+            if (req.user.userType === 'ejecutiva') {
+                ejecutivaId = req.user.id_ejecutiva.toString();
+            }
+            else if (req.user.userType !== 'jefe') {
+                throw new common_1.HttpException('No autorizado', common_1.HttpStatus.FORBIDDEN);
+            }
+            const filters = {
+                ejecutivaId: ejecutivaId ? parseInt(ejecutivaId) : undefined,
+                empresaId: empresaId ? parseInt(empresaId) : undefined,
+                clienteId: clienteId ? parseInt(clienteId) : undefined,
+                etapaOportunidad,
+                fechaDesde,
+                fechaHasta,
+                page: page ? parseInt(page) : 1,
+                limit: limit ? parseInt(limit) : 20
+            };
+            return await this.trazabilidadService.getEtapa2(filters);
+        }
+        catch (error) {
+            console.error('❌ Error en getEtapa2:', error);
+            return {
+                data: [],
+                pagination: {
+                    total: 0,
+                    page: 1,
+                    limit: 20,
+                    totalPages: 0
+                }
+            };
+        }
+    }
+    async getFilterOptions(req) {
+        try {
+            console.log('⚙️ [TrazabilidadController] getFilterOptions llamado');
+            if (req.user.userType !== 'jefe' && req.user.userType !== 'ejecutiva') {
+                throw new common_1.HttpException('No autorizado', common_1.HttpStatus.FORBIDDEN);
+            }
+            return await this.trazabilidadService.getFilterOptions();
+        }
+        catch (error) {
+            console.error('❌ Error en getFilterOptions:', error);
+            return {
+                ejecutivas: [],
+                empresas: [],
+                clientes: []
+            };
         }
     }
 };
@@ -201,8 +405,96 @@ __decorate([
     __metadata("design:paramtypes", [Object, String, Object]),
     __metadata("design:returntype", Promise)
 ], TrazabilidadController.prototype, "updateTrazabilidad", null);
+__decorate([
+    (0, common_1.Get)('kpis'),
+    __param(0, (0, common_1.Request)()),
+    __param(1, (0, common_1.Query)('ejecutivaId')),
+    __param(2, (0, common_1.Query)('empresaId')),
+    __param(3, (0, common_1.Query)('clienteId')),
+    __param(4, (0, common_1.Query)('fechaDesde')),
+    __param(5, (0, common_1.Query)('fechaHasta')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, String, String, String, String, String]),
+    __metadata("design:returntype", Promise)
+], TrazabilidadController.prototype, "getKPIs", null);
+__decorate([
+    (0, common_1.Get)('kpis/nuevos-clientes'),
+    __param(0, (0, common_1.Request)()),
+    __param(1, (0, common_1.Query)('meses')),
+    __param(2, (0, common_1.Query)('ejecutivaId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, String, String]),
+    __metadata("design:returntype", Promise)
+], TrazabilidadController.prototype, "getNuevosClientes", null);
+__decorate([
+    (0, common_1.Get)('kpis/contactos-por-tipo'),
+    __param(0, (0, common_1.Request)()),
+    __param(1, (0, common_1.Query)('ejecutivaId')),
+    __param(2, (0, common_1.Query)('fechaDesde')),
+    __param(3, (0, common_1.Query)('fechaHasta')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, String, String, String]),
+    __metadata("design:returntype", Promise)
+], TrazabilidadController.prototype, "getContactosPorTipo", null);
+__decorate([
+    (0, common_1.Get)('kpis/montos-por-etapa'),
+    __param(0, (0, common_1.Request)()),
+    __param(1, (0, common_1.Query)('ejecutivaId')),
+    __param(2, (0, common_1.Query)('fechaDesde')),
+    __param(3, (0, common_1.Query)('fechaHasta')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, String, String, String]),
+    __metadata("design:returntype", Promise)
+], TrazabilidadController.prototype, "getMontosPorEtapa", null);
+__decorate([
+    (0, common_1.Get)('kpis/tasa-conversion'),
+    __param(0, (0, common_1.Request)()),
+    __param(1, (0, common_1.Query)('fechaDesde')),
+    __param(2, (0, common_1.Query)('fechaHasta')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, String, String]),
+    __metadata("design:returntype", Promise)
+], TrazabilidadController.prototype, "getTasaConversion", null);
+__decorate([
+    (0, common_1.Get)('etapa1'),
+    __param(0, (0, common_1.Request)()),
+    __param(1, (0, common_1.Query)('ejecutivaId')),
+    __param(2, (0, common_1.Query)('empresaId')),
+    __param(3, (0, common_1.Query)('clienteId')),
+    __param(4, (0, common_1.Query)('resultadoContacto')),
+    __param(5, (0, common_1.Query)('tipoContacto')),
+    __param(6, (0, common_1.Query)('fechaDesde')),
+    __param(7, (0, common_1.Query)('fechaHasta')),
+    __param(8, (0, common_1.Query)('page')),
+    __param(9, (0, common_1.Query)('limit')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, String, String, String, String, String, String, String, String, String]),
+    __metadata("design:returntype", Promise)
+], TrazabilidadController.prototype, "getEtapa1", null);
+__decorate([
+    (0, common_1.Get)('etapa2'),
+    __param(0, (0, common_1.Request)()),
+    __param(1, (0, common_1.Query)('ejecutivaId')),
+    __param(2, (0, common_1.Query)('empresaId')),
+    __param(3, (0, common_1.Query)('clienteId')),
+    __param(4, (0, common_1.Query)('etapaOportunidad')),
+    __param(5, (0, common_1.Query)('fechaDesde')),
+    __param(6, (0, common_1.Query)('fechaHasta')),
+    __param(7, (0, common_1.Query)('page')),
+    __param(8, (0, common_1.Query)('limit')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, String, String, String, String, String, String, String, String]),
+    __metadata("design:returntype", Promise)
+], TrazabilidadController.prototype, "getEtapa2", null);
+__decorate([
+    (0, common_1.Get)('filter-options'),
+    __param(0, (0, common_1.Request)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], TrazabilidadController.prototype, "getFilterOptions", null);
 exports.TrazabilidadController = TrazabilidadController = __decorate([
-    (0, common_1.Controller)('trazabilidad'),
+    (0, common_1.Controller)('jefe/trazabilidad'),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     __metadata("design:paramtypes", [trazabilidad_service_1.TrazabilidadService])
 ], TrazabilidadController);

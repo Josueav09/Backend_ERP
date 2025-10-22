@@ -24,9 +24,7 @@ import { PersonaContacto } from '../../../shared/entities/PersonaContacto.entity
 import { Trazabilidad } from '../../../shared/entities/Trazabilidad.entity';
 import { AuditoriaCambios } from '../../../shared/entities/AuditoriaCambios.entity';
 import { ClientesController } from './controllers/jefe/clienteFinal.controller';
-import { TrazabilidadController } from './controllers/jefe/trazabilidad.controller';
 import { ClientesService } from './services/jefe/clientes.service';
-import { TrazabilidadService } from './services/jefe/trazabilidad.service';
 import { JwtModule } from '@nestjs/jwt';
 
 import { JwtAuthGuard } from '../../../shared/guards/jwt-auth.guard'; // ← AJUSTA RUTA
@@ -102,7 +100,6 @@ console.log('🔧 Env file exists:', fs.existsSync(envPath));
     JefeController,
     EjecutivaController,
     ClientesController,
-    TrazabilidadController,
   ],
   providers: [
     JefeService,
@@ -112,8 +109,7 @@ console.log('🔧 Env file exists:', fs.existsSync(envPath));
     EmpresasService,
     EjecutivaService,
     ClientesService,
-    TrazabilidadService,
-  ],
+ ],
 })
 export class AppModule { }
 
