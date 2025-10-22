@@ -527,7 +527,7 @@ let ApiGatewayController = class ApiGatewayController {
             throw new common_1.HttpException(error.response?.data?.message || 'Error al obtener pipeline de trazabilidad', error.response?.status || common_1.HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
-    async getEjecutivaTrazabilidadActividades(ejecutivaId, limit = '10', req) {
+    async getEjecutivaTrazabilidadActividades(ejecutivaId, limit = '1000', req) {
         try {
             const headers = this.getHeadersWithAuth(req);
             const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get(`http://localhost:3007/ejecutiva/trazabilidad/actividades?ejecutivaId=${ejecutivaId}&limit=${limit}`, { headers }));
@@ -545,6 +545,16 @@ let ApiGatewayController = class ApiGatewayController {
         }
         catch (error) {
             throw new common_1.HttpException(error.response?.data?.message || 'Error al actualizar etapa de trazabilidad', error.response?.status || common_1.HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+    async getEjecutivaTrazabilidadStats(ejecutivaId, req) {
+        try {
+            const headers = this.getHeadersWithAuth(req);
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get(`http://localhost:3007/ejecutiva/trazabilidad/stats?ejecutivaId=${ejecutivaId}`, { headers }));
+            return response.data;
+        }
+        catch (error) {
+            throw new common_1.HttpException(error.response?.data?.message || 'Error al obtener estadísticas de trazabilidad', error.response?.status || common_1.HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 };
@@ -949,6 +959,14 @@ __decorate([
     __metadata("design:paramtypes", [Object, Object]),
     __metadata("design:returntype", Promise)
 ], ApiGatewayController.prototype, "updateEjecutivaTrazabilidadEtapa", null);
+__decorate([
+    (0, common_1.Get)('ejecutiva/trazabilidad/stats'),
+    __param(0, (0, common_1.Query)('ejecutivaId')),
+    __param(1, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", Promise)
+], ApiGatewayController.prototype, "getEjecutivaTrazabilidadStats", null);
 exports.ApiGatewayController = ApiGatewayController = __decorate([
     (0, common_1.Controller)(),
     __metadata("design:paramtypes", [axios_1.HttpService])

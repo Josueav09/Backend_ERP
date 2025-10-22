@@ -25,6 +25,7 @@ export declare class EjecutivaTraceabilityService {
         nombre_oportunidad: string;
         etapa_oportunidad: string;
         monto_total_sin_imp: number;
+        probabilidad_cierre: number;
         observaciones: string;
         informacion_importante: string;
     }[]>;
@@ -58,6 +59,7 @@ export declare class EjecutivaTraceabilityService {
         persona_contacto: string;
         oportunidad: string;
         etapa: string;
+        success: boolean;
     }>;
     getPipeline(ejecutivaId: string): Promise<{
         id: number;
@@ -77,13 +79,27 @@ export declare class EjecutivaTraceabilityService {
         tipo_contacto: string;
         resultado: string;
         cliente: string;
-        persona_contacto: string;
+        persona_contacto: {
+            id: number;
+            nombre_completo: string;
+            email: string;
+            telefono: string;
+        };
         oportunidad: string;
         etapa: string;
         observaciones: string;
     }[]>;
     updateEtapaOportunidad(trazabilidadId: string, nuevaEtapa: string, ejecutivaId: string): Promise<{
+        success: boolean;
         message: string;
         nueva_etapa: string;
+    }>;
+    getStats(ejecutivaId: string): Promise<{
+        totalContactos: number;
+        oportunidadesGeneradas: number;
+        ventasGanadas: number;
+        tasaConversion: number;
+        montoTotal: number;
+        enProceso: number;
     }>;
 }

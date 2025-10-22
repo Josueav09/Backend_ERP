@@ -27,26 +27,35 @@ let EjecutivaTraceabilityController = class EjecutivaTraceabilityController {
             return await this.ejecutivaTraceabilityService.getTrazabilidad(ejecutivaId);
         }
         catch (error) {
+            console.error('❌ Error en getTrazabilidad controller:', error);
             if (error instanceof common_1.HttpException)
                 throw error;
             throw new common_1.HttpException('Error al obtener trazabilidad', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
     async createTrazabilidad(body) {
+        console.log('📝 POST /ejecutiva/trazabilidad - Body recibido:', body);
         const { id_ejecutiva, id_empresa_prov, id_cliente_final, id_contacto, tipo_contacto, fecha_contacto, resultado_contacto } = body;
         if (!id_ejecutiva || !id_empresa_prov || !id_cliente_final || !id_contacto) {
-            throw new common_1.HttpException('Ejecutiva, empresa, cliente y contacto requeridos', common_1.HttpStatus.BAD_REQUEST);
+            throw new common_1.HttpException('Ejecutiva, empresa, cliente y contacto son requeridos', common_1.HttpStatus.BAD_REQUEST);
         }
-        const tiposValidos = ['Llamada telefónica', 'Chat de Whatsapp', 'Correo electrónico', 'Contacto por linkedin', 'Reunión presencial', 'Otro'];
-        if (!tiposValidos.includes(tipo_contacto)) {
-            throw new common_1.HttpException('Tipo de contacto no válido', common_1.HttpStatus.BAD_REQUEST);
+        const tiposValidos = [
+            'Llamada telefónica',
+            'Chat de Whatsapp',
+            'Correo electrónico',
+            'Contacto por linkedin',
+            'Reunión presencial',
+            'Otro'
+        ];
+        if (!tipo_contacto || !tiposValidos.includes(tipo_contacto)) {
+            throw new common_1.HttpException(`Tipo de contacto no válido. Debe ser uno de: ${tiposValidos.join(', ')}`, common_1.HttpStatus.BAD_REQUEST);
         }
         const resultadosValidos = ['Positivo', 'Negativo', 'Pendiente', 'Neutro'];
-        if (!resultadosValidos.includes(resultado_contacto)) {
-            throw new common_1.HttpException('Resultado de contacto no válido', common_1.HttpStatus.BAD_REQUEST);
+        if (!resultado_contacto || !resultadosValidos.includes(resultado_contacto)) {
+            throw new common_1.HttpException(`Resultado de contacto no válido. Debe ser uno de: ${resultadosValidos.join(', ')}`, common_1.HttpStatus.BAD_REQUEST);
         }
         try {
-            return await this.ejecutivaTraceabilityService.createTrazabilidad({
+            const result = await this.ejecutivaTraceabilityService.createTrazabilidad({
                 id_ejecutiva,
                 id_empresa_prov,
                 id_cliente_final,
@@ -55,24 +64,27 @@ let EjecutivaTraceabilityController = class EjecutivaTraceabilityController {
                 fecha_contacto: fecha_contacto ? new Date(fecha_contacto) : new Date(),
                 resultado_contacto,
                 informacion_importante: body.informacion_importante,
-                reunion_agendada: body.reunion_agendada,
+                reunion_agendada: body.reunion_agendada || false,
                 fecha_reunion: body.fecha_reunion ? new Date(body.fecha_reunion) : undefined,
                 participantes: body.participantes,
                 se_dio_reunion: body.se_dio_reunion,
                 resultados_reunion: body.resultados_reunion,
-                pasa_embudo_ventas: body.pasa_embudo_ventas,
+                pasa_embudo_ventas: body.pasa_embudo_ventas || false,
                 nombre_oportunidad: body.nombre_oportunidad,
                 etapa_oportunidad: body.etapa_oportunidad,
                 producto_ofrecido: body.producto_ofrecido,
-                monto_total_sin_imp: body.monto_total_sin_imp,
-                probabilidad_cierre: body.probabilidad_cierre,
+                monto_total_sin_imp: body.monto_total_sin_imp ? parseFloat(body.monto_total_sin_imp) : undefined,
+                probabilidad_cierre: body.probabilidad_cierre ? parseInt(body.probabilidad_cierre) : undefined,
                 observaciones: body.observaciones
             });
+            console.log('✅ Trazabilidad creada exitosamente:', result);
+            return result;
         }
         catch (error) {
+            console.error('❌ Error en createTrazabilidad controller:', error);
             if (error instanceof common_1.HttpException)
                 throw error;
-            throw new common_1.HttpException('Error al crear trazabilidad', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
+            throw new common_1.HttpException(error.message || 'Error al crear trazabilidad', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
     async getPipeline(ejecutivaId) {
@@ -83,6 +95,7 @@ let EjecutivaTraceabilityController = class EjecutivaTraceabilityController {
             return await this.ejecutivaTraceabilityService.getPipeline(ejecutivaId);
         }
         catch (error) {
+            console.error('❌ Error en getPipeline controller:', error);
             if (error instanceof common_1.HttpException)
                 throw error;
             throw new common_1.HttpException('Error al obtener pipeline', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
@@ -96,6 +109,7 @@ let EjecutivaTraceabilityController = class EjecutivaTraceabilityController {
             return await this.ejecutivaTraceabilityService.getActividadesRecientes(ejecutivaId, parseInt(limit));
         }
         catch (error) {
+            console.error('❌ Error en getActividadesRecientes controller:', error);
             if (error instanceof common_1.HttpException)
                 throw error;
             throw new common_1.HttpException('Error al obtener actividades', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
@@ -110,9 +124,24 @@ let EjecutivaTraceabilityController = class EjecutivaTraceabilityController {
             return await this.ejecutivaTraceabilityService.updateEtapaOportunidad(trazabilidadId, nuevaEtapa, ejecutivaId);
         }
         catch (error) {
+            console.error('❌ Error en updateEtapaOportunidad controller:', error);
             if (error instanceof common_1.HttpException)
                 throw error;
             throw new common_1.HttpException('Error al actualizar etapa', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+    async getStats(ejecutivaId) {
+        if (!ejecutivaId) {
+            throw new common_1.HttpException('ID de ejecutiva requerido', common_1.HttpStatus.BAD_REQUEST);
+        }
+        try {
+            return await this.ejecutivaTraceabilityService.getStats(ejecutivaId);
+        }
+        catch (error) {
+            console.error('❌ Error en getStats controller:', error);
+            if (error instanceof common_1.HttpException)
+                throw error;
+            throw new common_1.HttpException('Error al obtener estadísticas', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 };
@@ -153,6 +182,13 @@ __decorate([
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", Promise)
 ], EjecutivaTraceabilityController.prototype, "updateEtapaOportunidad", null);
+__decorate([
+    (0, common_1.Get)('stats'),
+    __param(0, (0, common_1.Query)('ejecutivaId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], EjecutivaTraceabilityController.prototype, "getStats", null);
 exports.EjecutivaTraceabilityController = EjecutivaTraceabilityController = __decorate([
     (0, common_1.Controller)('ejecutiva/trazabilidad'),
     __metadata("design:paramtypes", [ejecutiva_service_1.EjecutivaTraceabilityService])

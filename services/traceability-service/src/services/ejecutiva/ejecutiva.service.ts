@@ -1,7 +1,7 @@
 // backend/services/traceability-service/src/services/ejecutiva/ejecutiva.service.ts - CORREGIDO
 // import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
 // import { InjectRepository } from '@nestjs/typeorm';
-// import { Repository } from 'typeorm';
+// import { Repository, Not, In, IsNull } from 'typeorm';
 // import { Trazabilidad } from '../../../../../shared/entities/Trazabilidad.entity';
 // import { Ejecutiva } from '../../../../../shared/entities/Ejecutiva.entity';
 // import { EmpresaProveedora } from '../../../../../shared/entities/EmpresaProveedora.entity';
@@ -32,12 +32,11 @@
 //       const id = parseInt(ejecutivaId);
 
 //       const trazabilidad = await this.trazabilidadRepository.find({
-//         where: { ejecutiva: { id_ejecutiva: id } },
+//         where: { id_ejecutiva: id },
 //         relations: [
 //           'empresa_proveedora', 
 //           'cliente_final', 
-//           'persona_contacto',
-//           'cliente_final.personas_contacto'
+//           'persona_contacto'
 //         ],
 //         order: { fecha_contacto: 'DESC' },
 //         take: 50
@@ -94,44 +93,46 @@
 //       const idCliente = parseInt(data.id_cliente_final);
 //       const idContacto = parseInt(data.id_contacto);
 
-//       // Verificar que todos los IDs existen y las relaciones son válidas
-//       const [ejecutiva, empresa, cliente, persona_contacto] = await Promise.all([
-//         this.ejecutivaRepository.findOne({ 
-//           where: { 
-//             id_ejecutiva: idEjecutiva,
-//             empresa_proveedora: { id_empresa_prov: idEmpresa }
-//           },
-//           relations: ['empresa_proveedora']
-//         }),
-//         this.empresaRepository.findOne({ where: { id_empresa_prov: idEmpresa } }),
-//         this.clienteRepository.findOne({ 
-//           where: { 
-//             id_cliente_final: idCliente,
-//             ejecutiva: { id_ejecutiva: idEjecutiva }
-//           } 
-//         }),
-//         this.contactoRepository.findOne({ 
-//           where: { 
-//             id_contacto: idContacto,
-//             cliente_final: { id_cliente_final: idCliente }
-//           } 
-//         })
-//       ]);
+//       // ✅ CORREGIDO: Verificar relaciones según la BD real
+//       // 1. Verificar que la ejecutiva está asignada a la empresa
+//       const ejecutiva = await this.ejecutivaRepository.findOne({
+//         where: { 
+//           id_ejecutiva: idEjecutiva,
+//           id_empresa_prov: idEmpresa  // ✅ Relación directa por ID
+//         }
+//       });
 
 //       if (!ejecutiva) {
-//         throw new HttpException('Ejecutiva no encontrada o empresa no asignada', HttpStatus.NOT_FOUND);
+//         throw new HttpException('Ejecutiva no encontrada o no asignada a esta empresa', HttpStatus.NOT_FOUND);
 //       }
-//       if (!empresa) {
-//         throw new HttpException('Empresa no encontrada', HttpStatus.NOT_FOUND);
-//       }
+
+//       // 2. Verificar que el cliente pertenece a la ejecutiva Y a la empresa
+//       const cliente = await this.clienteRepository.findOne({
+//         where: { 
+//           id_cliente_final: idCliente,
+//           id_ejecutiva: idEjecutiva,
+//           id_empresa_prov: idEmpresa
+//         }
+//       });
+
 //       if (!cliente) {
-//         throw new HttpException('Cliente no encontrado o no asignado a esta ejecutiva', HttpStatus.NOT_FOUND);
+//         throw new HttpException('Cliente no encontrado o no asignado a esta ejecutiva/empresa', HttpStatus.NOT_FOUND);
 //       }
+
+//       // 3. Verificar que el contacto pertenece al cliente
+//       const persona_contacto = await this.contactoRepository.findOne({
+//         where: {
+//           id_contacto: idContacto,
+//           cliente_final: { id_cliente_final: idCliente }
+//         },
+//         relations: ['cliente_final']
+//       });
+
 //       if (!persona_contacto) {
 //         throw new HttpException('Contacto no encontrado o no pertenece a este cliente', HttpStatus.NOT_FOUND);
 //       }
 
-//       // Crear nueva trazabilidad
+//       // ✅ CORREGIDO: Crear nueva trazabilidad con IDs directos
 //       const nuevaTrazabilidad = this.trazabilidadRepository.create({
 //         ejecutiva: { id_ejecutiva: idEjecutiva },
 //         empresa_proveedora: { id_empresa_prov: idEmpresa },
@@ -153,20 +154,19 @@
 //         monto_total_sin_imp: data.monto_total_sin_imp,
 //         probabilidad_cierre: data.probabilidad_cierre,
 //         observaciones: data.observaciones
-//       } as any);
+//       });
 
 //       const saved = await this.trazabilidadRepository.save(nuevaTrazabilidad);
-//       const trazabilidadGuardada = Array.isArray(saved) ? saved[0] : saved;
 
 //       return {
-//         id: trazabilidadGuardada.id_trazabilidad,
-//         fecha_contacto: trazabilidadGuardada.fecha_contacto,
-//         tipo_contacto: trazabilidadGuardada.tipo_contacto,
-//         resultado: trazabilidadGuardada.resultado_contacto,
+//         id: saved.id_trazabilidad,
+//         fecha_contacto: saved.fecha_contacto,
+//         tipo_contacto: saved.tipo_contacto,
+//         resultado: saved.resultado_contacto,
 //         cliente: cliente.razon_social,
 //         persona_contacto: persona_contacto.nombre_completo,
-//         oportunidad: trazabilidadGuardada.nombre_oportunidad,
-//         etapa: trazabilidadGuardada.etapa_oportunidad
+//         oportunidad: saved.nombre_oportunidad,
+//         etapa: saved.etapa_oportunidad
 //       };
 //     } catch (error) {
 //       console.error('Error en createTrazabilidad:', error);
@@ -175,14 +175,14 @@
 //     }
 //   }
 
-//   // ✅ NUEVO MÉTODO: Obtener pipeline de ventas
+//   // ✅ CORREGIDO: Obtener pipeline de ventas
 //   async getPipeline(ejecutivaId: string) {
 //     try {
 //       const id = parseInt(ejecutivaId);
 
 //       const pipeline = await this.trazabilidadRepository.find({
 //         where: {
-//           ejecutiva: { id_ejecutiva: id },
+//           id_ejecutiva: id,
 //           etapa_oportunidad: Not(In(['Venta ganada', 'Venta perdida', 'Venta suspendida'])),
 //           nombre_oportunidad: Not(IsNull())
 //         },
@@ -199,7 +199,8 @@
 //         monto: oportunidad.monto_total_sin_imp,
 //         probabilidad: oportunidad.probabilidad_cierre,
 //         fecha_cierre_esperado: oportunidad.fecha_cierre_esperado,
-//         producto_ofrecido: oportunidad.producto_ofrecido
+//         producto_ofrecido: oportunidad.producto_ofrecido,
+//         fecha_inicio_etapa: oportunidad.fecha_inicio_etapa
 //       }));
 //     } catch (error) {
 //       console.error('Error en getPipeline:', error);
@@ -207,14 +208,14 @@
 //     }
 //   }
 
-//   // ✅ NUEVO MÉTODO: Obtener actividades recientes
+//   // ✅ CORREGIDO: Obtener actividades recientes
 //   async getActividadesRecientes(ejecutivaId: string, limit: number = 10) {
 //     try {
 //       const id = parseInt(ejecutivaId);
 
 //       const actividades = await this.trazabilidadRepository.find({
 //         where: {
-//           ejecutiva: { id_ejecutiva: id }
+//           id_ejecutiva: id
 //         },
 //         relations: ['cliente_final', 'persona_contacto', 'empresa_proveedora'],
 //         order: { fecha_contacto: 'DESC' },
@@ -237,12 +238,55 @@
 //       throw new HttpException('Error al obtener actividades', HttpStatus.INTERNAL_SERVER_ERROR);
 //     }
 //   }
+
+//   // ✅ NUEVO MÉTODO: Actualizar etapa de oportunidad
+//   async updateEtapaOportunidad(trazabilidadId: string, nuevaEtapa: string, ejecutivaId: string) {
+//     try {
+//       const idTrazabilidad = parseInt(trazabilidadId);
+//       const idEjecutiva = parseInt(ejecutivaId);
+
+//       // Verificar que la trazabilidad pertenece a la ejecutiva
+//       const trazabilidad = await this.trazabilidadRepository.findOne({
+//         where: { 
+//           id_trazabilidad: idTrazabilidad,
+//           id_ejecutiva: idEjecutiva 
+//         }
+//       });
+
+//       if (!trazabilidad) {
+//         throw new HttpException('Trazabilidad no encontrada o no autorizada', HttpStatus.NOT_FOUND);
+//       }
+
+//       // Validar etapa
+//       const etapasValidas = [
+//         'Prospección', 'Calificación', 'Detección de necesidades', 'Presentación de solución',
+//         'Manejo de objeciones', 'Presentación de propuesta', 'Negociación', 'Firma de contrato',
+//         'Venta ganada', 'Venta perdida', 'Venta suspendida'
+//       ];
+
+//       if (!etapasValidas.includes(nuevaEtapa)) {
+//         throw new HttpException('Etapa no válida', HttpStatus.BAD_REQUEST);
+//       }
+
+//       // Actualizar
+//       await this.trazabilidadRepository.update(idTrazabilidad, {
+//         etapa_oportunidad: nuevaEtapa,
+//         fecha_inicio_etapa: nuevaEtapa !== trazabilidad.etapa_oportunidad ? new Date() : trazabilidad.fecha_inicio_etapa
+//       });
+
+//       return { 
+//         message: 'Etapa actualizada correctamente',
+//         nueva_etapa: nuevaEtapa 
+//       };
+//     } catch (error) {
+//       console.error('Error en updateEtapaOportunidad:', error);
+//       if (error instanceof HttpException) throw error;
+//       throw new HttpException('Error al actualizar etapa', HttpStatus.INTERNAL_SERVER_ERROR);
+//     }
+//   }
 // }
 
-// // Importar operadores TypeORM
-// import { Not, In, IsNull } from 'typeorm';
-
-// backend/services/traceability-service/src/services/ejecutiva/ejecutiva.service.ts - CORREGIDO
+// backend/services/traceability-service/src/services/ejecutiva/ejecutiva.service.ts
 import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Not, In, IsNull } from 'typeorm';
@@ -269,42 +313,43 @@ export class EjecutivaTraceabilityService {
 
     @InjectRepository(PersonaContacto)
     private contactoRepository: Repository<PersonaContacto>,
-  ) {}
+  ) { }
 
   async getTrazabilidad(ejecutivaId: string) {
     try {
       const id = parseInt(ejecutivaId);
+      console.log('🔍 Buscando trazabilidad para ejecutiva:', id);
 
       const trazabilidad = await this.trazabilidadRepository.find({
-        where: { id_ejecutiva: id },
-        relations: [
-          'empresa_proveedora', 
-          'cliente_final', 
-          'persona_contacto'
-        ],
+        where: { ejecutiva: { id_ejecutiva: id } },
+        relations: ['empresa_proveedora', 'cliente_final', 'persona_contacto'],
         order: { fecha_contacto: 'DESC' },
         take: 50
       });
+
+      console.log(`✅ Encontrados ${trazabilidad.length} registros de trazabilidad`);
 
       return trazabilidad.map(registro => ({
         id_trazabilidad: registro.id_trazabilidad,
         fecha_contacto: registro.fecha_contacto,
         tipo_contacto: registro.tipo_contacto,
         resultado_contacto: registro.resultado_contacto,
-        empresa_proveedora: registro.empresa_proveedora?.razon_social,
-        cliente_final: registro.cliente_final?.razon_social,
-        persona_contacto: registro.persona_contacto?.nombre_completo,
+        empresa_proveedora: registro.empresa_proveedora?.razon_social || 'N/A',
+        cliente_final: registro.cliente_final?.razon_social || 'N/A',
+        persona_contacto: registro.persona_contacto?.nombre_completo || 'N/A',
         reunion_agendada: registro.reunion_agendada,
         fecha_reunion: registro.fecha_reunion,
         pasa_embudo_ventas: registro.pasa_embudo_ventas,
         nombre_oportunidad: registro.nombre_oportunidad,
         etapa_oportunidad: registro.etapa_oportunidad,
         monto_total_sin_imp: registro.monto_total_sin_imp,
+        probabilidad_cierre: registro.probabilidad_cierre,
         observaciones: registro.observaciones,
-        informacion_importante: registro.informacion_importante
+        informacion_importante: registro.informacion_importante,
+
       }));
     } catch (error) {
-      console.error('Error en getTrazabilidad:', error);
+      console.error('❌ Error en getTrazabilidad service:', error);
       throw new HttpException('Error al obtener trazabilidad', HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
@@ -332,38 +377,54 @@ export class EjecutivaTraceabilityService {
     observaciones?: string;
   }) {
     try {
+      console.log('📝 Iniciando creación de trazabilidad con data:', data);
+
       const idEjecutiva = parseInt(data.id_ejecutiva);
       const idEmpresa = parseInt(data.id_empresa_prov);
       const idCliente = parseInt(data.id_cliente_final);
       const idContacto = parseInt(data.id_contacto);
 
-      // ✅ CORREGIDO: Verificar relaciones según la BD real
-      // 1. Verificar que la ejecutiva está asignada a la empresa
+      // 1️⃣ Verificar que la ejecutiva existe y está asignada a la empresa
+      console.log('🔍 Verificando ejecutiva...');
       const ejecutiva = await this.ejecutivaRepository.findOne({
-        where: { 
+        where: {
           id_ejecutiva: idEjecutiva,
-          id_empresa_prov: idEmpresa  // ✅ Relación directa por ID
-        }
+          empresa_proveedora: { id_empresa_prov: idEmpresa }
+        },
+        relations: ['empresa_proveedora']
       });
 
       if (!ejecutiva) {
-        throw new HttpException('Ejecutiva no encontrada o no asignada a esta empresa', HttpStatus.NOT_FOUND);
+        console.error('❌ Ejecutiva no encontrada o no asignada a la empresa');
+        throw new HttpException(
+          'Ejecutiva no encontrada o no asignada a esta empresa',
+          HttpStatus.NOT_FOUND
+        );
       }
+      console.log('✅ Ejecutiva verificada:', ejecutiva.nombre_completo);
 
-      // 2. Verificar que el cliente pertenece a la ejecutiva Y a la empresa
+      // 2️⃣ Verificar que el cliente pertenece a la ejecutiva Y a la empresa
+      console.log('🔍 Verificando cliente...');
       const cliente = await this.clienteRepository.findOne({
-        where: { 
+        where: {
           id_cliente_final: idCliente,
-          id_ejecutiva: idEjecutiva,
-          id_empresa_prov: idEmpresa
-        }
+          ejecutiva: { id_ejecutiva: idEjecutiva },
+          empresa_proveedora: { id_empresa_prov: idEmpresa }
+        },
+        relations: ['ejecutiva', 'empresa_proveedora']
       });
 
       if (!cliente) {
-        throw new HttpException('Cliente no encontrado o no asignado a esta ejecutiva/empresa', HttpStatus.NOT_FOUND);
+        console.error('❌ Cliente no encontrado o no asignado a esta ejecutiva/empresa');
+        throw new HttpException(
+          'Cliente no encontrado o no asignado a esta ejecutiva/empresa',
+          HttpStatus.NOT_FOUND
+        );
       }
+      console.log('✅ Cliente verificado:', cliente.razon_social);
 
-      // 3. Verificar que el contacto pertenece al cliente
+      // 3️⃣ Verificar que el contacto pertenece al cliente
+      console.log('🔍 Verificando contacto...');
       const persona_contacto = await this.contactoRepository.findOne({
         where: {
           id_contacto: idContacto,
@@ -373,10 +434,16 @@ export class EjecutivaTraceabilityService {
       });
 
       if (!persona_contacto) {
-        throw new HttpException('Contacto no encontrado o no pertenece a este cliente', HttpStatus.NOT_FOUND);
+        console.error('❌ Contacto no encontrado o no pertenece a este cliente');
+        throw new HttpException(
+          'Contacto no encontrado o no pertenece a este cliente',
+          HttpStatus.NOT_FOUND
+        );
       }
+      console.log('✅ Contacto verificado:', persona_contacto.nombre_completo);
 
-      // ✅ CORREGIDO: Crear nueva trazabilidad con IDs directos
+      // 4️⃣ Crear nueva trazabilidad
+      console.log('💾 Creando registro de trazabilidad...');
       const nuevaTrazabilidad = this.trazabilidadRepository.create({
         ejecutiva: { id_ejecutiva: idEjecutiva },
         empresa_proveedora: { id_empresa_prov: idEmpresa },
@@ -397,10 +464,12 @@ export class EjecutivaTraceabilityService {
         producto_ofrecido: data.producto_ofrecido,
         monto_total_sin_imp: data.monto_total_sin_imp,
         probabilidad_cierre: data.probabilidad_cierre,
-        observaciones: data.observaciones
+        observaciones: data.observaciones,
+        fecha_creacion: new Date()
       });
 
       const saved = await this.trazabilidadRepository.save(nuevaTrazabilidad);
+      console.log('✅ Trazabilidad creada con ID:', saved.id_trazabilidad);
 
       return {
         id: saved.id_trazabilidad,
@@ -410,23 +479,27 @@ export class EjecutivaTraceabilityService {
         cliente: cliente.razon_social,
         persona_contacto: persona_contacto.nombre_completo,
         oportunidad: saved.nombre_oportunidad,
-        etapa: saved.etapa_oportunidad
+        etapa: saved.etapa_oportunidad,
+        success: true
       };
     } catch (error) {
-      console.error('Error en createTrazabilidad:', error);
+      console.error('❌ Error en createTrazabilidad service:', error);
       if (error instanceof HttpException) throw error;
-      throw new HttpException('Error al crear trazabilidad', HttpStatus.INTERNAL_SERVER_ERROR);
+      throw new HttpException(
+        error.message || 'Error al crear trazabilidad',
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
     }
   }
 
-  // ✅ CORREGIDO: Obtener pipeline de ventas
   async getPipeline(ejecutivaId: string) {
     try {
       const id = parseInt(ejecutivaId);
+      console.log('🔍 Buscando pipeline para ejecutiva:', id);
 
       const pipeline = await this.trazabilidadRepository.find({
         where: {
-          id_ejecutiva: id,
+          ejecutiva: { id_ejecutiva: id },
           etapa_oportunidad: Not(In(['Venta ganada', 'Venta perdida', 'Venta suspendida'])),
           nombre_oportunidad: Not(IsNull())
         },
@@ -434,11 +507,13 @@ export class EjecutivaTraceabilityService {
         order: { fecha_cierre_esperado: 'ASC' }
       });
 
+      console.log(`✅ Encontradas ${pipeline.length} oportunidades activas`);
+
       return pipeline.map(oportunidad => ({
         id: oportunidad.id_trazabilidad,
         nombre_oportunidad: oportunidad.nombre_oportunidad,
-        cliente: oportunidad.cliente_final?.razon_social,
-        persona_contacto: oportunidad.persona_contacto?.nombre_completo,
+        cliente: oportunidad.cliente_final?.razon_social || 'N/A',
+        persona_contacto: oportunidad.persona_contacto?.nombre_completo || 'N/A',
         etapa: oportunidad.etapa_oportunidad,
         monto: oportunidad.monto_total_sin_imp,
         probabilidad: oportunidad.probabilidad_cierre,
@@ -447,58 +522,69 @@ export class EjecutivaTraceabilityService {
         fecha_inicio_etapa: oportunidad.fecha_inicio_etapa
       }));
     } catch (error) {
-      console.error('Error en getPipeline:', error);
+      console.error('❌ Error en getPipeline service:', error);
       throw new HttpException('Error al obtener pipeline', HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 
-  // ✅ CORREGIDO: Obtener actividades recientes
   async getActividadesRecientes(ejecutivaId: string, limit: number = 10) {
     try {
       const id = parseInt(ejecutivaId);
+      console.log('🔍 Buscando actividades recientes para ejecutiva:', id);
 
       const actividades = await this.trazabilidadRepository.find({
-        where: {
-          id_ejecutiva: id
-        },
+        where: { ejecutiva: { id_ejecutiva: id } },
         relations: ['cliente_final', 'persona_contacto', 'empresa_proveedora'],
         order: { fecha_contacto: 'DESC' },
         take: limit
       });
+
+      console.log(`✅ Encontradas ${actividades.length} actividades recientes`);
 
       return actividades.map(actividad => ({
         id: actividad.id_trazabilidad,
         fecha: actividad.fecha_contacto,
         tipo_contacto: actividad.tipo_contacto,
         resultado: actividad.resultado_contacto,
-        cliente: actividad.cliente_final?.razon_social,
-        persona_contacto: actividad.persona_contacto?.nombre_completo,
+        cliente: actividad.cliente_final?.razon_social || 'N/A',
+        persona_contacto: {
+          id: actividad.persona_contacto?.id_contacto,
+          nombre_completo: actividad.persona_contacto?.nombre_completo || 'N/A',
+          email: actividad.persona_contacto?.correo || '',
+          telefono: actividad.persona_contacto?.telefono || ''
+        },
         oportunidad: actividad.nombre_oportunidad,
         etapa: actividad.etapa_oportunidad,
-        observaciones: actividad.observaciones?.substring(0, 100) + (actividad.observaciones?.length > 100 ? '...' : '')
+        observaciones: actividad.observaciones?.substring(0, 100) +
+          (actividad.observaciones?.length > 100 ? '...' : '')
       }));
     } catch (error) {
-      console.error('Error en getActividadesRecientes:', error);
+      console.error('❌ Error en getActividadesRecientes service:', error);
       throw new HttpException('Error al obtener actividades', HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 
-  // ✅ NUEVO MÉTODO: Actualizar etapa de oportunidad
   async updateEtapaOportunidad(trazabilidadId: string, nuevaEtapa: string, ejecutivaId: string) {
     try {
       const idTrazabilidad = parseInt(trazabilidadId);
       const idEjecutiva = parseInt(ejecutivaId);
 
+      console.log(`🔄 Actualizando etapa de oportunidad ${idTrazabilidad} a: ${nuevaEtapa}`);
+
       // Verificar que la trazabilidad pertenece a la ejecutiva
       const trazabilidad = await this.trazabilidadRepository.findOne({
-        where: { 
+        where: {
           id_trazabilidad: idTrazabilidad,
-          id_ejecutiva: idEjecutiva 
-        }
+          ejecutiva: { id_ejecutiva: idEjecutiva }
+        },
+        relations: ['ejecutiva']
       });
 
       if (!trazabilidad) {
-        throw new HttpException('Trazabilidad no encontrada o no autorizada', HttpStatus.NOT_FOUND);
+        throw new HttpException(
+          'Trazabilidad no encontrada o no autorizada',
+          HttpStatus.NOT_FOUND
+        );
       }
 
       // Validar etapa
@@ -509,7 +595,10 @@ export class EjecutivaTraceabilityService {
       ];
 
       if (!etapasValidas.includes(nuevaEtapa)) {
-        throw new HttpException('Etapa no válida', HttpStatus.BAD_REQUEST);
+        throw new HttpException(
+          `Etapa no válida. Debe ser una de: ${etapasValidas.join(', ')}`,
+          HttpStatus.BAD_REQUEST
+        );
       }
 
       // Actualizar
@@ -518,14 +607,94 @@ export class EjecutivaTraceabilityService {
         fecha_inicio_etapa: nuevaEtapa !== trazabilidad.etapa_oportunidad ? new Date() : trazabilidad.fecha_inicio_etapa
       });
 
-      return { 
+      console.log('✅ Etapa actualizada exitosamente');
+
+      return {
+        success: true,
         message: 'Etapa actualizada correctamente',
-        nueva_etapa: nuevaEtapa 
+        nueva_etapa: nuevaEtapa
       };
     } catch (error) {
-      console.error('Error en updateEtapaOportunidad:', error);
+      console.error('❌ Error en updateEtapaOportunidad service:', error);
       if (error instanceof HttpException) throw error;
       throw new HttpException('Error al actualizar etapa', HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
+
+  // ✅ NUEVO: Obtener estadísticas para el dashboard
+  async getStats(ejecutivaId: string) {
+    try {
+      const id = parseInt(ejecutivaId);
+      console.log('📊 Calculando estadísticas para ejecutiva:', id);
+
+      // Total contactos (Etapa 1)
+      const totalContactos = await this.trazabilidadRepository.count({
+        where: {
+          ejecutiva: { id_ejecutiva: id },
+          pasa_embudo_ventas: false
+        }
+      });
+
+      // Oportunidades generadas (pasaron a Etapa 2)
+      const oportunidadesGeneradas = await this.trazabilidadRepository.count({
+        where: {
+          ejecutiva: { id_ejecutiva: id },
+          pasa_embudo_ventas: true
+        }
+      });
+
+      // Ventas ganadas
+      const ventasGanadas = await this.trazabilidadRepository.count({
+        where: {
+          ejecutiva: { id_ejecutiva: id },
+          etapa_oportunidad: 'Venta ganada'
+        }
+      });
+
+      // Oportunidades en proceso (no ganadas, perdidas ni suspendidas)
+      const enProceso = await this.trazabilidadRepository.count({
+        where: {
+          ejecutiva: { id_ejecutiva: id },
+          pasa_embudo_ventas: true,
+          etapa_oportunidad: Not(In(['Venta ganada', 'Venta perdida', 'Venta suspendida']))
+        }
+      });
+
+      const pipeline = await this.trazabilidadRepository.find({
+        where: {
+          ejecutiva: { id_ejecutiva: id },
+          etapa_oportunidad: Not(In(['Venta ganada', 'Venta perdida', 'Venta suspendida']))
+        },
+        select: ['monto_total_sin_imp']
+      });
+
+      // Validación robusta para montoTotal
+      const montoTotal = pipeline.reduce((sum, op) => {
+        const monto = op.monto_total_sin_imp;
+        // Convertir a número y validar
+        const montoNumerico = Number(monto) || 0;
+        return sum + montoNumerico;
+      }, 0);
+
+      // Calcular tasa de conversión
+      const tasaConversion = oportunidadesGeneradas > 0
+        ? (ventasGanadas / oportunidadesGeneradas) * 100
+        : 0;
+
+      const stats = {
+        totalContactos,
+        oportunidadesGeneradas,
+        ventasGanadas,
+        tasaConversion: parseFloat(tasaConversion.toFixed(1)),
+        montoTotal: parseFloat(montoTotal.toFixed(2)), // ✅ Ahora montoTotal siempre es número
+        enProceso
+      };
+
+      console.log('✅ Estadísticas calculadas:', stats);
+      return stats;
+    } catch (error) {
+      console.error('❌ Error en getStats service:', error);
+      throw new HttpException('Error al calcular estadísticas', HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 }

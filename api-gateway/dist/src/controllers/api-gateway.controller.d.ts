@@ -53,4 +53,5 @@ export declare class ApiGatewayController {
     getEjecutivaTrazabilidadPipeline(ejecutivaId: string, req: Request): Promise<any>;
     getEjecutivaTrazabilidadActividades(ejecutivaId: string, limit: string, req: Request): Promise<any>;
     updateEjecutivaTrazabilidadEtapa(body: any, req: Request): Promise<any>;
+    getEjecutivaTrazabilidadStats(ejecutivaId: string, req: Request): Promise<any>;
 }

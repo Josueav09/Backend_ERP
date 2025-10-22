@@ -871,7 +871,7 @@ export class ApiGatewayController {
   @Get('ejecutiva/trazabilidad/actividades')
   async getEjecutivaTrazabilidadActividades(
     @Query('ejecutivaId') ejecutivaId: string,
-    @Query('limit') limit: string = '10',
+    @Query('limit') limit: string = '1000',
     @Req() req: Request
   ) {
     try {
@@ -899,6 +899,23 @@ export class ApiGatewayController {
     } catch (error) {
       throw new HttpException(
         error.response?.data?.message || 'Error al actualizar etapa de trazabilidad',
+        error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
+
+    // ✅ ENDPOINT FALTANTE: Estadísticas de Trazabilidad
+  @Get('ejecutiva/trazabilidad/stats')
+  async getEjecutivaTrazabilidadStats(@Query('ejecutivaId') ejecutivaId: string, @Req() req: Request) {
+    try {
+      const headers = this.getHeadersWithAuth(req);
+      const response = await firstValueFrom(
+        this.httpService.get(`http://localhost:3007/ejecutiva/trazabilidad/stats?ejecutivaId=${ejecutivaId}`, { headers })
+      );
+      return response.data;
+    } catch (error) {
+      throw new HttpException(
+        error.response?.data?.message || 'Error al obtener estadísticas de trazabilidad',
         error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR
       );
     }

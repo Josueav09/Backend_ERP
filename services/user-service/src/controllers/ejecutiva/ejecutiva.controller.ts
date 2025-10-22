@@ -191,35 +191,6 @@ export class EjecutivaController {
   }
 
   // ✅ CORREGIDO: Registro de empresa (estado Pendiente)
-  // @Post('empresas/registrar')
-  // async registrarEmpresa(@Body() body: any) {
-  //   const { razon_social, ruc, direccion, telefono, correo, ejecutivaId } = body;
-
-  //   if (!ejecutivaId) {
-  //     throw new HttpException('ID de ejecutiva requerido', HttpStatus.BAD_REQUEST);
-  //   }
-
-  //   // Validaciones básicas
-  //   if (!razon_social || !ruc || !correo) {
-  //     throw new HttpException('Razón social, RUC y correo son requeridos', HttpStatus.BAD_REQUEST);
-  //   }
-
-  //   try {
-  //     return await this.ejecutivaService.createEmpresa({
-  //       razon_social,
-  //       ruc,
-  //       direccion,
-  //       telefono,
-  //       correo,
-  //       ejecutivaId
-  //     });
-  //   } catch (error) {
-  //     if (error instanceof HttpException) throw error;
-  //     throw new HttpException('Error al registrar empresa', HttpStatus.INTERNAL_SERVER_ERROR);
-  //   }
-  // }
-
-
   @Post('empresas/registrar')
   async registrarEmpresa(@Body() body: any) {
     const {
@@ -314,33 +285,6 @@ export class EjecutivaController {
   }
 
   // ✅ CORREGIDO: Crear cliente final
-  // @Post('clientes')
-  // async createCliente(@Body() body: any) {
-  //   const { razon_social, ruc, direccion, telefono, correo, ejecutivaId } = body;
-
-  //   if (!ejecutivaId) {
-  //     throw new HttpException('ID de ejecutiva requerido', HttpStatus.BAD_REQUEST);
-  //   }
-
-  //   // Validaciones básicas
-  //   if (!razon_social || !ruc) {
-  //     throw new HttpException('Razón social y RUC son requeridos', HttpStatus.BAD_REQUEST);
-  //   }
-
-  //   try {
-  //     return await this.ejecutivaService.createCliente({
-  //       razon_social,
-  //       ruc,
-  //       direccion,
-  //       telefono,
-  //       correo,
-  //       ejecutivaId
-  //     });
-  //   } catch (error) {
-  //     if (error instanceof HttpException) throw error;
-  //     throw new HttpException('Error al crear cliente', HttpStatus.INTERNAL_SERVER_ERROR);
-  //   }
-  // }
 
   @Post('clientes')
   async createCliente(@Body() body: any) {
@@ -404,33 +348,7 @@ export class EjecutivaController {
   }
 
   // ✅ NUEVO: Crear persona de contacto
-  // @Post('contactos')
-  // async createContacto(@Body() body: any) {
-  //   const { nombre_completo, cargo, correo, telefono, id_cliente_final, ejecutivaId } = body;
 
-  //   if (!ejecutivaId || !id_cliente_final) {
-  //     throw new HttpException('Ejecutiva y cliente son requeridos', HttpStatus.BAD_REQUEST);
-  //   }
-
-  //   // Validaciones básicas
-  //   if (!nombre_completo || !correo) {
-  //     throw new HttpException('Nombre completo y correo son requeridos', HttpStatus.BAD_REQUEST);
-  //   }
-
-  //   try {
-  //     return await this.ejecutivaService.createPersonaContacto({
-  //       nombre_completo,
-  //       cargo,
-  //       correo,
-  //       telefono,
-  //       id_cliente_final,
-  //       ejecutivaId
-  //     });
-  //   } catch (error) {
-  //     if (error instanceof HttpException) throw error;
-  //     throw new HttpException('Error al crear contacto', HttpStatus.INTERNAL_SERVER_ERROR);
-  //   }
-  // }
 
   @Post('contactos')
   async createContacto(@Body() body: any) {
