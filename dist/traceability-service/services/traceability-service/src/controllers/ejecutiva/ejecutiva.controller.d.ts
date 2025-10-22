@@ -39,6 +39,7 @@ export declare class EjecutivaTraceabilityController {
         probabilidad: number;
         fecha_cierre_esperado: Date;
         producto_ofrecido: string;
+        fecha_inicio_etapa: Date;
     }[]>;
     getActividadesRecientes(ejecutivaId: string, limit?: string): Promise<{
         id: number;
@@ -51,4 +52,12 @@ export declare class EjecutivaTraceabilityController {
         etapa: string;
         observaciones: string;
     }[]>;
+    updateEtapaOportunidad(body: {
+        trazabilidadId: string;
+        nuevaEtapa: string;
+        ejecutivaId: string;
+    }): Promise<{
+        message: string;
+        nueva_etapa: string;
+    }>;
 }

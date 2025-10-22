@@ -25,6 +25,7 @@ export declare class EmpresasController {
         cantidad_empleados: number;
         logo: string;
         estado: string;
+        id_ejecutiva_registro: number;
         ejecutiva_registro: import("shared/entities/Ejecutiva.entity").Ejecutiva;
         fecha_creacion: Date;
         fecha_actualizacion: Date;
@@ -78,6 +79,7 @@ export declare class EmpresasController {
         cantidad_empleados: number;
         logo: string;
         estado: string;
+        id_ejecutiva_registro: number;
         ejecutiva_registro: import("shared/entities/Ejecutiva.entity").Ejecutiva;
         fecha_creacion: Date;
         fecha_actualizacion: Date;

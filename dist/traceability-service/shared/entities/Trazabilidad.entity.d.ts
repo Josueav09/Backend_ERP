@@ -4,8 +4,10 @@ import { ClienteFinal } from './ClienteFinal.entity';
 import { PersonaContacto } from './PersonaContacto.entity';
 export declare class Trazabilidad {
     id_trazabilidad: number;
+    id_ejecutiva: number;
     ejecutiva: Ejecutiva;
     empresa_proveedora: EmpresaProveedora;
+    id_cliente_final: number;
     cliente_final: ClienteFinal;
     persona_contacto: PersonaContacto;
     fecha_agregado_base: Date;

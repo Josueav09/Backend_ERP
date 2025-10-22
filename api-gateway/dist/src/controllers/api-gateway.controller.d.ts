@@ -41,6 +41,16 @@ export declare class ApiGatewayController {
     createEjecutivaEmpresa(body: any, req: Request): Promise<any>;
     getEjecutivaClientes(ejecutivaId: string, req: Request): Promise<any>;
     createEjecutivaCliente(body: any, req: Request): Promise<any>;
+    getEjecutivaEmpresasRegistradas(ejecutivaId: string, req: Request): Promise<any>;
+    createEjecutivaEmpresaRegistrar(body: any, req: Request): Promise<any>;
+    createEjecutivaContacto(body: any, req: Request): Promise<any>;
+    getEjecutivaContactos(clienteId: string, ejecutivaId: string, req: Request): Promise<any>;
+    getEjecutivaPipeline(ejecutivaId: string, req: Request): Promise<any>;
+    getEjecutivaActividades(ejecutivaId: string, limit: string, req: Request): Promise<any>;
+    getEjecutivaKPIsSemanales(ejecutivaId: string, req: Request): Promise<any>;
     getEjecutivaTrazabilidad(ejecutivaId: string, req: Request): Promise<any>;
     createEjecutivaTrazabilidad(body: any, req: Request): Promise<any>;
+    getEjecutivaTrazabilidadPipeline(ejecutivaId: string, req: Request): Promise<any>;
+    getEjecutivaTrazabilidadActividades(ejecutivaId: string, limit: string, req: Request): Promise<any>;
+    updateEjecutivaTrazabilidadEtapa(body: any, req: Request): Promise<any>;
 }

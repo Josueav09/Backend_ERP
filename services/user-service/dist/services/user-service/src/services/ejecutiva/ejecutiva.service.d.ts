@@ -41,6 +41,7 @@ export declare class EjecutivaService {
         cantidad_empleados: number;
         logo: string;
         estado: string;
+        id_ejecutiva_registro: number;
         ejecutiva_registro: Ejecutiva;
         fecha_creacion: Date;
         fecha_actualizacion: Date;
@@ -55,7 +56,30 @@ export declare class EjecutivaService {
         telefono: string;
         correo: string;
         ejecutivaId: string;
+        contraseña: string;
+        pagina_web?: string;
+        pais?: string;
+        departamento?: string;
+        provincia?: string;
+        linkedin?: string;
+        grupo_economico?: string;
+        rubro?: string;
+        sub_rubro?: string;
+        tamanio_empresa?: string;
+        facturacion_anual?: string;
+        cantidad_empleados?: string;
     }): Promise<EmpresaProveedora>;
+    getEmpresasRegistradas(ejecutivaId: string): Promise<{
+        id_empresa_prov: number;
+        ruc: string;
+        razon_social: string;
+        correo: string;
+        telefono: string;
+        estado: string;
+        fecha_creacion: Date;
+        esta_asignada: boolean;
+        puede_crear_clientes: boolean;
+    }[]>;
     getClientes(ejecutivaId: string): Promise<{
         total_actividades: number;
         contacto_principal: PersonaContacto;
@@ -99,14 +123,35 @@ export declare class EjecutivaService {
         fecha_actualizacion: Date;
     }[]>;
     createCliente(data: {
-        id_empresa: string;
-        id_ejecutiva: string;
         razon_social: string;
         ruc: string;
         direccion: string;
         telefono: string;
         correo: string;
+        ejecutivaId: string;
+        pagina_web?: string;
+        pais?: string;
+        departamento?: string;
+        provincia?: string;
+        linkedin?: string;
+        grupo_economico?: string;
+        rubro?: string;
+        sub_rubro?: string;
+        tamanio_empresa?: string;
+        facturacion_anual?: string;
+        cantidad_empleados?: string;
     }): Promise<ClienteFinal>;
+    createPersonaContacto(data: {
+        nombre_completo: string;
+        cargo: string;
+        correo: string;
+        telefono: string;
+        id_cliente_final: string;
+        ejecutivaId: string;
+        dni?: string;
+        linkedin?: string;
+    }): Promise<PersonaContacto>;
+    getContactosCliente(clienteId: string, ejecutivaId: string): Promise<PersonaContacto[]>;
     getPipeline(ejecutivaId: string): Promise<{
         oportunidades: Trazabilidad[];
         agrupado_por_etapa: {};

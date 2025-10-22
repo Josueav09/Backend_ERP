@@ -33,12 +33,11 @@ let EjecutivaTraceabilityService = class EjecutivaTraceabilityService {
         try {
             const id = parseInt(ejecutivaId);
             const trazabilidad = await this.trazabilidadRepository.find({
-                where: { ejecutiva: { id_ejecutiva: id } },
+                where: { id_ejecutiva: id },
                 relations: [
                     'empresa_proveedora',
                     'cliente_final',
-                    'persona_contacto',
-                    'cliente_final.personas_contacto'
+                    'persona_contacto'
                 ],
                 order: { fecha_contacto: 'DESC' },
                 take: 50
@@ -72,37 +71,32 @@ let EjecutivaTraceabilityService = class EjecutivaTraceabilityService {
             const idEmpresa = parseInt(data.id_empresa_prov);
             const idCliente = parseInt(data.id_cliente_final);
             const idContacto = parseInt(data.id_contacto);
-            const [ejecutiva, empresa, cliente, persona_contacto] = await Promise.all([
-                this.ejecutivaRepository.findOne({
-                    where: {
-                        id_ejecutiva: idEjecutiva,
-                        empresa_proveedora: { id_empresa_prov: idEmpresa }
-                    },
-                    relations: ['empresa_proveedora']
-                }),
-                this.empresaRepository.findOne({ where: { id_empresa_prov: idEmpresa } }),
-                this.clienteRepository.findOne({
-                    where: {
-                        id_cliente_final: idCliente,
-                        ejecutiva: { id_ejecutiva: idEjecutiva }
-                    }
-                }),
-                this.contactoRepository.findOne({
-                    where: {
-                        id_contacto: idContacto,
-                        cliente_final: { id_cliente_final: idCliente }
-                    }
-                })
-            ]);
+            const ejecutiva = await this.ejecutivaRepository.findOne({
+                where: {
+                    id_ejecutiva: idEjecutiva,
+                    id_empresa_prov: idEmpresa
+                }
+            });
             if (!ejecutiva) {
-                throw new common_1.HttpException('Ejecutiva no encontrada o empresa no asignada', common_1.HttpStatus.NOT_FOUND);
+                throw new common_1.HttpException('Ejecutiva no encontrada o no asignada a esta empresa', common_1.HttpStatus.NOT_FOUND);
             }
-            if (!empresa) {
-                throw new common_1.HttpException('Empresa no encontrada', common_1.HttpStatus.NOT_FOUND);
-            }
+            const cliente = await this.clienteRepository.findOne({
+                where: {
+                    id_cliente_final: idCliente,
+                    id_ejecutiva: idEjecutiva,
+                    id_empresa_prov: idEmpresa
+                }
+            });
             if (!cliente) {
-                throw new common_1.HttpException('Cliente no encontrado o no asignado a esta ejecutiva', common_1.HttpStatus.NOT_FOUND);
+                throw new common_1.HttpException('Cliente no encontrado o no asignado a esta ejecutiva/empresa', common_1.HttpStatus.NOT_FOUND);
             }
+            const persona_contacto = await this.contactoRepository.findOne({
+                where: {
+                    id_contacto: idContacto,
+                    cliente_final: { id_cliente_final: idCliente }
+                },
+                relations: ['cliente_final']
+            });
             if (!persona_contacto) {
                 throw new common_1.HttpException('Contacto no encontrado o no pertenece a este cliente', common_1.HttpStatus.NOT_FOUND);
             }
@@ -129,16 +123,15 @@ let EjecutivaTraceabilityService = class EjecutivaTraceabilityService {
                 observaciones: data.observaciones
             });
             const saved = await this.trazabilidadRepository.save(nuevaTrazabilidad);
-            const trazabilidadGuardada = Array.isArray(saved) ? saved[0] : saved;
             return {
-                id: trazabilidadGuardada.id_trazabilidad,
-                fecha_contacto: trazabilidadGuardada.fecha_contacto,
-                tipo_contacto: trazabilidadGuardada.tipo_contacto,
-                resultado: trazabilidadGuardada.resultado_contacto,
+                id: saved.id_trazabilidad,
+                fecha_contacto: saved.fecha_contacto,
+                tipo_contacto: saved.tipo_contacto,
+                resultado: saved.resultado_contacto,
                 cliente: cliente.razon_social,
                 persona_contacto: persona_contacto.nombre_completo,
-                oportunidad: trazabilidadGuardada.nombre_oportunidad,
-                etapa: trazabilidadGuardada.etapa_oportunidad
+                oportunidad: saved.nombre_oportunidad,
+                etapa: saved.etapa_oportunidad
             };
         }
         catch (error) {
@@ -153,9 +146,9 @@ let EjecutivaTraceabilityService = class EjecutivaTraceabilityService {
             const id = parseInt(ejecutivaId);
             const pipeline = await this.trazabilidadRepository.find({
                 where: {
-                    ejecutiva: { id_ejecutiva: id },
-                    etapa_oportunidad: (0, typeorm_3.Not)((0, typeorm_3.In)(['Venta ganada', 'Venta perdida', 'Venta suspendida'])),
-                    nombre_oportunidad: (0, typeorm_3.Not)((0, typeorm_3.IsNull)())
+                    id_ejecutiva: id,
+                    etapa_oportunidad: (0, typeorm_2.Not)((0, typeorm_2.In)(['Venta ganada', 'Venta perdida', 'Venta suspendida'])),
+                    nombre_oportunidad: (0, typeorm_2.Not)((0, typeorm_2.IsNull)())
                 },
                 relations: ['cliente_final', 'persona_contacto', 'empresa_proveedora'],
                 order: { fecha_cierre_esperado: 'ASC' }
@@ -169,7 +162,8 @@ let EjecutivaTraceabilityService = class EjecutivaTraceabilityService {
                 monto: oportunidad.monto_total_sin_imp,
                 probabilidad: oportunidad.probabilidad_cierre,
                 fecha_cierre_esperado: oportunidad.fecha_cierre_esperado,
-                producto_ofrecido: oportunidad.producto_ofrecido
+                producto_ofrecido: oportunidad.producto_ofrecido,
+                fecha_inicio_etapa: oportunidad.fecha_inicio_etapa
             }));
         }
         catch (error) {
@@ -182,7 +176,7 @@ let EjecutivaTraceabilityService = class EjecutivaTraceabilityService {
             const id = parseInt(ejecutivaId);
             const actividades = await this.trazabilidadRepository.find({
                 where: {
-                    ejecutiva: { id_ejecutiva: id }
+                    id_ejecutiva: id
                 },
                 relations: ['cliente_final', 'persona_contacto', 'empresa_proveedora'],
                 order: { fecha_contacto: 'DESC' },
@@ -205,6 +199,43 @@ let EjecutivaTraceabilityService = class EjecutivaTraceabilityService {
             throw new common_1.HttpException('Error al obtener actividades', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+    async updateEtapaOportunidad(trazabilidadId, nuevaEtapa, ejecutivaId) {
+        try {
+            const idTrazabilidad = parseInt(trazabilidadId);
+            const idEjecutiva = parseInt(ejecutivaId);
+            const trazabilidad = await this.trazabilidadRepository.findOne({
+                where: {
+                    id_trazabilidad: idTrazabilidad,
+                    id_ejecutiva: idEjecutiva
+                }
+            });
+            if (!trazabilidad) {
+                throw new common_1.HttpException('Trazabilidad no encontrada o no autorizada', common_1.HttpStatus.NOT_FOUND);
+            }
+            const etapasValidas = [
+                'Prospección', 'Calificación', 'Detección de necesidades', 'Presentación de solución',
+                'Manejo de objeciones', 'Presentación de propuesta', 'Negociación', 'Firma de contrato',
+                'Venta ganada', 'Venta perdida', 'Venta suspendida'
+            ];
+            if (!etapasValidas.includes(nuevaEtapa)) {
+                throw new common_1.HttpException('Etapa no válida', common_1.HttpStatus.BAD_REQUEST);
+            }
+            await this.trazabilidadRepository.update(idTrazabilidad, {
+                etapa_oportunidad: nuevaEtapa,
+                fecha_inicio_etapa: nuevaEtapa !== trazabilidad.etapa_oportunidad ? new Date() : trazabilidad.fecha_inicio_etapa
+            });
+            return {
+                message: 'Etapa actualizada correctamente',
+                nueva_etapa: nuevaEtapa
+            };
+        }
+        catch (error) {
+            console.error('Error en updateEtapaOportunidad:', error);
+            if (error instanceof common_1.HttpException)
+                throw error;
+            throw new common_1.HttpException('Error al actualizar etapa', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
 };
 exports.EjecutivaTraceabilityService = EjecutivaTraceabilityService;
 exports.EjecutivaTraceabilityService = EjecutivaTraceabilityService = __decorate([
@@ -220,5 +251,4 @@ exports.EjecutivaTraceabilityService = EjecutivaTraceabilityService = __decorate
         typeorm_2.Repository,
         typeorm_2.Repository])
 ], EjecutivaTraceabilityService);
-const typeorm_3 = require("typeorm");
 //# sourceMappingURL=ejecutiva.service.js.map

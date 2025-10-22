@@ -22,6 +22,7 @@ export declare class EmpresaProveedora {
     cantidad_empleados: number;
     logo: string;
     estado: string;
+    id_ejecutiva_registro: number;
     ejecutiva_registro: Ejecutiva;
     fecha_creacion: Date;
     fecha_actualizacion: Date;

@@ -32,6 +32,7 @@ export declare class EjecutivaController {
         cantidad_empleados: number;
         logo: string;
         estado: string;
+        id_ejecutiva_registro: number;
         ejecutiva_registro: import("shared/entities/Ejecutiva.entity").Ejecutiva;
         fecha_creacion: Date;
         fecha_actualizacion: Date;
@@ -39,7 +40,18 @@ export declare class EjecutivaController {
         trazabilidades: import("shared/entities/Trazabilidad.entity").Trazabilidad[];
         clientes_finales: import("shared/entities/ClienteFinal.entity").ClienteFinal[];
     }[]>;
-    createEmpresa(body: any): Promise<import("shared/entities/EmpresaProveedora.entity").EmpresaProveedora>;
+    registrarEmpresa(body: any): Promise<import("shared/entities/EmpresaProveedora.entity").EmpresaProveedora>;
+    getEmpresasRegistradas(ejecutivaId: string): Promise<{
+        id_empresa_prov: number;
+        ruc: string;
+        razon_social: string;
+        correo: string;
+        telefono: string;
+        estado: string;
+        fecha_creacion: Date;
+        esta_asignada: boolean;
+        puede_crear_clientes: boolean;
+    }[]>;
     getClientes(ejecutivaId: string): Promise<{
         total_actividades: number;
         contacto_principal: import("shared/entities/PersonaContacto.entity").PersonaContacto;
@@ -83,6 +95,8 @@ export declare class EjecutivaController {
         fecha_actualizacion: Date;
     }[]>;
     createCliente(body: any): Promise<import("shared/entities/ClienteFinal.entity").ClienteFinal>;
+    createContacto(body: any): Promise<import("shared/entities/PersonaContacto.entity").PersonaContacto>;
+    getContactos(clienteId: string, ejecutivaId: string): Promise<import("shared/entities/PersonaContacto.entity").PersonaContacto[]>;
     getPipeline(ejecutivaId: string): Promise<{
         oportunidades: import("shared/entities/Trazabilidad.entity").Trazabilidad[];
         agrupado_por_etapa: {};
@@ -108,4 +122,10 @@ export declare class EjecutivaController {
         etapa: string;
         observaciones: string;
     }[]>;
+    getKPIsSemanales(ejecutivaId: string): Promise<{
+        actividades_semana: number;
+        nuevas_oportunidades: number;
+        reuniones_agendadas: number;
+        inicio_semana: Date;
+    }>;
 }

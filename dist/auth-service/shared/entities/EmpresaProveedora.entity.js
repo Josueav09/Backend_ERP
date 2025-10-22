@@ -108,6 +108,10 @@ __decorate([
     __metadata("design:type", String)
 ], EmpresaProveedora.prototype, "estado", void 0);
 __decorate([
+    (0, typeorm_1.Column)({ type: 'int', nullable: true }),
+    __metadata("design:type", Number)
+], EmpresaProveedora.prototype, "id_ejecutiva_registro", void 0);
+__decorate([
     (0, typeorm_1.ManyToOne)(() => Ejecutiva_entity_1.Ejecutiva, { nullable: true }),
     (0, typeorm_1.JoinColumn)({ name: 'id_ejecutiva_registro' }),
     __metadata("design:type", Ejecutiva_entity_1.Ejecutiva)

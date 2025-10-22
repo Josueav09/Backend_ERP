@@ -37,6 +37,14 @@ let EjecutivaTraceabilityController = class EjecutivaTraceabilityController {
         if (!id_ejecutiva || !id_empresa_prov || !id_cliente_final || !id_contacto) {
             throw new common_1.HttpException('Ejecutiva, empresa, cliente y contacto requeridos', common_1.HttpStatus.BAD_REQUEST);
         }
+        const tiposValidos = ['Llamada telefónica', 'Chat de Whatsapp', 'Correo electrónico', 'Contacto por linkedin', 'Reunión presencial', 'Otro'];
+        if (!tiposValidos.includes(tipo_contacto)) {
+            throw new common_1.HttpException('Tipo de contacto no válido', common_1.HttpStatus.BAD_REQUEST);
+        }
+        const resultadosValidos = ['Positivo', 'Negativo', 'Pendiente', 'Neutro'];
+        if (!resultadosValidos.includes(resultado_contacto)) {
+            throw new common_1.HttpException('Resultado de contacto no válido', common_1.HttpStatus.BAD_REQUEST);
+        }
         try {
             return await this.ejecutivaTraceabilityService.createTrazabilidad({
                 id_ejecutiva,
@@ -93,17 +101,31 @@ let EjecutivaTraceabilityController = class EjecutivaTraceabilityController {
             throw new common_1.HttpException('Error al obtener actividades', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+    async updateEtapaOportunidad(body) {
+        const { trazabilidadId, nuevaEtapa, ejecutivaId } = body;
+        if (!trazabilidadId || !nuevaEtapa || !ejecutivaId) {
+            throw new common_1.HttpException('ID de trazabilidad, nueva etapa y ejecutiva requeridos', common_1.HttpStatus.BAD_REQUEST);
+        }
+        try {
+            return await this.ejecutivaTraceabilityService.updateEtapaOportunidad(trazabilidadId, nuevaEtapa, ejecutivaId);
+        }
+        catch (error) {
+            if (error instanceof common_1.HttpException)
+                throw error;
+            throw new common_1.HttpException('Error al actualizar etapa', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
 };
 exports.EjecutivaTraceabilityController = EjecutivaTraceabilityController;
 __decorate([
-    (0, common_1.Get)('trazabilidad'),
+    (0, common_1.Get)(),
     __param(0, (0, common_1.Query)('ejecutivaId')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], EjecutivaTraceabilityController.prototype, "getTrazabilidad", null);
 __decorate([
-    (0, common_1.Post)('trazabilidad'),
+    (0, common_1.Post)(),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),
@@ -124,8 +146,15 @@ __decorate([
     __metadata("design:paramtypes", [String, String]),
     __metadata("design:returntype", Promise)
 ], EjecutivaTraceabilityController.prototype, "getActividadesRecientes", null);
+__decorate([
+    (0, common_1.Put)('etapa'),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], EjecutivaTraceabilityController.prototype, "updateEtapaOportunidad", null);
 exports.EjecutivaTraceabilityController = EjecutivaTraceabilityController = __decorate([
-    (0, common_1.Controller)('ejecutiva'),
+    (0, common_1.Controller)('ejecutiva/trazabilidad'),
     __metadata("design:paramtypes", [ejecutiva_service_1.EjecutivaTraceabilityService])
 ], EjecutivaTraceabilityController);
 //# sourceMappingURL=ejecutiva.controller.js.map

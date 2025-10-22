@@ -23,6 +23,10 @@ __decorate([
     __metadata("design:type", Number)
 ], Trazabilidad.prototype, "id_trazabilidad", void 0);
 __decorate([
+    (0, typeorm_1.Column)({ type: 'int' }),
+    __metadata("design:type", Number)
+], Trazabilidad.prototype, "id_ejecutiva", void 0);
+__decorate([
     (0, typeorm_1.ManyToOne)(() => Ejecutiva_entity_1.Ejecutiva, ejecutiva => ejecutiva.trazabilidades),
     (0, typeorm_1.JoinColumn)({ name: 'id_ejecutiva' }),
     __metadata("design:type", Ejecutiva_entity_1.Ejecutiva)
@@ -32,6 +36,10 @@ __decorate([
     (0, typeorm_1.JoinColumn)({ name: 'id_empresa_prov' }),
     __metadata("design:type", EmpresaProveedora_entity_1.EmpresaProveedora)
 ], Trazabilidad.prototype, "empresa_proveedora", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'int' }),
+    __metadata("design:type", Number)
+], Trazabilidad.prototype, "id_cliente_final", void 0);
 __decorate([
     (0, typeorm_1.ManyToOne)(() => ClienteFinal_entity_1.ClienteFinal, cliente => cliente.trazabilidades),
     (0, typeorm_1.JoinColumn)({ name: 'id_cliente_final' }),

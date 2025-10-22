@@ -427,6 +427,76 @@ let ApiGatewayController = class ApiGatewayController {
             throw new common_1.HttpException(error.response?.data?.message || 'Error al crear cliente', error.response?.status || common_1.HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+    async getEjecutivaEmpresasRegistradas(ejecutivaId, req) {
+        try {
+            const headers = this.getHeadersWithAuth(req);
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get(`http://localhost:3002/ejecutiva/empresas/registradas?ejecutivaId=${ejecutivaId}`, { headers }));
+            return response.data;
+        }
+        catch (error) {
+            throw new common_1.HttpException(error.response?.data?.message || 'Error al obtener empresas registradas de ejecutiva', error.response?.status || common_1.HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+    async createEjecutivaEmpresaRegistrar(body, req) {
+        try {
+            const headers = this.getHeadersWithAuth(req);
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.post('http://localhost:3002/ejecutiva/empresas/registrar', body, { headers }));
+            return response.data;
+        }
+        catch (error) {
+            throw new common_1.HttpException(error.response?.data?.message || 'Error al registrar empresa', error.response?.status || common_1.HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+    async createEjecutivaContacto(body, req) {
+        try {
+            const headers = this.getHeadersWithAuth(req);
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.post('http://localhost:3002/ejecutiva/contactos', body, { headers }));
+            return response.data;
+        }
+        catch (error) {
+            throw new common_1.HttpException(error.response?.data?.message || 'Error al crear contacto', error.response?.status || common_1.HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+    async getEjecutivaContactos(clienteId, ejecutivaId, req) {
+        try {
+            const headers = this.getHeadersWithAuth(req);
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get(`http://localhost:3002/ejecutiva/contactos?clienteId=${clienteId}&ejecutivaId=${ejecutivaId}`, { headers }));
+            return response.data;
+        }
+        catch (error) {
+            throw new common_1.HttpException(error.response?.data?.message || 'Error al obtener contactos de ejecutiva', error.response?.status || common_1.HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+    async getEjecutivaPipeline(ejecutivaId, req) {
+        try {
+            const headers = this.getHeadersWithAuth(req);
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get(`http://localhost:3002/ejecutiva/pipeline?ejecutivaId=${ejecutivaId}`, { headers }));
+            return response.data;
+        }
+        catch (error) {
+            throw new common_1.HttpException(error.response?.data?.message || 'Error al obtener pipeline de ejecutiva', error.response?.status || common_1.HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+    async getEjecutivaActividades(ejecutivaId, limit = '10', req) {
+        try {
+            const headers = this.getHeadersWithAuth(req);
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get(`http://localhost:3002/ejecutiva/actividades?ejecutivaId=${ejecutivaId}&limit=${limit}`, { headers }));
+            return response.data;
+        }
+        catch (error) {
+            throw new common_1.HttpException(error.response?.data?.message || 'Error al obtener actividades de ejecutiva', error.response?.status || common_1.HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+    async getEjecutivaKPIsSemanales(ejecutivaId, req) {
+        try {
+            const headers = this.getHeadersWithAuth(req);
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get(`http://localhost:3002/ejecutiva/kpis/semanales?ejecutivaId=${ejecutivaId}`, { headers }));
+            return response.data;
+        }
+        catch (error) {
+            throw new common_1.HttpException(error.response?.data?.message || 'Error al obtener KPIs semanales de ejecutiva', error.response?.status || common_1.HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
     async getEjecutivaTrazabilidad(ejecutivaId, req) {
         try {
             const headers = this.getHeadersWithAuth(req);
@@ -445,6 +515,36 @@ let ApiGatewayController = class ApiGatewayController {
         }
         catch (error) {
             throw new common_1.HttpException(error.response?.data?.message || 'Error al crear trazabilidad', error.response?.status || common_1.HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+    async getEjecutivaTrazabilidadPipeline(ejecutivaId, req) {
+        try {
+            const headers = this.getHeadersWithAuth(req);
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get(`http://localhost:3007/ejecutiva/trazabilidad/pipeline?ejecutivaId=${ejecutivaId}`, { headers }));
+            return response.data;
+        }
+        catch (error) {
+            throw new common_1.HttpException(error.response?.data?.message || 'Error al obtener pipeline de trazabilidad', error.response?.status || common_1.HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+    async getEjecutivaTrazabilidadActividades(ejecutivaId, limit = '10', req) {
+        try {
+            const headers = this.getHeadersWithAuth(req);
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get(`http://localhost:3007/ejecutiva/trazabilidad/actividades?ejecutivaId=${ejecutivaId}&limit=${limit}`, { headers }));
+            return response.data;
+        }
+        catch (error) {
+            throw new common_1.HttpException(error.response?.data?.message || 'Error al obtener actividades de trazabilidad', error.response?.status || common_1.HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+    async updateEjecutivaTrazabilidadEtapa(body, req) {
+        try {
+            const headers = this.getHeadersWithAuth(req);
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.put('http://localhost:3007/ejecutiva/trazabilidad/etapa', body, { headers }));
+            return response.data;
+        }
+        catch (error) {
+            throw new common_1.HttpException(error.response?.data?.message || 'Error al actualizar etapa de trazabilidad', error.response?.status || common_1.HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 };
@@ -751,6 +851,64 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], ApiGatewayController.prototype, "createEjecutivaCliente", null);
 __decorate([
+    (0, common_1.Get)('ejecutiva/empresas/registradas'),
+    __param(0, (0, common_1.Query)('ejecutivaId')),
+    __param(1, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", Promise)
+], ApiGatewayController.prototype, "getEjecutivaEmpresasRegistradas", null);
+__decorate([
+    (0, common_1.Post)('ejecutiva/empresas/registrar'),
+    __param(0, (0, common_1.Body)()),
+    __param(1, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Object]),
+    __metadata("design:returntype", Promise)
+], ApiGatewayController.prototype, "createEjecutivaEmpresaRegistrar", null);
+__decorate([
+    (0, common_1.Post)('ejecutiva/contactos'),
+    __param(0, (0, common_1.Body)()),
+    __param(1, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Object]),
+    __metadata("design:returntype", Promise)
+], ApiGatewayController.prototype, "createEjecutivaContacto", null);
+__decorate([
+    (0, common_1.Get)('ejecutiva/contactos'),
+    __param(0, (0, common_1.Query)('clienteId')),
+    __param(1, (0, common_1.Query)('ejecutivaId')),
+    __param(2, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, Object]),
+    __metadata("design:returntype", Promise)
+], ApiGatewayController.prototype, "getEjecutivaContactos", null);
+__decorate([
+    (0, common_1.Get)('ejecutiva/pipeline'),
+    __param(0, (0, common_1.Query)('ejecutivaId')),
+    __param(1, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", Promise)
+], ApiGatewayController.prototype, "getEjecutivaPipeline", null);
+__decorate([
+    (0, common_1.Get)('ejecutiva/actividades'),
+    __param(0, (0, common_1.Query)('ejecutivaId')),
+    __param(1, (0, common_1.Query)('limit')),
+    __param(2, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, Object]),
+    __metadata("design:returntype", Promise)
+], ApiGatewayController.prototype, "getEjecutivaActividades", null);
+__decorate([
+    (0, common_1.Get)('ejecutiva/kpis/semanales'),
+    __param(0, (0, common_1.Query)('ejecutivaId')),
+    __param(1, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", Promise)
+], ApiGatewayController.prototype, "getEjecutivaKPIsSemanales", null);
+__decorate([
     (0, common_1.Get)('ejecutiva/trazabilidad'),
     __param(0, (0, common_1.Query)('ejecutivaId')),
     __param(1, (0, common_1.Req)()),
@@ -766,6 +924,31 @@ __decorate([
     __metadata("design:paramtypes", [Object, Object]),
     __metadata("design:returntype", Promise)
 ], ApiGatewayController.prototype, "createEjecutivaTrazabilidad", null);
+__decorate([
+    (0, common_1.Get)('ejecutiva/trazabilidad/pipeline'),
+    __param(0, (0, common_1.Query)('ejecutivaId')),
+    __param(1, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", Promise)
+], ApiGatewayController.prototype, "getEjecutivaTrazabilidadPipeline", null);
+__decorate([
+    (0, common_1.Get)('ejecutiva/trazabilidad/actividades'),
+    __param(0, (0, common_1.Query)('ejecutivaId')),
+    __param(1, (0, common_1.Query)('limit')),
+    __param(2, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, Object]),
+    __metadata("design:returntype", Promise)
+], ApiGatewayController.prototype, "getEjecutivaTrazabilidadActividades", null);
+__decorate([
+    (0, common_1.Put)('ejecutiva/trazabilidad/etapa'),
+    __param(0, (0, common_1.Body)()),
+    __param(1, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Object]),
+    __metadata("design:returntype", Promise)
+], ApiGatewayController.prototype, "updateEjecutivaTrazabilidadEtapa", null);
 exports.ApiGatewayController = ApiGatewayController = __decorate([
     (0, common_1.Controller)(),
     __metadata("design:paramtypes", [axios_1.HttpService])

@@ -86,6 +86,9 @@ export class EmpresaProveedora {
   })
   estado: string;
 
+    // NUEVO: Relación con ejecutiva que registró la empresa
+  @Column({ type: 'int', nullable: true })
+  id_ejecutiva_registro: number;
 
   @ManyToOne(() => Ejecutiva, { nullable: true })
   @JoinColumn({ name: 'id_ejecutiva_registro' })
@@ -106,4 +109,5 @@ export class EmpresaProveedora {
 
   @OneToMany(() => ClienteFinal, clienteFinal => clienteFinal.empresa_proveedora)
   clientes_finales: ClienteFinal[];
+
 }

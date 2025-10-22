@@ -33,7 +33,8 @@ let EjecutivaService = class EjecutivaService {
         try {
             const id = parseInt(ejecutivaId);
             const ejecutiva = await this.ejecutivaRepository.findOne({
-                where: { id_ejecutiva: id, estado_ejecutiva: 'Activo' }
+                where: { id_ejecutiva: id, estado_ejecutiva: 'Activo' },
+                relations: ['empresa_proveedora']
             });
             if (!ejecutiva) {
                 throw new common_1.HttpException('Ejecutiva no encontrada', common_1.HttpStatus.NOT_FOUND);
@@ -56,8 +57,8 @@ let EjecutivaService = class EjecutivaService {
             const pipelineCount = await this.trazabilidadRepository.count({
                 where: {
                     ejecutiva: { id_ejecutiva: id },
-                    etapa_oportunidad: (0, typeorm_3.Not)((0, typeorm_3.In)(['Venta ganada', 'Venta perdida', 'Venta suspendida'])),
-                    nombre_oportunidad: (0, typeorm_3.Not)((0, typeorm_3.IsNull)())
+                    etapa_oportunidad: (0, typeorm_2.Not)((0, typeorm_2.In)(['Venta ganada', 'Venta perdida', 'Venta suspendida'])),
+                    nombre_oportunidad: (0, typeorm_2.Not)((0, typeorm_2.IsNull)())
                 }
             });
             return {
@@ -105,9 +106,6 @@ let EjecutivaService = class EjecutivaService {
         if (!ejecutiva) {
             throw new common_1.HttpException('Ejecutiva no encontrada', common_1.HttpStatus.NOT_FOUND);
         }
-        if (ejecutiva.empresa_proveedora) {
-            throw new common_1.HttpException('La ejecutiva ya tiene una empresa asignada', common_1.HttpStatus.BAD_REQUEST);
-        }
         const existingRuc = await this.empresaRepository.findOne({
             where: { ruc: data.ruc }
         });
@@ -117,23 +115,76 @@ let EjecutivaService = class EjecutivaService {
         const nuevaEmpresa = this.empresaRepository.create({
             ruc: data.ruc,
             razon_social: data.razon_social,
-            direccion: data.direccion,
-            telefono: data.telefono,
+            pagina_web: data.pagina_web,
             correo: data.correo,
-            contraseña: 'temp_password_123',
-            estado: 'Activo'
+            contraseña: data.contraseña,
+            telefono: data.telefono,
+            pais: data.pais || 'Perú',
+            departamento: data.departamento,
+            provincia: data.provincia,
+            direccion: data.direccion,
+            linkedin: data.linkedin,
+            grupo_economico: data.grupo_economico,
+            rubro: data.rubro,
+            sub_rubro: data.sub_rubro,
+            tamanio_empresa: data.tamanio_empresa,
+            facturacion_anual: data.facturacion_anual ? parseFloat(data.facturacion_anual) : null,
+            cantidad_empleados: data.cantidad_empleados ? parseInt(data.cantidad_empleados) : null,
+            estado: 'Inactivo',
+            id_ejecutiva_registro: id
         });
-        const empresaGuardada = await this.empresaRepository.save(nuevaEmpresa);
-        ejecutiva.empresa_proveedora = empresaGuardada;
-        await this.ejecutivaRepository.save(ejecutiva);
-        return empresaGuardada;
+        console.log('📝 Creando empresa en BD:', nuevaEmpresa);
+        try {
+            const empresaGuardada = await this.empresaRepository.save(nuevaEmpresa);
+            console.log('✅ Empresa guardada en BD:', empresaGuardada);
+            return empresaGuardada;
+        }
+        catch (error) {
+            console.error('❌ Error al guardar empresa:', error);
+            throw new common_1.HttpException('Error al guardar empresa en la base de datos', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+    async getEmpresasRegistradas(ejecutivaId) {
+        try {
+            const id = parseInt(ejecutivaId);
+            const empresas = await this.empresaRepository.find({
+                where: { id_ejecutiva_registro: id },
+                order: { fecha_creacion: 'DESC' }
+            });
+            const empresasConInfo = await Promise.all(empresas.map(async (empresa) => {
+                const ejecutivaAsignada = await this.ejecutivaRepository.findOne({
+                    where: {
+                        id_ejecutiva: id,
+                        empresa_proveedora: { id_empresa_prov: empresa.id_empresa_prov }
+                    }
+                });
+                const esta_asignada = !!ejecutivaAsignada;
+                const puede_crear_clientes = empresa.estado === 'Activo' && esta_asignada;
+                return {
+                    id_empresa_prov: empresa.id_empresa_prov,
+                    ruc: empresa.ruc,
+                    razon_social: empresa.razon_social,
+                    correo: empresa.correo,
+                    telefono: empresa.telefono,
+                    estado: empresa.estado,
+                    fecha_creacion: empresa.fecha_creacion,
+                    esta_asignada,
+                    puede_crear_clientes
+                };
+            }));
+            return empresasConInfo;
+        }
+        catch (error) {
+            console.error('Error en getEmpresasRegistradas:', error);
+            throw new common_1.HttpException('Error al obtener empresas registradas', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
     async getClientes(ejecutivaId) {
         try {
             const id = parseInt(ejecutivaId);
             const clientes = await this.clienteRepository.find({
                 where: { ejecutiva: { id_ejecutiva: id } },
-                relations: ['personas_contacto'],
+                relations: ['personas_contacto', 'empresa_proveedora'],
                 order: { razon_social: 'ASC' }
             });
             const clientesConStats = await Promise.all(clientes.map(async (cliente) => {
@@ -143,7 +194,7 @@ let EjecutivaService = class EjecutivaService {
                 const ultimaActividad = await this.trazabilidadRepository.findOne({
                     where: { cliente_final: { id_cliente_final: cliente.id_cliente_final } },
                     order: { fecha_contacto: 'DESC' },
-                    relations: ['contacto']
+                    relations: ['persona_contacto']
                 });
                 return {
                     ...cliente,
@@ -170,33 +221,116 @@ let EjecutivaService = class EjecutivaService {
         }
     }
     async createCliente(data) {
-        const idEjecutiva = parseInt(data.id_ejecutiva);
-        const idEmpresa = parseInt(data.id_empresa);
-        const ejecutiva = await this.ejecutivaRepository.findOne({
-            where: {
-                id_ejecutiva: idEjecutiva,
-                empresa_proveedora: { id_empresa_prov: idEmpresa }
-            },
-            relations: ['empresa_proveedora']
-        });
-        if (!ejecutiva) {
-            throw new common_1.HttpException('Empresa no asignada a esta ejecutiva', common_1.HttpStatus.FORBIDDEN);
+        try {
+            const idEjecutiva = parseInt(data.ejecutivaId);
+            const ejecutiva = await this.ejecutivaRepository.findOne({
+                where: {
+                    id_ejecutiva: idEjecutiva,
+                    estado_ejecutiva: 'Activo'
+                },
+                relations: ['empresa_proveedora']
+            });
+            if (!ejecutiva) {
+                throw new common_1.HttpException('Ejecutiva no encontrada', common_1.HttpStatus.NOT_FOUND);
+            }
+            if (!ejecutiva.empresa_proveedora) {
+                throw new common_1.HttpException('La ejecutiva no tiene empresa asignada', common_1.HttpStatus.BAD_REQUEST);
+            }
+            const existingCliente = await this.clienteRepository.findOne({
+                where: {
+                    ruc: data.ruc,
+                    empresa_proveedora: { id_empresa_prov: ejecutiva.empresa_proveedora.id_empresa_prov }
+                }
+            });
+            if (existingCliente) {
+                throw new common_1.HttpException('Ya existe un cliente con este RUC para esta empresa', common_1.HttpStatus.BAD_REQUEST);
+            }
+            const nuevoCliente = this.clienteRepository.create({
+                ruc: data.ruc,
+                razon_social: data.razon_social,
+                pagina_web: data.pagina_web,
+                correo: data.correo,
+                telefono: data.telefono,
+                pais: data.pais || 'Perú',
+                departamento: data.departamento,
+                provincia: data.provincia,
+                direccion: data.direccion,
+                linkedin: data.linkedin,
+                grupo_economico: data.grupo_economico,
+                rubro: data.rubro,
+                sub_rubro: data.sub_rubro,
+                tamanio_empresa: data.tamanio_empresa,
+                facturacion_anual: data.facturacion_anual ? parseFloat(data.facturacion_anual) : null,
+                cantidad_empleados: data.cantidad_empleados ? parseInt(data.cantidad_empleados) : null,
+                ejecutiva: ejecutiva,
+                empresa_proveedora: ejecutiva.empresa_proveedora
+            });
+            console.log('📝 Creando cliente en BD:', nuevoCliente);
+            return await this.clienteRepository.save(nuevoCliente);
         }
-        const existingRuc = await this.clienteRepository.findOne({
-            where: { ruc: data.ruc }
-        });
-        if (existingRuc) {
-            throw new common_1.HttpException('Ya existe un cliente con este RUC', common_1.HttpStatus.BAD_REQUEST);
+        catch (error) {
+            console.error('Error en createCliente:', error);
+            if (error instanceof common_1.HttpException)
+                throw error;
+            throw new common_1.HttpException('Error al crear cliente', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
         }
-        const nuevoCliente = this.clienteRepository.create({
-            ruc: data.ruc,
-            razon_social: data.razon_social,
-            direccion: data.direccion,
-            telefono: data.telefono,
-            correo: data.correo,
-            ejecutiva: ejecutiva
-        });
-        return await this.clienteRepository.save(nuevoCliente);
+    }
+    async createPersonaContacto(data) {
+        try {
+            const idEjecutiva = parseInt(data.ejecutivaId);
+            const idCliente = parseInt(data.id_cliente_final);
+            const cliente = await this.clienteRepository.findOne({
+                where: {
+                    id_cliente_final: idCliente,
+                    ejecutiva: { id_ejecutiva: idEjecutiva }
+                }
+            });
+            if (!cliente) {
+                throw new common_1.HttpException('Cliente no encontrado o no autorizado', common_1.HttpStatus.NOT_FOUND);
+            }
+            const nuevoContacto = this.contactoRepository.create({
+                dni: data.dni,
+                nombre_completo: data.nombre_completo,
+                cargo: data.cargo,
+                correo: data.correo,
+                telefono: data.telefono,
+                linkedin: data.linkedin,
+                cliente_final: cliente
+            });
+            console.log('📝 Creando contacto en BD:', nuevoContacto);
+            return await this.contactoRepository.save(nuevoContacto);
+        }
+        catch (error) {
+            console.error('Error en createPersonaContacto:', error);
+            if (error instanceof common_1.HttpException)
+                throw error;
+            throw new common_1.HttpException('Error al crear contacto', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+    async getContactosCliente(clienteId, ejecutivaId) {
+        try {
+            const idCliente = parseInt(clienteId);
+            const idEjecutiva = parseInt(ejecutivaId);
+            const cliente = await this.clienteRepository.findOne({
+                where: {
+                    id_cliente_final: idCliente,
+                    ejecutiva: { id_ejecutiva: idEjecutiva }
+                }
+            });
+            if (!cliente) {
+                throw new common_1.HttpException('Cliente no encontrado', common_1.HttpStatus.NOT_FOUND);
+            }
+            return await this.contactoRepository.find({
+                where: { cliente_final: { id_cliente_final: idCliente } },
+                order: { nombre_completo: 'ASC' }
+            });
+        }
+        catch (error) {
+            console.error('Error en getContactosCliente:', error);
+            if (error instanceof common_1.HttpException)
+                throw error;
+            throw new common_1.HttpException('Error al obtener contactos', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
     async getPipeline(ejecutivaId) {
         try {
@@ -204,8 +338,8 @@ let EjecutivaService = class EjecutivaService {
             const pipeline = await this.trazabilidadRepository.find({
                 where: {
                     ejecutiva: { id_ejecutiva: id },
-                    etapa_oportunidad: (0, typeorm_3.Not)((0, typeorm_3.In)(['Venta ganada', 'Venta perdida', 'Venta suspendida'])),
-                    nombre_oportunidad: (0, typeorm_3.Not)((0, typeorm_3.IsNull)())
+                    etapa_oportunidad: (0, typeorm_2.Not)((0, typeorm_2.In)(['Venta ganada', 'Venta perdida', 'Venta suspendida'])),
+                    nombre_oportunidad: (0, typeorm_2.Not)((0, typeorm_2.IsNull)())
                 },
                 relations: ['cliente_final', 'persona_contacto', 'empresa_proveedora'],
                 order: { fecha_cierre_esperado: 'ASC' }
@@ -287,7 +421,7 @@ let EjecutivaService = class EjecutivaService {
                 where: {
                     ejecutiva: { id_ejecutiva: id },
                     fecha_registro_oportunidad: (0, typeorm_2.MoreThanOrEqual)(inicioSemana),
-                    nombre_oportunidad: (0, typeorm_3.Not)((0, typeorm_3.IsNull)())
+                    nombre_oportunidad: (0, typeorm_2.Not)((0, typeorm_2.IsNull)())
                 }
             });
             const reunionesAgendadas = await this.trazabilidadRepository.count({
@@ -324,5 +458,4 @@ exports.EjecutivaService = EjecutivaService = __decorate([
         typeorm_2.Repository,
         typeorm_2.Repository])
 ], EjecutivaService);
-const typeorm_3 = require("typeorm");
 //# sourceMappingURL=ejecutiva.service.js.map

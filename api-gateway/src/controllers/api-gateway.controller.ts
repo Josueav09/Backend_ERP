@@ -90,7 +90,7 @@ export class ApiGatewayController {
     try {
       const headers = this.getHeadersWithAuth(req);
       console.log('🔐 [API Gateway /jefe/perfil] Headers:', headers);
-      
+
       const response = await firstValueFrom(
         this.httpService.get('http://localhost:3002/jefe/perfil', { headers })
       );
@@ -694,6 +694,127 @@ export class ApiGatewayController {
     }
   }
 
+  @Get('ejecutiva/empresas/registradas')
+  async getEjecutivaEmpresasRegistradas(@Query('ejecutivaId') ejecutivaId: string, @Req() req: Request) {
+    try {
+      const headers = this.getHeadersWithAuth(req);
+      const response = await firstValueFrom(
+        this.httpService.get(`http://localhost:3002/ejecutiva/empresas/registradas?ejecutivaId=${ejecutivaId}`, { headers })
+      );
+      return response.data;
+    } catch (error) {
+      throw new HttpException(
+        error.response?.data?.message || 'Error al obtener empresas registradas de ejecutiva',
+        error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
+
+  @Post('ejecutiva/empresas/registrar')
+  async createEjecutivaEmpresaRegistrar(@Body() body: any, @Req() req: Request) {
+    try {
+      const headers = this.getHeadersWithAuth(req);
+      const response = await firstValueFrom(
+        this.httpService.post('http://localhost:3002/ejecutiva/empresas/registrar', body, { headers })
+      );
+      return response.data;
+    } catch (error) {
+      throw new HttpException(
+        error.response?.data?.message || 'Error al registrar empresa',
+        error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
+
+  @Post('ejecutiva/contactos')
+  async createEjecutivaContacto(@Body() body: any, @Req() req: Request) {
+    try {
+      const headers = this.getHeadersWithAuth(req);
+      const response = await firstValueFrom(
+        this.httpService.post('http://localhost:3002/ejecutiva/contactos', body, { headers })
+      );
+      return response.data;
+    } catch (error) {
+      throw new HttpException(
+        error.response?.data?.message || 'Error al crear contacto',
+        error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
+
+  @Get('ejecutiva/contactos')
+  async getEjecutivaContactos(
+    @Query('clienteId') clienteId: string,
+    @Query('ejecutivaId') ejecutivaId: string,
+    @Req() req: Request
+  ) {
+    try {
+      const headers = this.getHeadersWithAuth(req);
+      const response = await firstValueFrom(
+        this.httpService.get(`http://localhost:3002/ejecutiva/contactos?clienteId=${clienteId}&ejecutivaId=${ejecutivaId}`, { headers })
+      );
+      return response.data;
+    } catch (error) {
+      throw new HttpException(
+        error.response?.data?.message || 'Error al obtener contactos de ejecutiva',
+        error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
+
+  @Get('ejecutiva/pipeline')
+  async getEjecutivaPipeline(@Query('ejecutivaId') ejecutivaId: string, @Req() req: Request) {
+    try {
+      const headers = this.getHeadersWithAuth(req);
+      const response = await firstValueFrom(
+        this.httpService.get(`http://localhost:3002/ejecutiva/pipeline?ejecutivaId=${ejecutivaId}`, { headers })
+      );
+      return response.data;
+    } catch (error) {
+      throw new HttpException(
+        error.response?.data?.message || 'Error al obtener pipeline de ejecutiva',
+        error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
+
+  @Get('ejecutiva/actividades')
+  async getEjecutivaActividades(
+    @Query('ejecutivaId') ejecutivaId: string,
+    @Query('limit') limit: string = '10',
+    @Req() req: Request
+  ) {
+    try {
+      const headers = this.getHeadersWithAuth(req);
+      const response = await firstValueFrom(
+        this.httpService.get(`http://localhost:3002/ejecutiva/actividades?ejecutivaId=${ejecutivaId}&limit=${limit}`, { headers })
+      );
+      return response.data;
+    } catch (error) {
+      throw new HttpException(
+        error.response?.data?.message || 'Error al obtener actividades de ejecutiva',
+        error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
+
+  @Get('ejecutiva/kpis/semanales')
+  async getEjecutivaKPIsSemanales(@Query('ejecutivaId') ejecutivaId: string, @Req() req: Request) {
+    try {
+      const headers = this.getHeadersWithAuth(req);
+      const response = await firstValueFrom(
+        this.httpService.get(`http://localhost:3002/ejecutiva/kpis/semanales?ejecutivaId=${ejecutivaId}`, { headers })
+      );
+      return response.data;
+    } catch (error) {
+      throw new HttpException(
+        error.response?.data?.message || 'Error al obtener KPIs semanales de ejecutiva',
+        error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
+
+
   // 👩‍💼 =====================================================
   // EJECUTIVA - TRAZABILIDAD (Traceability Service)
   // =====================================================
@@ -728,5 +849,59 @@ export class ApiGatewayController {
         error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR
       );
     }
+
   }
+
+  @Get('ejecutiva/trazabilidad/pipeline')
+  async getEjecutivaTrazabilidadPipeline(@Query('ejecutivaId') ejecutivaId: string, @Req() req: Request) {
+    try {
+      const headers = this.getHeadersWithAuth(req);
+      const response = await firstValueFrom(
+        this.httpService.get(`http://localhost:3007/ejecutiva/trazabilidad/pipeline?ejecutivaId=${ejecutivaId}`, { headers })
+      );
+      return response.data;
+    } catch (error) {
+      throw new HttpException(
+        error.response?.data?.message || 'Error al obtener pipeline de trazabilidad',
+        error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
+
+  @Get('ejecutiva/trazabilidad/actividades')
+  async getEjecutivaTrazabilidadActividades(
+    @Query('ejecutivaId') ejecutivaId: string,
+    @Query('limit') limit: string = '10',
+    @Req() req: Request
+  ) {
+    try {
+      const headers = this.getHeadersWithAuth(req);
+      const response = await firstValueFrom(
+        this.httpService.get(`http://localhost:3007/ejecutiva/trazabilidad/actividades?ejecutivaId=${ejecutivaId}&limit=${limit}`, { headers })
+      );
+      return response.data;
+    } catch (error) {
+      throw new HttpException(
+        error.response?.data?.message || 'Error al obtener actividades de trazabilidad',
+        error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
+
+  @Put('ejecutiva/trazabilidad/etapa')
+  async updateEjecutivaTrazabilidadEtapa(@Body() body: any, @Req() req: Request) {
+    try {
+      const headers = this.getHeadersWithAuth(req);
+      const response = await firstValueFrom(
+        this.httpService.put('http://localhost:3007/ejecutiva/trazabilidad/etapa', body, { headers })
+      );
+      return response.data;
+    } catch (error) {
+      throw new HttpException(
+        error.response?.data?.message || 'Error al actualizar etapa de trazabilidad',
+        error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
+
 }

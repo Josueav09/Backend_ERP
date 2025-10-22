@@ -10,6 +10,9 @@ export class Trazabilidad {
   @PrimaryGeneratedColumn()
   id_trazabilidad: number;
 
+  @Column({ type: 'int' })
+  id_ejecutiva: number;
+
   @ManyToOne(() => Ejecutiva, ejecutiva => ejecutiva.trazabilidades)
   @JoinColumn({ name: 'id_ejecutiva' })
   ejecutiva: Ejecutiva;
@@ -17,6 +20,10 @@ export class Trazabilidad {
   @ManyToOne(() => EmpresaProveedora, empresa => empresa.trazabilidades)
   @JoinColumn({ name: 'id_empresa_prov' })
   empresa_proveedora: EmpresaProveedora;
+
+  
+  @Column({ type: 'int' })
+  id_cliente_final: number;
 
   @ManyToOne(() => ClienteFinal, cliente => cliente.trazabilidades)
   @JoinColumn({ name: 'id_cliente_final' })
@@ -30,8 +37,8 @@ export class Trazabilidad {
   @Column({ type: 'date', nullable: true })
   fecha_agregado_base: Date;
 
-  @Column({ 
-    type: 'varchar', 
+  @Column({
+    type: 'varchar',
     length: 50,
     enum: ['Llamada telefónica', 'Chat de Whatsapp', 'Correo electrónico', 'Contacto por linkedin', 'Reunión presencial', 'Otro']
   })
@@ -43,8 +50,8 @@ export class Trazabilidad {
   @Column({ type: 'timestamp', nullable: true })
   fecha_respuesta: Date;
 
-  @Column({ 
-    type: 'varchar', 
+  @Column({
+    type: 'varchar',
     length: 50,
     enum: ['Positivo', 'Negativo', 'Pendiente', 'Neutro']
   })
@@ -79,16 +86,16 @@ export class Trazabilidad {
   @Column({ type: 'varchar', length: 255, nullable: true })
   nombre_oportunidad: string;
 
-  @Column({ 
-    type: 'varchar', 
-    length: 50, 
+  @Column({
+    type: 'varchar',
+    length: 50,
     nullable: true,
     enum: ['One-shot', 'Mensual', 'Proyecto', 'Otro']
   })
   tipo_oportunidad: string;
 
-  @Column({ 
-    type: 'varchar', 
+  @Column({
+    type: 'varchar',
     length: 50,
     nullable: true,
     enum: [

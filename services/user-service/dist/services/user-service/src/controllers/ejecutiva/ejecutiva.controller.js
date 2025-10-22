@@ -45,8 +45,9 @@ let EjecutivaController = class EjecutivaController {
             throw new common_1.HttpException('Error al obtener empresas', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
-    async createEmpresa(body) {
-        const { razon_social, ruc, direccion, telefono, correo, ejecutivaId } = body;
+    async registrarEmpresa(body) {
+        const { razon_social, ruc, direccion, telefono, correo, ejecutivaId, pagina_web, contraseña, pais, departamento, provincia, linkedin, grupo_economico, rubro, sub_rubro, tamanio_empresa, facturacion_anual, cantidad_empleados } = body;
+        console.log('📨 Datos recibidos en backend:', body);
         if (!ejecutivaId) {
             throw new common_1.HttpException('ID de ejecutiva requerido', common_1.HttpStatus.BAD_REQUEST);
         }
@@ -60,13 +61,39 @@ let EjecutivaController = class EjecutivaController {
                 direccion,
                 telefono,
                 correo,
-                ejecutivaId
+                ejecutivaId,
+                pagina_web,
+                contraseña,
+                pais,
+                departamento,
+                provincia,
+                linkedin,
+                grupo_economico,
+                rubro,
+                sub_rubro,
+                tamanio_empresa,
+                facturacion_anual,
+                cantidad_empleados
             });
+        }
+        catch (error) {
+            console.error('❌ Error en controller:', error);
+            if (error instanceof common_1.HttpException)
+                throw error;
+            throw new common_1.HttpException('Error al registrar empresa', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+    async getEmpresasRegistradas(ejecutivaId) {
+        if (!ejecutivaId) {
+            throw new common_1.HttpException('ID de ejecutiva requerido', common_1.HttpStatus.BAD_REQUEST);
+        }
+        try {
+            return await this.ejecutivaService.getEmpresasRegistradas(ejecutivaId);
         }
         catch (error) {
             if (error instanceof common_1.HttpException)
                 throw error;
-            throw new common_1.HttpException('Error al crear empresa', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
+            throw new common_1.HttpException('Error al obtener empresas registradas', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
     async getClientes(ejecutivaId) {
@@ -83,28 +110,81 @@ let EjecutivaController = class EjecutivaController {
         }
     }
     async createCliente(body) {
-        const { id_empresa, id_ejecutiva, razon_social, ruc, direccion, telefono, correo } = body;
-        if (!id_empresa || !id_ejecutiva) {
-            throw new common_1.HttpException('Empresa y ejecutiva requeridos', common_1.HttpStatus.BAD_REQUEST);
+        const { razon_social, ruc, direccion, telefono, correo, ejecutivaId, pagina_web, pais, departamento, provincia, linkedin, grupo_economico, rubro, sub_rubro, tamanio_empresa, facturacion_anual, cantidad_empleados } = body;
+        console.log('📨 Datos recibidos para crear cliente:', body);
+        if (!ejecutivaId) {
+            throw new common_1.HttpException('ID de ejecutiva requerido', common_1.HttpStatus.BAD_REQUEST);
         }
         if (!razon_social || !ruc) {
             throw new common_1.HttpException('Razón social y RUC son requeridos', common_1.HttpStatus.BAD_REQUEST);
         }
         try {
             return await this.ejecutivaService.createCliente({
-                id_empresa,
-                id_ejecutiva,
                 razon_social,
                 ruc,
                 direccion,
                 telefono,
-                correo
+                correo,
+                ejecutivaId,
+                pagina_web,
+                pais,
+                departamento,
+                provincia,
+                linkedin,
+                grupo_economico,
+                rubro,
+                sub_rubro,
+                tamanio_empresa,
+                facturacion_anual,
+                cantidad_empleados
             });
+        }
+        catch (error) {
+            console.error('❌ Error en controller crear cliente:', error);
+            if (error instanceof common_1.HttpException)
+                throw error;
+            throw new common_1.HttpException('Error al crear cliente', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+    async createContacto(body) {
+        const { nombre_completo, cargo, correo, telefono, id_cliente_final, ejecutivaId, dni, linkedin } = body;
+        console.log('📨 Datos recibidos para crear contacto:', body);
+        if (!ejecutivaId || !id_cliente_final) {
+            throw new common_1.HttpException('Ejecutiva y cliente son requeridos', common_1.HttpStatus.BAD_REQUEST);
+        }
+        if (!nombre_completo || !correo) {
+            throw new common_1.HttpException('Nombre completo y correo son requeridos', common_1.HttpStatus.BAD_REQUEST);
+        }
+        try {
+            return await this.ejecutivaService.createPersonaContacto({
+                nombre_completo,
+                cargo,
+                correo,
+                telefono,
+                id_cliente_final,
+                ejecutivaId,
+                dni,
+                linkedin
+            });
+        }
+        catch (error) {
+            console.error('❌ Error en controller crear contacto:', error);
+            if (error instanceof common_1.HttpException)
+                throw error;
+            throw new common_1.HttpException('Error al crear contacto', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+    async getContactos(clienteId, ejecutivaId) {
+        if (!clienteId || !ejecutivaId) {
+            throw new common_1.HttpException('Cliente y ejecutiva son requeridos', common_1.HttpStatus.BAD_REQUEST);
+        }
+        try {
+            return await this.ejecutivaService.getContactosCliente(clienteId, ejecutivaId);
         }
         catch (error) {
             if (error instanceof common_1.HttpException)
                 throw error;
-            throw new common_1.HttpException('Error al crear cliente', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
+            throw new common_1.HttpException('Error al obtener contactos', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
     async getPipeline(ejecutivaId) {
@@ -133,6 +213,19 @@ let EjecutivaController = class EjecutivaController {
             throw new common_1.HttpException('Error al obtener actividades', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+    async getKPIsSemanales(ejecutivaId) {
+        if (!ejecutivaId) {
+            throw new common_1.HttpException('ID de ejecutiva requerido', common_1.HttpStatus.BAD_REQUEST);
+        }
+        try {
+            return await this.ejecutivaService.getKPIsSemanales(ejecutivaId);
+        }
+        catch (error) {
+            if (error instanceof common_1.HttpException)
+                throw error;
+            throw new common_1.HttpException('Error al obtener KPIs', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
 };
 exports.EjecutivaController = EjecutivaController;
 __decorate([
@@ -150,12 +243,19 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], EjecutivaController.prototype, "getEmpresas", null);
 __decorate([
-    (0, common_1.Post)('empresas'),
+    (0, common_1.Post)('empresas/registrar'),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", Promise)
-], EjecutivaController.prototype, "createEmpresa", null);
+], EjecutivaController.prototype, "registrarEmpresa", null);
+__decorate([
+    (0, common_1.Get)('empresas/registradas'),
+    __param(0, (0, common_1.Query)('ejecutivaId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], EjecutivaController.prototype, "getEmpresasRegistradas", null);
 __decorate([
     (0, common_1.Get)('clientes'),
     __param(0, (0, common_1.Query)('ejecutivaId')),
@@ -171,6 +271,21 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], EjecutivaController.prototype, "createCliente", null);
 __decorate([
+    (0, common_1.Post)('contactos'),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], EjecutivaController.prototype, "createContacto", null);
+__decorate([
+    (0, common_1.Get)('contactos'),
+    __param(0, (0, common_1.Query)('clienteId')),
+    __param(1, (0, common_1.Query)('ejecutivaId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:returntype", Promise)
+], EjecutivaController.prototype, "getContactos", null);
+__decorate([
     (0, common_1.Get)('pipeline'),
     __param(0, (0, common_1.Query)('ejecutivaId')),
     __metadata("design:type", Function),
@@ -185,6 +300,13 @@ __decorate([
     __metadata("design:paramtypes", [String, String]),
     __metadata("design:returntype", Promise)
 ], EjecutivaController.prototype, "getActividadesRecientes", null);
+__decorate([
+    (0, common_1.Get)('kpis/semanales'),
+    __param(0, (0, common_1.Query)('ejecutivaId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], EjecutivaController.prototype, "getKPIsSemanales", null);
 exports.EjecutivaController = EjecutivaController = __decorate([
     (0, common_1.Controller)('ejecutiva'),
     __metadata("design:paramtypes", [ejecutiva_service_1.EjecutivaService])
