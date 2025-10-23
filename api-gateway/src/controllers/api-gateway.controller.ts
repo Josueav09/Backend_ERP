@@ -235,6 +235,68 @@ export class ApiGatewayController {
       );
     }
   }
+  // // En API Gateway - CORREGIR ESTA RUTA
+  // @Get('jefe/ejecutivas/disponibles')
+  // async getJefeEjecutivasDisponibles(@Req() req: Request) {
+  //   try {
+  //     const headers = this.getHeadersWithAuth(req);
+  //     const response = await firstValueFrom(
+  //       this.httpService.get('http://localhost:3002/ejecutivas/disponibles/todas', { headers }) // ✅ Ruta corregida
+  //     );
+  //     return response.data;
+  //   } catch (error) {
+  //     throw new HttpException(
+  //       error.response?.data?.message || 'Error al obtener ejecutivas disponibles',
+  //       error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR
+  //     );
+  //   }
+  // }
+  // En API Gateway - VERIFICAR ENDPOINT
+  @Get('jefe/ejecutivas/disponibles')
+  async getJefeEjecutivasDisponibles(@Req() req: Request) {
+    try {
+      console.log('🔍 [API Gateway] Solicitando ejecutivas disponibles...');
+
+      const headers = this.getHeadersWithAuth(req);
+
+      // ✅ VERIFICAR QUE LA URL SEA CORRECTA
+      const url = 'http://localhost:3002/ejecutivas/disponibles';
+
+      console.log('🔍 [API Gateway] URL destino:', url);
+
+      const response = await firstValueFrom(
+        this.httpService.get(url, {
+          headers,
+          timeout: 10000
+        })
+      );
+
+      console.log('✅ [API Gateway] Respuesta recibida:', {
+        status: response.status,
+        cantidad: response.data?.length || 0
+      });
+
+      return response.data;
+
+    } catch (error) {
+      console.error('❌ [API Gateway] Error:', {
+        message: error.message,
+        status: error.response?.status,
+        data: error.response?.data
+      });
+
+      // ✅ RETORNAR ARRAY VACÍO EN CASO DE ERROR
+      if (error.response?.status === 404 || error.response?.status === 500) {
+        console.log('ℹ️ [API Gateway] No hay ejecutivas disponibles');
+        return [];
+      }
+
+      throw new HttpException(
+        error.response?.data || 'Error interno del servidor',
+        error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
 
   // 👔 =====================================================
   // JEFE - EMPRESAS PROVEEDORAS (User Service)
@@ -371,6 +433,32 @@ export class ApiGatewayController {
       );
     }
   }
+
+  // En API Gateway
+  @Put('jefe/empresas/:id/asignar-ejecutiva')
+  async asignarEjecutivaAEmpresa(
+    @Param('id') id: string,
+    @Body() body: { id_ejecutiva: number },
+    @Req() req: Request
+  ) {
+    try {
+      const headers = this.getHeadersWithAuth(req);
+      const response = await firstValueFrom(
+        this.httpService.put(
+          `http://localhost:3002/empresas/${id}/asignar-ejecutiva`, // ✅ Puerto 3002
+          body,
+          { headers }
+        )
+      );
+      return response.data;
+    } catch (error) {
+      throw new HttpException(
+        error.response?.data?.message || 'Error al asignar ejecutiva',
+        error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
+
 
   // 👔 =====================================================
   // JEFE - CLIENTES FINALES (Sales Service - Puerto 3003)
@@ -823,9 +911,57 @@ export class ApiGatewayController {
     }
   }
 
+  // 👩‍💼 =====================================================
+  // JEFE (AUDITORIA) TRACEABILITY SERVICE (3007)
+  // ============================================================
 
-  @Get('jefe/auditoria')
-  async getJefeAuditoria(
+
+  // @Get('jefe/auditoria')
+  // async getJefeAuditoria(
+  //   @Query('fechaInicio') fechaInicio?: string,
+  //   @Query('fechaFin') fechaFin?: string,
+  //   @Query('accion') accion?: string,
+  //   @Query('usuario') usuario?: string,
+  //   @Req() req?: Request
+  // ) {
+  //   try {
+  //     const headers = this.getHeadersWithAuth(req);
+  //     let url = 'http://localhost:3007/audit/contratos?';
+  //     if (fechaInicio) url += `fechaInicio=${fechaInicio}&`;
+  //     if (fechaFin) url += `fechaFin=${fechaFin}&`;
+  //     if (accion) url += `accion=${accion}&`;
+  //     if (usuario) url += `usuario=${usuario}&`;
+
+  //     const response = await firstValueFrom(
+  //       this.httpService.get(url, { headers })
+  //     );
+  //     return response.data;
+  //   } catch (error) {
+  //     throw new HttpException(
+  //       error.response?.data?.message || 'Error al obtener auditoría',
+  //       error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR
+  //     );
+  //   }
+  // }
+
+  // @Get('jefe/auditoria/estadisticas')
+  // async getJefeAuditoriaEstadisticas(@Req() req: Request) {
+  //   try {
+  //     const headers = this.getHeadersWithAuth(req);
+  //     const response = await firstValueFrom(
+  //       this.httpService.get('http://localhost:3007/audit/estadisticas', { headers })
+  //     );
+  //     return response.data;
+  //   } catch (error) {
+  //     throw new HttpException(
+  //       error.response?.data?.message || 'Error al obtener estadísticas de auditoría',
+  //       error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR
+  //     );
+  //   }
+  // }
+
+  @Get('auditoria/contratos')
+  async getAuditoriaContratos(
     @Query('fechaInicio') fechaInicio?: string,
     @Query('fechaFin') fechaFin?: string,
     @Query('accion') accion?: string,
@@ -834,7 +970,7 @@ export class ApiGatewayController {
   ) {
     try {
       const headers = this.getHeadersWithAuth(req);
-      let url = 'http://localhost:3007/audit/contratos?';
+      let url = 'http://localhost:3007/auditoria/contratos?';
       if (fechaInicio) url += `fechaInicio=${fechaInicio}&`;
       if (fechaFin) url += `fechaFin=${fechaFin}&`;
       if (accion) url += `accion=${accion}&`;
@@ -852,12 +988,12 @@ export class ApiGatewayController {
     }
   }
 
-  @Get('jefe/auditoria/estadisticas')
-  async getJefeAuditoriaEstadisticas(@Req() req: Request) {
+  @Get('auditoria/estadisticas')
+  async getAuditoriaEstadisticas(@Req() req: Request) {
     try {
       const headers = this.getHeadersWithAuth(req);
       const response = await firstValueFrom(
-        this.httpService.get('http://localhost:3007/audit/estadisticas', { headers })
+        this.httpService.get('http://localhost:3007/auditoria/estadisticas', { headers })
       );
       return response.data;
     } catch (error) {
@@ -867,6 +1003,23 @@ export class ApiGatewayController {
       );
     }
   }
+
+  @Get('auditoria/resumen-mensual')
+  async getAuditoriaResumenMensual(@Req() req: Request) {
+    try {
+      const headers = this.getHeadersWithAuth(req);
+      const response = await firstValueFrom(
+        this.httpService.get('http://localhost:3007/auditoria/resumen-mensual', { headers })
+      );
+      return response.data;
+    } catch (error) {
+      throw new HttpException(
+        error.response?.data?.message || 'Error al obtener resumen mensual',
+        error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
+
 
   // 🏢 =====================================================
   // CLIENTE (EMPRESA PROVEEDORA) - USER SERVICE

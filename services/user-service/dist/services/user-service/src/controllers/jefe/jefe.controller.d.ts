@@ -18,19 +18,36 @@ export declare class JefeController {
         message: string;
     }>;
     getStats(req: any): Promise<{
+        totalEmpresas: any;
+        totalEjecutivas: any;
+        totalClientes: any;
+        clientesEsteMes: any;
+        revenueTotal: number;
+        pipelineOportunidades: any;
+        dashboardEjecutivas: any;
+        topEjecutivas: any;
+        topEmpresas: any;
+        topClientes: any;
+        kpis: {
+            tasaConversion: string;
+            clientesNuevosMes: any;
+            actividadesMes: any;
+        };
+        pipeline: any;
+    } | {
         totalEmpresas: number;
         totalEjecutivas: number;
         totalClientes: number;
         clientesEsteMes: number;
         revenueTotal: number;
         pipelineOportunidades: number;
-        ventasGanadas: number;
         dashboardEjecutivas: any[];
         kpis: {
             tasaConversion: string;
             clientesNuevosMes: number;
             actividadesMes: number;
         };
+        pipeline: any[];
     }>;
     getClientes(req: any): Promise<{
         id_cliente_final: any;

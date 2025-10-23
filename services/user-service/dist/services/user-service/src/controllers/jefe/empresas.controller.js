@@ -107,6 +107,16 @@ let EmpresasController = class EmpresasController {
             throw new common_1.HttpException(error.message || 'Error al remover ejecutiva', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+    async asignarEjecutivaAEmpresa(id, body) {
+        try {
+            console.log(`🔗 [EmpresasController] Asignando ejecutiva ${body.id_ejecutiva} a empresa ${id}`);
+            return await this.empresasService.asignarEjecutivaAEmpresa(parseInt(id), body.id_ejecutiva);
+        }
+        catch (error) {
+            console.error('❌ [EmpresasController] Error asignando ejecutiva:', error);
+            throw new common_1.HttpException(error.message || 'Error al asignar ejecutiva', common_1.HttpStatus.BAD_REQUEST);
+        }
+    }
 };
 exports.EmpresasController = EmpresasController;
 __decorate([
@@ -161,6 +171,14 @@ __decorate([
     __metadata("design:paramtypes", [String, String]),
     __metadata("design:returntype", Promise)
 ], EmpresasController.prototype, "removeEjecutivaFromEmpresa", null);
+__decorate([
+    (0, common_1.Put)(':id/asignar-ejecutiva'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", Promise)
+], EmpresasController.prototype, "asignarEjecutivaAEmpresa", null);
 exports.EmpresasController = EmpresasController = __decorate([
     (0, common_1.Controller)('empresas'),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),

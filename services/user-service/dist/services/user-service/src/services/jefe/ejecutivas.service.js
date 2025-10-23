@@ -181,30 +181,66 @@ let EjecutivasService = class EjecutivasService {
         return await this.ejecutivaRepository.save(ejecutiva);
     }
     async getEjecutivasDisponibles() {
-        console.log('🔍 [EjecutivasService] Buscando ejecutivas disponibles...');
-        const ejecutivasDisponibles = await this.ejecutivaRepository.find({
-            where: {
-                estado_ejecutiva: 'Activo',
-                empresa_proveedora: (0, typeorm_2.IsNull)()
-            },
-            relations: ['jefe'],
-            order: { nombre_completo: 'ASC' }
-        });
-        console.log('✅ [EjecutivasService] Ejecutivas disponibles:', ejecutivasDisponibles.length);
-        return ejecutivasDisponibles.map(ej => {
-            const nombreParts = ej.nombre_completo.split(' ');
-            return {
-                id_usuario: ej.id_ejecutiva,
-                nombre: nombreParts[0] || '',
-                apellido: nombreParts.slice(1).join(' ') || '',
-                email: ej.correo,
-                telefono: ej.telefono,
-                activo: ej.estado_ejecutiva === 'Activo',
-                total_empresas: 0,
-                total_clientes: 0,
-                total_actividades: 0
-            };
-        });
+        try {
+            console.log('🔍 [EjecutivasService] Buscando ejecutivas disponibles...');
+            const ejecutivasDisponibles = await this.ejecutivaRepository.find({
+                where: {
+                    estado_ejecutiva: 'Activo',
+                    id_empresa_prov: (0, typeorm_2.IsNull)()
+                },
+                relations: ['jefe'],
+                order: { nombre_completo: 'ASC' }
+            });
+            console.log('✅ [EjecutivasService] Ejecutivas encontradas:', ejecutivasDisponibles.length);
+            const ejecutivasValidas = ejecutivasDisponibles.filter(ej => ej.id_ejecutiva !== null && ej.id_ejecutiva !== undefined);
+            console.log('✅ [EjecutivasService] Ejecutivas válidas:', ejecutivasValidas.length);
+            if (ejecutivasValidas.length === 0) {
+                return [];
+            }
+            const ejecutivasConStats = await Promise.all(ejecutivasValidas.map(async (ej) => {
+                try {
+                    const [totalClientes, totalActividades] = await Promise.all([
+                        this.clienteRepository.count({
+                            where: { ejecutiva: { id_ejecutiva: ej.id_ejecutiva } }
+                        }),
+                        this.trazabilidadRepository.count({
+                            where: { ejecutiva: { id_ejecutiva: ej.id_ejecutiva } }
+                        })
+                    ]);
+                    const nombreParts = ej.nombre_completo?.split(' ') || ['Ejecutiva', ''];
+                    return {
+                        id_ejecutiva: ej.id_ejecutiva,
+                        id_usuario: ej.id_ejecutiva,
+                        dni: ej.dni,
+                        nombre_completo: ej.nombre_completo,
+                        nombre: nombreParts[0] || 'Ejecutiva',
+                        apellido: nombreParts.slice(1).join(' ') || '',
+                        correo: ej.correo,
+                        email: ej.correo,
+                        telefono: ej.telefono,
+                        linkedin: ej.linkedin,
+                        estado_ejecutiva: ej.estado_ejecutiva,
+                        activo: ej.estado_ejecutiva === 'Activo',
+                        total_empresas: 0,
+                        total_clientes: totalClientes || 0,
+                        total_actividades: totalActividades || 0,
+                        fecha_creacion: ej.fecha_creacion,
+                        fecha_actualizacion: ej.fecha_actualizacion
+                    };
+                }
+                catch (error) {
+                    console.error(`❌ Error procesando ejecutiva ${ej.id_ejecutiva}:`, error);
+                    return null;
+                }
+            }));
+            const resultado = ejecutivasConStats.filter(ej => ej !== null);
+            console.log('✅ [EjecutivasService] Resultado final:', resultado.length);
+            return resultado;
+        }
+        catch (error) {
+            console.error('❌ [EjecutivasService] Error crítico:', error);
+            throw error;
+        }
     }
 };
 exports.EjecutivasService = EjecutivasService;

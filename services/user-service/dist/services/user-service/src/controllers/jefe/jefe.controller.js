@@ -88,14 +88,14 @@ let JefeController = class JefeController {
     }
     async getStats(req) {
         console.log('📊 [JefeController] === OBTENER ESTADÍSTICAS ===');
+        console.log('👤 Usuario:', req.user?.id_jefe);
         try {
             const stats = await this.jefeService.getStats();
-            console.log('✅ [JefeController] Estadísticas obtenidas:', stats);
+            console.log('✅ [JefeController] Estadísticas obtenidas exitosamente');
             return stats;
         }
         catch (error) {
             console.error('❌ [JefeController] Error en getStats:', error.message);
-            console.error(error.stack);
             throw new common_1.HttpException(`Error al obtener estadísticas: ${error.message}`, common_1.HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
@@ -193,6 +193,8 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], JefeController.prototype, "updatePassword", null);
 __decorate([
+    (0, common_1.Get)('stats'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     (0, common_1.Get)('stats'),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     __param(0, (0, common_1.Request)()),

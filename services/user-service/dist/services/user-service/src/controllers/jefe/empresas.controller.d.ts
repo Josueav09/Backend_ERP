@@ -69,4 +69,12 @@ export declare class EmpresasController {
             nombre_completo: string;
         };
     }>;
+    asignarEjecutivaAEmpresa(id: string, body: {
+        id_ejecutiva: number;
+    }): Promise<{
+        success: boolean;
+        message: string;
+        empresa: string;
+        ejecutiva: string;
+    }>;
 }

@@ -400,81 +400,81 @@ export class EmpresasService {
   }
 
   // En EmpresasService.ts - Método alternativo más simple
-// En EmpresasService.ts - MODIFICAR el método updateEmpresaEstado
-async updateEmpresaEstado(empresaId: number, activo: boolean) {
-  console.log('🔄 [EmpresasService] Cambiando estado de empresa:', { empresaId, activo });
+  // En EmpresasService.ts - MODIFICAR el método updateEmpresaEstado
+  async updateEmpresaEstado(empresaId: number, activo: boolean) {
+    console.log('🔄 [EmpresasService] Cambiando estado de empresa:', { empresaId, activo });
 
-  const empresa = await this.empresaRepository.findOne({
-    where: { id_empresa_prov: empresaId }
-  });
+    const empresa = await this.empresaRepository.findOne({
+      where: { id_empresa_prov: empresaId }
+    });
 
-  if (!empresa) {
-    throw new HttpException('Empresa no encontrada', HttpStatus.NOT_FOUND);
-  }
-
-  // Guardar el estado anterior para auditoría
-  const estadoAnterior = empresa.estado;
-  empresa.estado = activo ? 'Activo' : 'Inactivo';
-  empresa.fecha_actualizacion = new Date();
-
-  // Obtener IDs de ejecutivas de esta empresa
-  const ejecutivasEmpresa = await this.ejecutivaRepository.find({
-    where: { empresa_proveedora: { id_empresa_prov: empresaId } },
-    select: ['id_ejecutiva']
-  });
-
-  const idsEjecutivas = ejecutivasEmpresa.map(ej => ej.id_ejecutiva);
-
-  if (idsEjecutivas.length > 0) {
-    if (!activo) {
-      // ✅ Desactivar empresa: Desactivar clientes
-      console.log('➖ [EmpresasService] Desactivando clientes de la empresa:', empresaId);
-      
-      const resultDesactivar = await this.clienteRepository
-        .createQueryBuilder()
-        .update()
-        .set({ 
-          estado: 'Inactivo',
-          fecha_actualizacion: new Date()
-        })
-        .where('id_ejecutiva IN (:...idsEjecutivas)', { idsEjecutivas })
-        .execute();
-
-      console.log('✅ [EmpresasService] Clientes desactivados:', resultDesactivar.affected);
-
-    } else {
-      // ✅ Activar empresa: Activar clientes automáticamente
-      console.log('➕ [EmpresasService] Activando empresa Y clientes:', empresaId);
-      
-      const resultActivar = await this.clienteRepository
-        .createQueryBuilder()
-        .update()
-        .set({ 
-          estado: 'Activo',
-          fecha_actualizacion: new Date()
-        })
-        .where('id_ejecutiva IN (:...idsEjecutivas)', { idsEjecutivas })
-        .andWhere('estado = :estado', { estado: 'Inactivo' }) // Solo activar los que estaban inactivos
-        .execute();
-
-      console.log('✅ [EmpresasService] Clientes activados:', resultActivar.affected);
+    if (!empresa) {
+      throw new HttpException('Empresa no encontrada', HttpStatus.NOT_FOUND);
     }
-  } else {
-    console.log('ℹ️ [EmpresasService] No hay ejecutivas en esta empresa');
+
+    // Guardar el estado anterior para auditoría
+    const estadoAnterior = empresa.estado;
+    empresa.estado = activo ? 'Activo' : 'Inactivo';
+    empresa.fecha_actualizacion = new Date();
+
+    // Obtener IDs de ejecutivas de esta empresa
+    const ejecutivasEmpresa = await this.ejecutivaRepository.find({
+      where: { empresa_proveedora: { id_empresa_prov: empresaId } },
+      select: ['id_ejecutiva']
+    });
+
+    const idsEjecutivas = ejecutivasEmpresa.map(ej => ej.id_ejecutiva);
+
+    if (idsEjecutivas.length > 0) {
+      if (!activo) {
+        // ✅ Desactivar empresa: Desactivar clientes
+        console.log('➖ [EmpresasService] Desactivando clientes de la empresa:', empresaId);
+
+        const resultDesactivar = await this.clienteRepository
+          .createQueryBuilder()
+          .update()
+          .set({
+            estado: 'Inactivo',
+            fecha_actualizacion: new Date()
+          })
+          .where('id_ejecutiva IN (:...idsEjecutivas)', { idsEjecutivas })
+          .execute();
+
+        console.log('✅ [EmpresasService] Clientes desactivados:', resultDesactivar.affected);
+
+      } else {
+        // ✅ Activar empresa: Activar clientes automáticamente
+        console.log('➕ [EmpresasService] Activando empresa Y clientes:', empresaId);
+
+        const resultActivar = await this.clienteRepository
+          .createQueryBuilder()
+          .update()
+          .set({
+            estado: 'Activo',
+            fecha_actualizacion: new Date()
+          })
+          .where('id_ejecutiva IN (:...idsEjecutivas)', { idsEjecutivas })
+          .andWhere('estado = :estado', { estado: 'Inactivo' }) // Solo activar los que estaban inactivos
+          .execute();
+
+        console.log('✅ [EmpresasService] Clientes activados:', resultActivar.affected);
+      }
+    } else {
+      console.log('ℹ️ [EmpresasService] No hay ejecutivas en esta empresa');
+    }
+
+    await this.empresaRepository.save(empresa);
+
+    // ✅ Auditoría
+    console.log('📝 [EmpresasService] Auditoría: Empresa', empresa.razon_social,
+      'cambió de', estadoAnterior, 'a', empresa.estado);
+
+    return {
+      empresa,
+      message: `Empresa ${activo ? 'activada' : 'desactivada'} correctamente. ` +
+        `${!activo ? 'Los clientes asociados han sido desactivados.' : 'Los clientes asociados han sido activados.'}`
+    };
   }
-
-  await this.empresaRepository.save(empresa);
-
-  // ✅ Auditoría
-  console.log('📝 [EmpresasService] Auditoría: Empresa', empresa.razon_social, 
-              'cambió de', estadoAnterior, 'a', empresa.estado);
-
-  return {
-    empresa,
-    message: `Empresa ${activo ? 'activada' : 'desactivada'} correctamente. ` +
-             `${!activo ? 'Los clientes asociados han sido desactivados.' : 'Los clientes asociados han sido activados.'}`
-  };
-}
 
   // En EmpresasService.ts - agregar este método
   async updateEmpresa(empresaId: number, data: any) {
@@ -548,7 +548,7 @@ async updateEmpresaEstado(empresaId: number, activo: boolean) {
 
     // ✅ Obtener ejecutivas ASIGNADAS a esta empresa
     const ejecutivasAsignadas = await this.ejecutivaRepository.find({
-      where: { 
+      where: {
         empresa_proveedora: { id_empresa_prov: empresaId },
         estado_ejecutiva: 'Activo'
       },
@@ -640,7 +640,7 @@ async updateEmpresaEstado(empresaId: number, activo: boolean) {
     console.log('➖ [EmpresasService] Removiendo ejecutiva:', { empresaId, ejecutivaId });
 
     const ejecutiva = await this.ejecutivaRepository.findOne({
-      where: { 
+      where: {
         id_ejecutiva: ejecutivaId,
         empresa_proveedora: { id_empresa_prov: empresaId }
       },
@@ -675,7 +675,7 @@ async updateEmpresaEstado(empresaId: number, activo: boolean) {
 
     console.log('✅ [EmpresasService] Ejecutiva removida exitosamente');
 
-    return { 
+    return {
       message: 'Ejecutiva removida correctamente de la empresa',
       ejecutiva: {
         id_ejecutiva: ejecutiva.id_ejecutiva,
@@ -683,4 +683,50 @@ async updateEmpresaEstado(empresaId: number, activo: boolean) {
       }
     };
   }
+
+  // En empresas.service.ts (puerto 3002)
+  async asignarEjecutivaAEmpresa(idEmpresa: number, idEjecutiva: number) {
+    try {
+      console.log(`🔗 [EmpresasService] Asignando ejecutiva ${idEjecutiva} a empresa ${idEmpresa}`);
+
+      // Verificar que la empresa existe
+      const empresa = await this.empresaRepository.findOne({
+        where: { id_empresa_prov: idEmpresa }
+      });
+
+      if (!empresa) {
+        throw new Error('Empresa no encontrada');
+      }
+
+      // Verificar que la ejecutiva existe y está disponible
+      const ejecutiva = await this.ejecutivaRepository.findOne({
+        where: {
+          id_ejecutiva: idEjecutiva,
+          estado_ejecutiva: 'Activo'
+        }
+      });
+
+      if (!ejecutiva) {
+        throw new Error('Ejecutiva no encontrada o no disponible');
+      }
+
+      // Asignar la ejecutiva a la empresa
+      ejecutiva.id_empresa_prov = idEmpresa;
+      await this.ejecutivaRepository.save(ejecutiva);
+
+      console.log(`✅ [EmpresasService] Ejecutiva ${idEjecutiva} asignada a empresa ${idEmpresa}`);
+
+      return {
+        success: true,
+        message: 'Ejecutiva asignada correctamente',
+        empresa: empresa.razon_social,
+        ejecutiva: ejecutiva.nombre_completo
+      };
+
+    } catch (error) {
+      console.error('❌ [EmpresasService] Error asignando ejecutiva:', error);
+      throw new Error(error.message || 'Error al asignar ejecutiva');
+    }
+  }
+
 }

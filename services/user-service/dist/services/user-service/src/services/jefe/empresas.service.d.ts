@@ -74,4 +74,10 @@ export declare class EmpresasService {
             nombre_completo: string;
         };
     }>;
+    asignarEjecutivaAEmpresa(idEmpresa: number, idEjecutiva: number): Promise<{
+        success: boolean;
+        message: string;
+        empresa: string;
+        ejecutiva: string;
+    }>;
 }

@@ -81,18 +81,18 @@
 //   }
 // }
 
-import { 
-  Controller, 
-  Get, 
-  Post, 
+import {
+  Controller,
+  Get,
+  Post,
   Put,
   Delete,
-  Patch, 
-  Param, 
-  Body, 
-  HttpException, 
+  Patch,
+  Param,
+  Body,
+  HttpException,
   HttpStatus,
-  UseGuards 
+  UseGuards
 } from '@nestjs/common';
 import { EmpresasService } from '../../services/jefe/empresas.service';
 import { JwtAuthGuard } from '../../../../../shared/guards/jwt-auth.guard';
@@ -100,7 +100,7 @@ import { JwtAuthGuard } from '../../../../../shared/guards/jwt-auth.guard';
 @Controller('empresas')
 @UseGuards(JwtAuthGuard)
 export class EmpresasController {
-  constructor(private readonly empresasService: EmpresasService) {}
+  constructor(private readonly empresasService: EmpresasService) { }
 
   @Get()
   async getEmpresas() {
@@ -184,11 +184,11 @@ export class EmpresasController {
     @Param('empresaId') empresaId: string,
     @Param('ejecutivaId') ejecutivaId: string
   ) {
-    console.log('➕ [EmpresasController] Asignando ejecutiva:', { 
-      empresaId: parseInt(empresaId), 
-      ejecutivaId: parseInt(ejecutivaId) 
+    console.log('➕ [EmpresasController] Asignando ejecutiva:', {
+      empresaId: parseInt(empresaId),
+      ejecutivaId: parseInt(ejecutivaId)
     });
-    
+
     try {
       return await this.empresasService.addEjecutivaToEmpresa(
         parseInt(empresaId),
@@ -210,11 +210,11 @@ export class EmpresasController {
     @Param('empresaId') empresaId: string,
     @Param('ejecutivaId') ejecutivaId: string
   ) {
-    console.log('➖ [EmpresasController] Removiendo ejecutiva:', { 
-      empresaId: parseInt(empresaId), 
-      ejecutivaId: parseInt(ejecutivaId) 
+    console.log('➖ [EmpresasController] Removiendo ejecutiva:', {
+      empresaId: parseInt(empresaId),
+      ejecutivaId: parseInt(ejecutivaId)
     });
-    
+
     try {
       return await this.empresasService.removeEjecutivaFromEmpresa(
         parseInt(empresaId),
@@ -229,5 +229,22 @@ export class EmpresasController {
       );
     }
   }
-  
+  // En empresas.controller.ts (puerto 3002)
+  @Put(':id/asignar-ejecutiva')
+  async asignarEjecutivaAEmpresa(
+    @Param('id') id: string,
+    @Body() body: { id_ejecutiva: number }
+  ) {
+    try {
+      console.log(`🔗 [EmpresasController] Asignando ejecutiva ${body.id_ejecutiva} a empresa ${id}`);
+      return await this.empresasService.asignarEjecutivaAEmpresa(parseInt(id), body.id_ejecutiva);
+    } catch (error) {
+      console.error('❌ [EmpresasController] Error asignando ejecutiva:', error);
+      throw new HttpException(
+        error.message || 'Error al asignar ejecutiva',
+        HttpStatus.BAD_REQUEST
+      );
+    }
+  }
+
 }

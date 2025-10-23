@@ -15,6 +15,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.EjecutivasController = void 0;
 const common_1 = require("@nestjs/common");
 const ejecutivas_service_1 = require("../../services/jefe/ejecutivas.service");
+const jwt_auth_guard_1 = require("../../../../../shared/guards/jwt-auth.guard");
 let EjecutivasController = class EjecutivasController {
     constructor(ejecutivasService) {
         this.ejecutivasService = ejecutivasService;
@@ -83,6 +84,22 @@ let EjecutivasController = class EjecutivasController {
             throw new common_1.HttpException('Error al desactivar ejecutiva', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+    async getEjecutivasDisponibles() {
+        try {
+            console.log('🔍 [EjecutivasController] Obteniendo ejecutivas disponibles');
+            const resultado = await this.ejecutivasService.getEjecutivasDisponibles();
+            console.log('✅ [EjecutivasController] Ejecutivas disponibles encontradas:', resultado.length);
+            return resultado;
+        }
+        catch (error) {
+            console.error('❌ [EjecutivasController] Error obteniendo ejecutivas disponibles:', error);
+            throw new common_1.HttpException({
+                message: 'Error al obtener ejecutivas disponibles',
+                error: error.message,
+                timestamp: new Date().toISOString()
+            }, common_1.HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
 };
 exports.EjecutivasController = EjecutivasController;
 __decorate([
@@ -120,8 +137,15 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], EjecutivasController.prototype, "deleteEjecutiva", null);
+__decorate([
+    (0, common_1.Get)('disponibles'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], EjecutivasController.prototype, "getEjecutivasDisponibles", null);
 exports.EjecutivasController = EjecutivasController = __decorate([
     (0, common_1.Controller)('ejecutivas'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     __metadata("design:paramtypes", [ejecutivas_service_1.EjecutivasService])
 ], EjecutivasController);
 //# sourceMappingURL=ejecutivas.controller.js.map

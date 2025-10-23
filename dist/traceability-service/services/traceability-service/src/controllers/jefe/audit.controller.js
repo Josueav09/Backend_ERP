@@ -91,7 +91,7 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], AuditController.prototype, "getAuditoriaResumenMensual", null);
 exports.AuditController = AuditController = __decorate([
-    (0, common_1.Controller)('audit'),
+    (0, common_1.Controller)('auditoria'),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     __metadata("design:paramtypes", [audit_service_1.AuditService])
 ], AuditController);

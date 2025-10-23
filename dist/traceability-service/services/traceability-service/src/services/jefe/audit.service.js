@@ -52,15 +52,18 @@ let AuditService = class AuditService {
             detalles: audit.detalles,
             fecha_accion: audit.fecha_accion,
             usuario_responsable: audit.usuario_responsable,
-            empresa: audit.empresa_proveedora?.razon_social || 'N/A',
-            cliente: audit.cliente_final?.razon_social || 'N/A',
-            ejecutiva: audit.ejecutiva?.nombre_completo || 'N/A',
-            ejecutiva_anterior: audit.ejecutiva_anterior?.nombre_completo || 'N/A',
-            ejecutiva_nueva: audit.ejecutiva_nueva?.nombre_completo || 'N/A',
             estado_anterior: audit.estado_anterior,
             estado_nuevo: audit.estado_nuevo,
+            observaciones_adicionales: audit.observaciones_adicionales,
             motivo_desvinculacion: audit.motivo_desvinculacion,
-            observaciones_adicionales: audit.observaciones_adicionales
+            empresa_nombre: audit.empresa_proveedora?.razon_social,
+            cliente_nombre: audit.cliente_final?.razon_social,
+            ejecutiva_nombre: audit.ejecutiva?.nombre_completo,
+            ejecutiva_anterior_nombre: audit.ejecutiva_anterior?.nombre_completo,
+            ejecutiva_nueva_nombre: audit.ejecutiva_nueva?.nombre_completo,
+            id_empresa_proveedora: audit.empresa_proveedora?.id_empresa_prov,
+            id_cliente_final: audit.cliente_final?.id_cliente_final,
+            id_ejecutiva: audit.ejecutiva?.id_ejecutiva
         }));
     }
     async getEstadisticasAuditoria() {

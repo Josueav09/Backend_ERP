@@ -16,6 +16,7 @@ export declare class ApiGatewayController {
     createJefeEjecutiva(body: any, req: Request): Promise<any>;
     updateJefeEjecutiva(id: string, body: any, req: Request): Promise<any>;
     deleteJefeEjecutiva(id: string, req: Request): Promise<any>;
+    getJefeEjecutivasDisponibles(req: Request): Promise<any>;
     getJefeEmpresas(req: Request): Promise<any>;
     getJefeEmpresa(id: string, req: Request): Promise<any>;
     createJefeEmpresa(body: any, req: Request): Promise<any>;
@@ -24,6 +25,9 @@ export declare class ApiGatewayController {
     getJefeEmpresaEjecutivas(id: string, req: Request): Promise<any>;
     addJefeEmpresaEjecutiva(id: string, body: any, req: Request): Promise<any>;
     removeJefeEmpresaEjecutiva(id: string, ejecutivaId: string, req: Request): Promise<any>;
+    asignarEjecutivaAEmpresa(id: string, body: {
+        id_ejecutiva: number;
+    }, req: Request): Promise<any>;
     getJefeClientes(req: Request): Promise<any>;
     getJefeCliente(id: string, req: Request): Promise<any>;
     createJefeCliente(body: any, req: Request): Promise<any>;
@@ -42,8 +46,9 @@ export declare class ApiGatewayController {
     getJefeTrazabilidadEtapa1(ejecutivaId?: string, empresaId?: string, clienteId?: string, resultadoContacto?: string, tipoContacto?: string, fechaDesde?: string, fechaHasta?: string, page?: string, limit?: string, req?: Request): Promise<any>;
     getJefeTrazabilidadEtapa2(ejecutivaId?: string, empresaId?: string, clienteId?: string, etapaOportunidad?: string, fechaDesde?: string, fechaHasta?: string, page?: string, limit?: string, req?: Request): Promise<any>;
     getJefeTrazabilidadFilterOptions(req: Request): Promise<any>;
-    getJefeAuditoria(fechaInicio?: string, fechaFin?: string, accion?: string, usuario?: string, req?: Request): Promise<any>;
-    getJefeAuditoriaEstadisticas(req: Request): Promise<any>;
+    getAuditoriaContratos(fechaInicio?: string, fechaFin?: string, accion?: string, usuario?: string, req?: Request): Promise<any>;
+    getAuditoriaEstadisticas(req: Request): Promise<any>;
+    getAuditoriaResumenMensual(req: Request): Promise<any>;
     getClienteDashboardStats(empresaId: string, req: Request): Promise<any>;
     getClienteTrazabilidad(empresaId: string, req: Request): Promise<any>;
     getEjecutivaStats(ejecutivaId: string, req: Request): Promise<any>;

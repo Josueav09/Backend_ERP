@@ -66,15 +66,15 @@
 //   }
 // }
 
-import { 
-  Controller, 
-  Get, 
-  Put, 
-  Body, 
-  Request, 
-  HttpException, 
+import {
+  Controller,
+  Get,
+  Put,
+  Body,
+  Request,
+  HttpException,
   HttpStatus,
-  UseGuards, 
+  UseGuards,
   Param,
   Post,
   Delete
@@ -84,7 +84,7 @@ import { JwtAuthGuard } from '../../../../../shared/guards/jwt-auth.guard';
 
 @Controller('jefe')
 export class JefeController {
-  constructor(private readonly jefeService: JefeService) {}
+  constructor(private readonly jefeService: JefeService) { }
 
   // ============================================
   // PERFIL DEL JEFE
@@ -97,7 +97,7 @@ export class JefeController {
     console.log('🔐 [JefeController] Headers:', req.headers);
     console.log('🔐 [JefeController] Authorization:', req.headers.authorization);
     console.log('🔐 [JefeController] User completo:', req.user);
-    
+
     try {
       if (!req.user || !req.user.id_jefe) {
         console.error('❌ [JefeController] Usuario no autenticado o sin id_jefe');
@@ -106,10 +106,10 @@ export class JefeController {
 
       const userId = req.user.id_jefe;
       console.log('🔐 [JefeController] User ID extraído:', userId);
-      
+
       const perfil = await this.jefeService.getPerfil(userId);
       console.log('✅ [JefeController] Perfil obtenido exitosamente');
-      
+
       return perfil;
     } catch (error) {
       console.error('❌ [JefeController] Error en getPerfil:', error);
@@ -127,7 +127,7 @@ export class JefeController {
     console.log('📝 [JefeController] === ACTUALIZAR PERFIL ===');
     console.log('📝 [JefeController] User:', req.user);
     console.log('📝 [JefeController] Body recibido:', body);
-    
+
     try {
       if (!req.user || !req.user.id_jefe) {
         throw new HttpException('Usuario no autenticado', HttpStatus.UNAUTHORIZED);
@@ -135,7 +135,7 @@ export class JefeController {
 
       const userId = req.user.id_jefe;
       const resultado = await this.jefeService.updatePerfil(userId, body);
-      
+
       console.log('✅ [JefeController] Perfil actualizado exitosamente');
       return resultado;
     } catch (error) {
@@ -153,7 +153,7 @@ export class JefeController {
   async updatePassword(@Request() req, @Body() body: any) {
     console.log('🔒 [JefeController] === ACTUALIZAR CONTRASEÑA ===');
     console.log('🔒 [JefeController] User:', req.user);
-    
+
     try {
       if (!req.user || !req.user.id_jefe) {
         throw new HttpException('Usuario no autenticado', HttpStatus.UNAUTHORIZED);
@@ -174,7 +174,7 @@ export class JefeController {
         password_actual,
         password_nueva
       );
-      
+
       console.log('✅ [JefeController] Contraseña actualizada exitosamente');
       return resultado;
     } catch (error) {
@@ -192,22 +192,41 @@ export class JefeController {
   // ============================================
 
   @Get('stats')
-@UseGuards(JwtAuthGuard)
-async getStats(@Request() req) {
-  console.log('📊 [JefeController] === OBTENER ESTADÍSTICAS ===');
-  try {
-    const stats = await this.jefeService.getStats();
-    console.log('✅ [JefeController] Estadísticas obtenidas:', stats);
-    return stats;
-  } catch (error) {
-    console.error('❌ [JefeController] Error en getStats:', error.message);
-    console.error(error.stack);
-    throw new HttpException(
-      `Error al obtener estadísticas: ${error.message}`,
-      HttpStatus.INTERNAL_SERVER_ERROR,
-    );
+  @UseGuards(JwtAuthGuard)
+  // async getStats(@Request() req) {
+  //   console.log('📊 [JefeController] === OBTENER ESTADÍSTICAS ===');
+  //   try {
+  //     const stats = await this.jefeService.getStats();
+  //     console.log('✅ [JefeController] Estadísticas obtenidas:', stats);
+  //     return stats;
+  //   } catch (error) {
+  //     console.error('❌ [JefeController] Error en getStats:', error.message);
+  //     console.error(error.stack);
+  //     throw new HttpException(
+  //       `Error al obtener estadísticas: ${error.message}`,
+  //       HttpStatus.INTERNAL_SERVER_ERROR,
+  //     );
+  //   }
+  // }
+  @Get('stats')
+  @UseGuards(JwtAuthGuard)
+  async getStats(@Request() req) {
+    console.log('📊 [JefeController] === OBTENER ESTADÍSTICAS ===');
+    console.log('👤 Usuario:', req.user?.id_jefe);
+
+    try {
+      const stats = await this.jefeService.getStats();
+      console.log('✅ [JefeController] Estadísticas obtenidas exitosamente');
+      return stats;
+    } catch (error) {
+      console.error('❌ [JefeController] Error en getStats:', error.message);
+      throw new HttpException(
+        `Error al obtener estadísticas: ${error.message}`,
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
-}
+
 
 
   // ============================================
@@ -220,7 +239,7 @@ async getStats(@Request() req) {
   async getClientes(@Request() req) {
     console.log('📋 [JefeController] === OBTENER CLIENTES - INICIANDO ===');
     console.log('👤 Usuario autenticado:', req.user);
-    
+
     try {
       console.log('🔄 Llamando a jefeService.getClientes()...');
       const clientes = await this.jefeService.getClientes();
@@ -300,5 +319,5 @@ async getStats(@Request() req) {
       );
     }
   }
- 
+
 }

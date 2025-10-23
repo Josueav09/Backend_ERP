@@ -157,6 +157,35 @@ let ApiGatewayController = class ApiGatewayController {
             throw new common_1.HttpException(error.response?.data?.message || 'Error al eliminar ejecutiva', error.response?.status || common_1.HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+    async getJefeEjecutivasDisponibles(req) {
+        try {
+            console.log('🔍 [API Gateway] Solicitando ejecutivas disponibles...');
+            const headers = this.getHeadersWithAuth(req);
+            const url = 'http://localhost:3002/ejecutivas/disponibles';
+            console.log('🔍 [API Gateway] URL destino:', url);
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get(url, {
+                headers,
+                timeout: 10000
+            }));
+            console.log('✅ [API Gateway] Respuesta recibida:', {
+                status: response.status,
+                cantidad: response.data?.length || 0
+            });
+            return response.data;
+        }
+        catch (error) {
+            console.error('❌ [API Gateway] Error:', {
+                message: error.message,
+                status: error.response?.status,
+                data: error.response?.data
+            });
+            if (error.response?.status === 404 || error.response?.status === 500) {
+                console.log('ℹ️ [API Gateway] No hay ejecutivas disponibles');
+                return [];
+            }
+            throw new common_1.HttpException(error.response?.data || 'Error interno del servidor', error.response?.status || common_1.HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
     async getJefeEmpresas(req) {
         try {
             const headers = this.getHeadersWithAuth(req);
@@ -235,6 +264,16 @@ let ApiGatewayController = class ApiGatewayController {
         }
         catch (error) {
             throw new common_1.HttpException(error.response?.data?.message || 'Error al remover ejecutiva', error.response?.status || common_1.HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+    async asignarEjecutivaAEmpresa(id, body, req) {
+        try {
+            const headers = this.getHeadersWithAuth(req);
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.put(`http://localhost:3002/empresas/${id}/asignar-ejecutiva`, body, { headers }));
+            return response.data;
+        }
+        catch (error) {
+            throw new common_1.HttpException(error.response?.data?.message || 'Error al asignar ejecutiva', error.response?.status || common_1.HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
     async getJefeClientes(req) {
@@ -520,10 +559,10 @@ let ApiGatewayController = class ApiGatewayController {
             throw new common_1.HttpException(error.response?.data?.message || 'Error al obtener opciones de filtro', error.response?.status || common_1.HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
-    async getJefeAuditoria(fechaInicio, fechaFin, accion, usuario, req) {
+    async getAuditoriaContratos(fechaInicio, fechaFin, accion, usuario, req) {
         try {
             const headers = this.getHeadersWithAuth(req);
-            let url = 'http://localhost:3007/audit/contratos?';
+            let url = 'http://localhost:3007/auditoria/contratos?';
             if (fechaInicio)
                 url += `fechaInicio=${fechaInicio}&`;
             if (fechaFin)
@@ -539,14 +578,24 @@ let ApiGatewayController = class ApiGatewayController {
             throw new common_1.HttpException(error.response?.data?.message || 'Error al obtener auditoría', error.response?.status || common_1.HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
-    async getJefeAuditoriaEstadisticas(req) {
+    async getAuditoriaEstadisticas(req) {
         try {
             const headers = this.getHeadersWithAuth(req);
-            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get('http://localhost:3007/audit/estadisticas', { headers }));
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get('http://localhost:3007/auditoria/estadisticas', { headers }));
             return response.data;
         }
         catch (error) {
             throw new common_1.HttpException(error.response?.data?.message || 'Error al obtener estadísticas de auditoría', error.response?.status || common_1.HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+    async getAuditoriaResumenMensual(req) {
+        try {
+            const headers = this.getHeadersWithAuth(req);
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get('http://localhost:3007/auditoria/resumen-mensual', { headers }));
+            return response.data;
+        }
+        catch (error) {
+            throw new common_1.HttpException(error.response?.data?.message || 'Error al obtener resumen mensual', error.response?.status || common_1.HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
     async getClienteDashboardStats(empresaId, req) {
@@ -845,6 +894,13 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], ApiGatewayController.prototype, "deleteJefeEjecutiva", null);
 __decorate([
+    (0, common_1.Get)('jefe/ejecutivas/disponibles'),
+    __param(0, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], ApiGatewayController.prototype, "getJefeEjecutivasDisponibles", null);
+__decorate([
     (0, common_1.Get)('jefe/empresas'),
     __param(0, (0, common_1.Req)()),
     __metadata("design:type", Function),
@@ -911,6 +967,15 @@ __decorate([
     __metadata("design:paramtypes", [String, String, Object]),
     __metadata("design:returntype", Promise)
 ], ApiGatewayController.prototype, "removeJefeEmpresaEjecutiva", null);
+__decorate([
+    (0, common_1.Put)('jefe/empresas/:id/asignar-ejecutiva'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)()),
+    __param(2, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object, Object]),
+    __metadata("design:returntype", Promise)
+], ApiGatewayController.prototype, "asignarEjecutivaAEmpresa", null);
 __decorate([
     (0, common_1.Get)('jefe/clientes'),
     __param(0, (0, common_1.Req)()),
@@ -1089,7 +1154,7 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], ApiGatewayController.prototype, "getJefeTrazabilidadFilterOptions", null);
 __decorate([
-    (0, common_1.Get)('jefe/auditoria'),
+    (0, common_1.Get)('auditoria/contratos'),
     __param(0, (0, common_1.Query)('fechaInicio')),
     __param(1, (0, common_1.Query)('fechaFin')),
     __param(2, (0, common_1.Query)('accion')),
@@ -1098,14 +1163,21 @@ __decorate([
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String, String, String, String, Object]),
     __metadata("design:returntype", Promise)
-], ApiGatewayController.prototype, "getJefeAuditoria", null);
+], ApiGatewayController.prototype, "getAuditoriaContratos", null);
 __decorate([
-    (0, common_1.Get)('jefe/auditoria/estadisticas'),
+    (0, common_1.Get)('auditoria/estadisticas'),
     __param(0, (0, common_1.Req)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", Promise)
-], ApiGatewayController.prototype, "getJefeAuditoriaEstadisticas", null);
+], ApiGatewayController.prototype, "getAuditoriaEstadisticas", null);
+__decorate([
+    (0, common_1.Get)('auditoria/resumen-mensual'),
+    __param(0, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], ApiGatewayController.prototype, "getAuditoriaResumenMensual", null);
 __decorate([
     (0, common_1.Get)('cliente/dashboard/stats'),
     __param(0, (0, common_1.Query)('empresaId')),

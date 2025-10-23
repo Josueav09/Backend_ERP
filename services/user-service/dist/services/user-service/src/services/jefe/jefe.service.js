@@ -116,116 +116,93 @@ let JefeService = class JefeService {
     }
     async getStats() {
         try {
-            console.log('📊 [JefeService] === INICIANDO getStats ===');
-            const [totalEmpresas, totalEjecutivas, totalClientes, clientesEsteMes, actividadesEsteMes] = await Promise.all([
-                this.empresaRepository.count({ where: { estado: 'Activo' } }),
-                this.ejecutivaRepository.count({ where: { estado_ejecutiva: 'Activo' } }),
-                this.clienteRepository.count(),
-                this.getClientesNuevosMes(),
-                this.getActividadesMes()
+            console.log('📊 [JefeService] === INICIANDO getStats CON VISTAS ===');
+            const [statsData, dashboardData, pipelineData, topEjecutivas, topEmpresas, topClientes] = await Promise.all([
+                this.trazabilidadRepository.query('SELECT * FROM vista_dashboard_stats LIMIT 1'),
+                this.trazabilidadRepository.query('SELECT * FROM vista_dashboard_ejecutiva'),
+                this.trazabilidadRepository.query('SELECT * FROM vista_pipeline_ventas'),
+                this.trazabilidadRepository.query('SELECT * FROM vista_top_ejecutivas'),
+                this.trazabilidadRepository.query('SELECT * FROM vista_top_empresas'),
+                this.trazabilidadRepository.query('SELECT * FROM vista_top_clientes')
             ]);
-            console.log('✅ [JefeService] Conteos básicos obtenidos:', {
-                totalEmpresas,
-                totalEjecutivas,
-                totalClientes,
-                clientesEsteMes,
-                actividadesEsteMes
+            console.log('✅ [JefeService] Vistas cargadas:', {
+                stats: statsData.length,
+                dashboard: dashboardData.length,
+                pipeline: pipelineData.length,
+                topEjecutivas: topEjecutivas.length,
+                topEmpresas: topEmpresas.length,
+                topClientes: topClientes.length
             });
-            let pipelineData = [];
-            let dashboardData = [];
-            try {
-                pipelineData = await this.trazabilidadRepository.query('SELECT * FROM vista_pipeline_ventas LIMIT 100');
-                console.log('✅ [JefeService] Pipeline data obtenida:', pipelineData.length);
-            }
-            catch (error) {
-                console.warn('⚠️ [JefeService] Vista pipeline no disponible, usando query alternativa');
-                pipelineData = await this.trazabilidadRepository
-                    .createQueryBuilder('t')
-                    .leftJoin('t.ejecutiva', 'e')
-                    .leftJoin('t.empresaProveedora', 'emp')
-                    .leftJoin('t.clienteFinal', 'cf')
-                    .select([
-                    't.id_trazabilidad',
-                    't.nombre_oportunidad',
-                    't.etapa_oportunidad',
-                    't.monto_total_sin_imp',
-                    't.probabilidad_cierre',
-                    'e.nombre_completo',
-                    'emp.razon_social',
-                    'cf.razon_social'
-                ])
-                    .where('t.pasa_embudo_ventas = :pasa', { pasa: true })
-                    .andWhere('t.nombre_oportunidad IS NOT NULL')
-                    .andWhere('t.etapa_oportunidad NOT IN (:...estados)', {
-                    estados: ['Venta ganada', 'Venta perdida', 'Venta suspendida']
-                })
-                    .limit(100)
-                    .getRawMany();
-            }
-            try {
-                dashboardData = await this.trazabilidadRepository.query('SELECT * FROM vista_dashboard_ejecutiva LIMIT 50');
-                console.log('✅ [JefeService] Dashboard data obtenida:', dashboardData.length);
-            }
-            catch (error) {
-                console.warn('⚠️ [JefeService] Vista dashboard no disponible, usando query alternativa');
-                dashboardData = await this.ejecutivaRepository
-                    .createQueryBuilder('e')
-                    .leftJoin('e.empresaProveedora', 'emp')
-                    .leftJoin('e.clientesFinales', 'cf')
-                    .leftJoin('e.trazabilidades', 't')
-                    .select([
-                    'e.id_ejecutiva as id_ejecutiva',
-                    'e.nombre_completo as nombre_ejecutiva',
-                    'emp.razon_social as empresa_proveedora',
-                    'COUNT(DISTINCT cf.id_cliente_final) as total_clientes',
-                    'COUNT(DISTINCT t.id_trazabilidad) as total_gestiones'
-                ])
-                    .where('e.estado_ejecutiva = :estado', { estado: 'Activo' })
-                    .groupBy('e.id_ejecutiva, e.nombre_completo, emp.razon_social')
-                    .limit(50)
-                    .getRawMany();
-            }
-            const revenueTotal = pipelineData.reduce((sum, item) => {
-                const monto = Number(item.monto_total_sin_imp || item.t_monto_total_sin_imp || 0);
-                return sum + monto;
-            }, 0);
-            const ventasGanadasCount = await this.trazabilidadRepository.count({
-                where: { etapa_oportunidad: 'Venta ganada' }
-            });
-            const tasaConversion = totalClientes > 0
-                ? ((ventasGanadasCount / totalClientes) * 100).toFixed(1) + '%'
-                : '0%';
+            const vistaStats = statsData[0];
             const stats = {
-                totalEmpresas,
-                totalEjecutivas,
-                totalClientes,
-                clientesEsteMes,
-                revenueTotal: Number(revenueTotal.toFixed(2)),
-                pipelineOportunidades: pipelineData.length,
-                ventasGanadas: ventasGanadasCount,
+                totalEmpresas: vistaStats?.total_empresas || 0,
+                totalEjecutivas: vistaStats?.total_ejecutivas || 0,
+                totalClientes: vistaStats?.total_clientes || 0,
+                clientesEsteMes: vistaStats?.clientes_este_mes || 0,
+                revenueTotal: parseFloat(vistaStats?.revenue_total) || 0,
+                pipelineOportunidades: vistaStats?.pipeline_oportunidades || 0,
                 dashboardEjecutivas: dashboardData,
+                topEjecutivas: topEjecutivas,
+                topEmpresas: topEmpresas,
+                topClientes: topClientes,
                 kpis: {
-                    tasaConversion,
-                    clientesNuevosMes: clientesEsteMes,
-                    actividadesMes: actividadesEsteMes
-                }
+                    tasaConversion: this.calcularTasaConversion(dashboardData),
+                    clientesNuevosMes: vistaStats?.clientes_este_mes || 0,
+                    actividadesMes: vistaStats?.actividades_mes || 0
+                },
+                pipeline: pipelineData
             };
-            console.log('✅ [JefeService] Estadísticas calculadas:', {
-                ...stats,
-                dashboardEjecutivas: `${dashboardData.length} registros`
-            });
+            console.log('✅ [JefeService] Estadísticas completas cargadas');
             return stats;
         }
         catch (error) {
             console.error('❌ [JefeService] ERROR en getStats:', error);
-            console.error('❌ [JefeService] Stack:', error.stack);
-            console.log('🔍 Verificando repositorios:', {
-                empresaRepo: !!this.empresaRepository,
-                ejecutivaRepo: !!this.ejecutivaRepository,
-                clienteRepo: !!this.clienteRepository,
-                trazabilidadRepo: !!this.trazabilidadRepository,
-            });
-            throw new common_1.HttpException(`Error al obtener estadísticas: ${error.message}`, common_1.HttpStatus.INTERNAL_SERVER_ERROR);
+            return await this.getStatsFallback();
+        }
+    }
+    async getStatsFallback() {
+        console.log('🔄 [JefeService] Usando método de respaldo...');
+        const startOfMonth = new Date();
+        startOfMonth.setDate(1);
+        startOfMonth.setHours(0, 0, 0, 0);
+        const [totalEmpresas, totalEjecutivas, totalClientes, actividadesMes] = await Promise.all([
+            this.empresaRepository.count({ where: { estado: 'Activo' } }),
+            this.ejecutivaRepository.count({ where: { estado_ejecutiva: 'Activo' } }),
+            this.clienteRepository.count(),
+            this.trazabilidadRepository.count({
+                where: { fecha_contacto: (0, typeorm_2.MoreThanOrEqual)(startOfMonth) }
+            })
+        ]);
+        return {
+            totalEmpresas,
+            totalEjecutivas,
+            totalClientes,
+            clientesEsteMes: 0,
+            revenueTotal: 0,
+            pipelineOportunidades: 0,
+            dashboardEjecutivas: [],
+            kpis: {
+                tasaConversion: '0%',
+                clientesNuevosMes: 0,
+                actividadesMes
+            },
+            pipeline: []
+        };
+    }
+    calcularTasaConversion(dashboardData) {
+        if (!dashboardData || !dashboardData.length)
+            return '0%';
+        try {
+            const totalVentasGanadas = dashboardData.reduce((sum, item) => sum + (parseInt(item.ventas_ganadas) || 0), 0);
+            const totalClientes = dashboardData.reduce((sum, item) => sum + (parseInt(item.total_clientes) || 0), 0);
+            const tasa = totalClientes > 0
+                ? ((totalVentasGanadas / totalClientes) * 100)
+                : 0;
+            return tasa.toFixed(1) + '%';
+        }
+        catch (error) {
+            console.warn('⚠️ Error calculando tasa de conversión:', error);
+            return '0%';
         }
     }
     async getClientesNuevosMes() {

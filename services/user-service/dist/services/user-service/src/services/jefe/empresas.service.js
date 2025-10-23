@@ -321,6 +321,39 @@ let EmpresasService = class EmpresasService {
             }
         };
     }
+    async asignarEjecutivaAEmpresa(idEmpresa, idEjecutiva) {
+        try {
+            console.log(`🔗 [EmpresasService] Asignando ejecutiva ${idEjecutiva} a empresa ${idEmpresa}`);
+            const empresa = await this.empresaRepository.findOne({
+                where: { id_empresa_prov: idEmpresa }
+            });
+            if (!empresa) {
+                throw new Error('Empresa no encontrada');
+            }
+            const ejecutiva = await this.ejecutivaRepository.findOne({
+                where: {
+                    id_ejecutiva: idEjecutiva,
+                    estado_ejecutiva: 'Activo'
+                }
+            });
+            if (!ejecutiva) {
+                throw new Error('Ejecutiva no encontrada o no disponible');
+            }
+            ejecutiva.id_empresa_prov = idEmpresa;
+            await this.ejecutivaRepository.save(ejecutiva);
+            console.log(`✅ [EmpresasService] Ejecutiva ${idEjecutiva} asignada a empresa ${idEmpresa}`);
+            return {
+                success: true,
+                message: 'Ejecutiva asignada correctamente',
+                empresa: empresa.razon_social,
+                ejecutiva: ejecutiva.nombre_completo
+            };
+        }
+        catch (error) {
+            console.error('❌ [EmpresasService] Error asignando ejecutiva:', error);
+            throw new Error(error.message || 'Error al asignar ejecutiva');
+        }
+    }
 };
 exports.EmpresasService = EmpresasService;
 exports.EmpresasService = EmpresasService = __decorate([
