@@ -179,56 +179,81 @@ export class EmpresasController {
   }
 
   // ✅ CRÍTICO: Asignar ejecutiva a empresa
-  @Post(':empresaId/ejecutivas/:ejecutivaId')
-  async addEjecutivaToEmpresa(
-    @Param('empresaId') empresaId: string,
-    @Param('ejecutivaId') ejecutivaId: string
-  ) {
-    console.log('➕ [EmpresasController] Asignando ejecutiva:', {
-      empresaId: parseInt(empresaId),
-      ejecutivaId: parseInt(ejecutivaId)
-    });
+  // @Post(':empresaId/ejecutivas/:ejecutivaId')
+  // async addEjecutivaToEmpresa(
+  //   @Param('empresaId') empresaId: string,
+  //   @Param('ejecutivaId') ejecutivaId: string
+  // ) {
+  //   console.log('➕ [EmpresasController] Asignando ejecutiva:', {
+  //     empresaId: parseInt(empresaId),
+  //     ejecutivaId: parseInt(ejecutivaId)
+  //   });
 
+  //   try {
+  //     return await this.empresasService.addEjecutivaToEmpresa(
+  //       parseInt(empresaId),
+  //       parseInt(ejecutivaId)
+  //     );
+  //   } catch (error) {
+  //     if (error instanceof HttpException) throw error;
+  //     console.error('❌ Error en addEjecutivaToEmpresa:', error);
+  //     throw new HttpException(
+  //       error.message || 'Error al agregar ejecutiva',
+  //       HttpStatus.INTERNAL_SERVER_ERROR
+  //     );
+  //   }
+  // }
+
+  // // ✅ CRÍTICO: Remover ejecutiva de empresa
+  // @Delete(':empresaId/ejecutivas/:ejecutivaId')
+  // async removeEjecutivaFromEmpresa(
+  //   @Param('empresaId') empresaId: string,
+  //   @Param('ejecutivaId') ejecutivaId: string
+  // ) {
+  //   console.log('➖ [EmpresasController] Removiendo ejecutiva:', {
+  //     empresaId: parseInt(empresaId),
+  //     ejecutivaId: parseInt(ejecutivaId)
+  //   });
+
+  //   try {
+  //     return await this.empresasService.removeEjecutivaFromEmpresa(
+  //       parseInt(empresaId),
+  //       parseInt(ejecutivaId)
+  //     );
+  //   } catch (error) {
+  //     if (error instanceof HttpException) throw error;
+  //     console.error('❌ Error en removeEjecutivaFromEmpresa:', error);
+  //     throw new HttpException(
+  //       error.message || 'Error al remover ejecutiva',
+  //       HttpStatus.INTERNAL_SERVER_ERROR
+  //     );
+  //   }
+  // }
+
+  @Post(':id/ejecutivas')
+  async addEjecutivaToEmpresa(@Param('id') id: string, @Body() body: any) {
     try {
-      return await this.empresasService.addEjecutivaToEmpresa(
-        parseInt(empresaId),
-        parseInt(ejecutivaId)
-      );
+      const { id_ejecutiva } = body;
+      if (!id_ejecutiva) {
+        throw new HttpException('ID de ejecutiva es requerido', HttpStatus.BAD_REQUEST);
+      }
+      return await this.empresasService.addEjecutivaToEmpresa(parseInt(id), parseInt(id_ejecutiva));
     } catch (error) {
       if (error instanceof HttpException) throw error;
-      console.error('❌ Error en addEjecutivaToEmpresa:', error);
-      throw new HttpException(
-        error.message || 'Error al agregar ejecutiva',
-        HttpStatus.INTERNAL_SERVER_ERROR
-      );
+      throw new HttpException('Error al agregar ejecutiva', HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 
-  // ✅ CRÍTICO: Remover ejecutiva de empresa
-  @Delete(':empresaId/ejecutivas/:ejecutivaId')
-  async removeEjecutivaFromEmpresa(
-    @Param('empresaId') empresaId: string,
-    @Param('ejecutivaId') ejecutivaId: string
-  ) {
-    console.log('➖ [EmpresasController] Removiendo ejecutiva:', {
-      empresaId: parseInt(empresaId),
-      ejecutivaId: parseInt(ejecutivaId)
-    });
-
+  @Post(':id/ejecutivas/:ejecutivaId/remove')
+  async removeEjecutivaFromEmpresa(@Param('id') id: string, @Param('ejecutivaId') ejecutivaId: string) {
     try {
-      return await this.empresasService.removeEjecutivaFromEmpresa(
-        parseInt(empresaId),
-        parseInt(ejecutivaId)
-      );
+      return await this.empresasService.removeEjecutivaFromEmpresa(parseInt(id), parseInt(ejecutivaId));
     } catch (error) {
       if (error instanceof HttpException) throw error;
-      console.error('❌ Error en removeEjecutivaFromEmpresa:', error);
-      throw new HttpException(
-        error.message || 'Error al remover ejecutiva',
-        HttpStatus.INTERNAL_SERVER_ERROR
-      );
+      throw new HttpException('Error al remover ejecutiva', HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
+
   // En empresas.controller.ts (puerto 3002)
   @Put(':id/asignar-ejecutiva')
   async asignarEjecutivaAEmpresa(

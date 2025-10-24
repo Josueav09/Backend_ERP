@@ -584,105 +584,105 @@ export class EmpresasService {
     };
   }
 
-  async addEjecutivaToEmpresa(empresaId: number, ejecutivaId: number) {
-    console.log('➕ [EmpresasService] Asignando ejecutiva:', { empresaId, ejecutivaId });
+  // async addEjecutivaToEmpresa(empresaId: number, ejecutivaId: number) {
+  //   console.log('➕ [EmpresasService] Asignando ejecutiva:', { empresaId, ejecutivaId });
 
-    const empresa = await this.empresaRepository.findOne({
-      where: { id_empresa_prov: empresaId }
-    });
+  //   const empresa = await this.empresaRepository.findOne({
+  //     where: { id_empresa_prov: empresaId }
+  //   });
 
-    if (!empresa) {
-      throw new HttpException('Empresa no encontrada', HttpStatus.NOT_FOUND);
-    }
+  //   if (!empresa) {
+  //     throw new HttpException('Empresa no encontrada', HttpStatus.NOT_FOUND);
+  //   }
 
-    const ejecutiva = await this.ejecutivaRepository.findOne({
-      where: { id_ejecutiva: ejecutivaId },
-      relations: ['empresa_proveedora'] // ✅ Cargar relación
-    });
+  //   const ejecutiva = await this.ejecutivaRepository.findOne({
+  //     where: { id_ejecutiva: ejecutivaId },
+  //     relations: ['empresa_proveedora'] // ✅ Cargar relación
+  //   });
 
-    if (!ejecutiva) {
-      throw new HttpException('Ejecutiva no encontrada', HttpStatus.NOT_FOUND);
-    }
+  //   if (!ejecutiva) {
+  //     throw new HttpException('Ejecutiva no encontrada', HttpStatus.NOT_FOUND);
+  //   }
 
-    // ✅ Verificar si ya está asignada a ESTA empresa
-    if (ejecutiva.empresa_proveedora?.id_empresa_prov === empresaId) {
-      throw new HttpException('Esta ejecutiva ya está asignada a esta empresa', HttpStatus.BAD_REQUEST);
-    }
+  //   // ✅ Verificar si ya está asignada a ESTA empresa
+  //   if (ejecutiva.empresa_proveedora?.id_empresa_prov === empresaId) {
+  //     throw new HttpException('Esta ejecutiva ya está asignada a esta empresa', HttpStatus.BAD_REQUEST);
+  //   }
 
-    // ✅ Verificar si ya está asignada a OTRA empresa
-    if (ejecutiva.empresa_proveedora && ejecutiva.empresa_proveedora.id_empresa_prov !== empresaId) {
-      throw new HttpException(
-        `La ejecutiva ya está asignada a la empresa "${ejecutiva.empresa_proveedora.razon_social}"`,
-        HttpStatus.BAD_REQUEST
-      );
-    }
+  //   // ✅ Verificar si ya está asignada a OTRA empresa
+  //   if (ejecutiva.empresa_proveedora && ejecutiva.empresa_proveedora.id_empresa_prov !== empresaId) {
+  //     throw new HttpException(
+  //       `La ejecutiva ya está asignada a la empresa "${ejecutiva.empresa_proveedora.razon_social}"`,
+  //       HttpStatus.BAD_REQUEST
+  //     );
+  //   }
 
-    // ✅ Asignar ejecutiva a la empresa
-    ejecutiva.empresa_proveedora = empresa;
-    ejecutiva.fecha_actualizacion = new Date();
+  //   // ✅ Asignar ejecutiva a la empresa
+  //   ejecutiva.empresa_proveedora = empresa;
+  //   ejecutiva.fecha_actualizacion = new Date();
 
-    await this.ejecutivaRepository.save(ejecutiva);
+  //   await this.ejecutivaRepository.save(ejecutiva);
 
-    console.log('✅ [EmpresasService] Ejecutiva asignada exitosamente');
+  //   console.log('✅ [EmpresasService] Ejecutiva asignada exitosamente');
 
-    return {
-      message: 'Ejecutiva asignada correctamente a la empresa',
-      ejecutiva: {
-        id_ejecutiva: ejecutiva.id_ejecutiva,
-        nombre_completo: ejecutiva.nombre_completo,
-        correo: ejecutiva.correo,
-        empresa: empresa.razon_social
-      }
-    };
-  }
+  //   return {
+  //     message: 'Ejecutiva asignada correctamente a la empresa',
+  //     ejecutiva: {
+  //       id_ejecutiva: ejecutiva.id_ejecutiva,
+  //       nombre_completo: ejecutiva.nombre_completo,
+  //       correo: ejecutiva.correo,
+  //       empresa: empresa.razon_social
+  //     }
+  //   };
+  // }
 
-  async removeEjecutivaFromEmpresa(empresaId: number, ejecutivaId: number) {
-    console.log('➖ [EmpresasService] Removiendo ejecutiva:', { empresaId, ejecutivaId });
+  // async removeEjecutivaFromEmpresa(empresaId: number, ejecutivaId: number) {
+  //   console.log('➖ [EmpresasService] Removiendo ejecutiva:', { empresaId, ejecutivaId });
 
-    const ejecutiva = await this.ejecutivaRepository.findOne({
-      where: {
-        id_ejecutiva: ejecutivaId,
-        empresa_proveedora: { id_empresa_prov: empresaId }
-      },
-      relations: ['empresa_proveedora']
-    });
+  //   const ejecutiva = await this.ejecutivaRepository.findOne({
+  //     where: {
+  //       id_ejecutiva: ejecutivaId,
+  //       empresa_proveedora: { id_empresa_prov: empresaId }
+  //     },
+  //     relations: ['empresa_proveedora']
+  //   });
 
-    if (!ejecutiva) {
-      throw new HttpException(
-        'Ejecutiva no encontrada o no está asignada a esta empresa',
-        HttpStatus.NOT_FOUND
-      );
-    }
+  //   if (!ejecutiva) {
+  //     throw new HttpException(
+  //       'Ejecutiva no encontrada o no está asignada a esta empresa',
+  //       HttpStatus.NOT_FOUND
+  //     );
+  //   }
 
-    // ✅ Verificar si tiene clientes asignados
-    const clientesCount = await this.clienteRepository.count({
-      where: { ejecutiva: { id_ejecutiva: ejecutivaId } }
-    });
+  //   // ✅ Verificar si tiene clientes asignados
+  //   const clientesCount = await this.clienteRepository.count({
+  //     where: { ejecutiva: { id_ejecutiva: ejecutivaId } }
+  //   });
 
-    if (clientesCount > 0) {
-      throw new HttpException(
-        `No se puede quitar la ejecutiva porque tiene ${clientesCount} cliente(s) asignado(s). ` +
-        `Primero reasigne los clientes a otra ejecutiva.`,
-        HttpStatus.BAD_REQUEST
-      );
-    }
+  //   if (clientesCount > 0) {
+  //     throw new HttpException(
+  //       `No se puede quitar la ejecutiva porque tiene ${clientesCount} cliente(s) asignado(s). ` +
+  //       `Primero reasigne los clientes a otra ejecutiva.`,
+  //       HttpStatus.BAD_REQUEST
+  //     );
+  //   }
 
-    // ✅ Remover asignación
-    ejecutiva.empresa_proveedora = null;
-    ejecutiva.fecha_actualizacion = new Date();
+  //   // ✅ Remover asignación
+  //   ejecutiva.empresa_proveedora = null;
+  //   ejecutiva.fecha_actualizacion = new Date();
 
-    await this.ejecutivaRepository.save(ejecutiva);
+  //   await this.ejecutivaRepository.save(ejecutiva);
 
-    console.log('✅ [EmpresasService] Ejecutiva removida exitosamente');
+  //   console.log('✅ [EmpresasService] Ejecutiva removida exitosamente');
 
-    return {
-      message: 'Ejecutiva removida correctamente de la empresa',
-      ejecutiva: {
-        id_ejecutiva: ejecutiva.id_ejecutiva,
-        nombre_completo: ejecutiva.nombre_completo
-      }
-    };
-  }
+  //   return {
+  //     message: 'Ejecutiva removida correctamente de la empresa',
+  //     ejecutiva: {
+  //       id_ejecutiva: ejecutiva.id_ejecutiva,
+  //       nombre_completo: ejecutiva.nombre_completo
+  //     }
+  //   };
+  // }
 
   // En empresas.service.ts (puerto 3002)
   async asignarEjecutivaAEmpresa(idEmpresa: number, idEjecutiva: number) {
@@ -728,5 +728,67 @@ export class EmpresasService {
       throw new Error(error.message || 'Error al asignar ejecutiva');
     }
   }
+
+  async addEjecutivaToEmpresa(empresaId: number, ejecutivaId: number) {
+    const empresa = await this.empresaRepository.findOne({
+      where: { id_empresa_prov: empresaId }
+    });
+
+    if (!empresa) {
+      throw new HttpException('Empresa no encontrada', HttpStatus.NOT_FOUND);
+    }
+
+    const ejecutiva = await this.ejecutivaRepository.findOne({
+      where: { id_ejecutiva: ejecutivaId }
+    });
+
+    if (!ejecutiva) {
+      throw new HttpException('Ejecutiva no encontrada', HttpStatus.NOT_FOUND);
+    }
+
+    // Verificar si ya está asignada
+    if (ejecutiva.empresa_proveedora && ejecutiva.empresa_proveedora.id_empresa_prov === empresaId) {
+      throw new HttpException('Esta ejecutiva ya está asignada a esta empresa', HttpStatus.BAD_REQUEST);
+    }
+
+    // Asignar ejecutiva a la empresa
+    ejecutiva.empresa_proveedora = empresa;
+    ejecutiva.fecha_actualizacion = new Date();
+
+    await this.ejecutivaRepository.save(ejecutiva);
+
+    return {
+      message: 'Ejecutiva asignada correctamente a la empresa',
+      ejecutiva: {
+        id_ejecutiva: ejecutiva.id_ejecutiva,
+        nombre_completo: ejecutiva.nombre_completo,
+        correo: ejecutiva.correo
+      }
+    };
+  }
+
+  async removeEjecutivaFromEmpresa(empresaId: number, ejecutivaId: number) {
+    const ejecutiva = await this.ejecutivaRepository.findOne({
+      where: {
+        id_ejecutiva: ejecutivaId,
+        empresa_proveedora: { id_empresa_prov: empresaId }
+      },
+      relations: ['empresa_proveedora']
+    });
+
+    if (!ejecutiva) {
+      throw new HttpException('Ejecutiva no encontrada en esta empresa', HttpStatus.NOT_FOUND);
+    }
+
+    // Remover asignación
+    ejecutiva.empresa_proveedora = null;
+    ejecutiva.fecha_actualizacion = new Date();
+
+    await this.ejecutivaRepository.save(ejecutiva);
+
+    return { message: 'Ejecutiva removida correctamente de la empresa' };
+  }
+
+
 
 }

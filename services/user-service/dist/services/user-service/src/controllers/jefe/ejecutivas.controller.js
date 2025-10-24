@@ -16,6 +16,7 @@ exports.EjecutivasController = void 0;
 const common_1 = require("@nestjs/common");
 const ejecutivas_service_1 = require("../../services/jefe/ejecutivas.service");
 const jwt_auth_guard_1 = require("../../../../../shared/guards/jwt-auth.guard");
+const typeorm_1 = require("typeorm");
 let EjecutivasController = class EjecutivasController {
     constructor(ejecutivasService) {
         this.ejecutivasService = ejecutivasService;
@@ -84,20 +85,53 @@ let EjecutivasController = class EjecutivasController {
             throw new common_1.HttpException('Error al desactivar ejecutiva', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
-    async getEjecutivasDisponibles() {
+    async getEjecutivasDisponiblesSimple() {
         try {
-            console.log('🔍 [EjecutivasController] Obteniendo ejecutivas disponibles');
-            const resultado = await this.ejecutivasService.getEjecutivasDisponibles();
-            console.log('✅ [EjecutivasController] Ejecutivas disponibles encontradas:', resultado.length);
+            console.log('🔍 [EjecutivasController] Endpoint simple para ejecutivas disponibles');
+            const ejecutivas = await this.ejecutivaRepository.find({
+                where: {
+                    estado_ejecutiva: 'Activo',
+                    id_empresa_prov: (0, typeorm_1.IsNull)()
+                },
+                select: [
+                    'id_ejecutiva',
+                    'dni',
+                    'nombre_completo',
+                    'correo',
+                    'telefono',
+                    'linkedin',
+                    'estado_ejecutiva',
+                    'fecha_creacion'
+                ],
+                order: { nombre_completo: 'ASC' }
+            });
+            const resultado = ejecutivas.map(ej => {
+                const nombreParts = ej.nombre_completo?.split(' ') || ['Ejecutiva', ''];
+                return {
+                    id_ejecutiva: ej.id_ejecutiva,
+                    id_usuario: ej.id_ejecutiva,
+                    dni: ej.dni,
+                    nombre_completo: ej.nombre_completo,
+                    nombre: nombreParts[0] || 'Ejecutiva',
+                    apellido: nombreParts.slice(1).join(' ') || '',
+                    correo: ej.correo,
+                    email: ej.correo,
+                    telefono: ej.telefono,
+                    linkedin: ej.linkedin,
+                    estado_ejecutiva: ej.estado_ejecutiva,
+                    activo: true,
+                    total_empresas: 0,
+                    total_clientes: 0,
+                    total_actividades: 0,
+                    fecha_creacion: ej.fecha_creacion
+                };
+            });
+            console.log('✅ [EjecutivasController] Ejecutivas simples retornadas:', resultado.length);
             return resultado;
         }
         catch (error) {
-            console.error('❌ [EjecutivasController] Error obteniendo ejecutivas disponibles:', error);
-            throw new common_1.HttpException({
-                message: 'Error al obtener ejecutivas disponibles',
-                error: error.message,
-                timestamp: new Date().toISOString()
-            }, common_1.HttpStatus.INTERNAL_SERVER_ERROR);
+            console.error('❌ [EjecutivasController] Error en endpoint simple:', error);
+            return [];
         }
     }
 };
@@ -138,11 +172,11 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], EjecutivasController.prototype, "deleteEjecutiva", null);
 __decorate([
-    (0, common_1.Get)('disponibles'),
+    (0, common_1.Get)('disponibles-simple'),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", Promise)
-], EjecutivasController.prototype, "getEjecutivasDisponibles", null);
+], EjecutivasController.prototype, "getEjecutivasDisponiblesSimple", null);
 exports.EjecutivasController = EjecutivasController = __decorate([
     (0, common_1.Controller)('ejecutivas'),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),

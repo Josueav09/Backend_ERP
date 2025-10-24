@@ -183,63 +183,57 @@ let EjecutivasService = class EjecutivasService {
     async getEjecutivasDisponibles() {
         try {
             console.log('🔍 [EjecutivasService] Buscando ejecutivas disponibles...');
-            const ejecutivasDisponibles = await this.ejecutivaRepository.find({
-                where: {
-                    estado_ejecutiva: 'Activo',
-                    id_empresa_prov: (0, typeorm_2.IsNull)()
-                },
-                relations: ['jefe'],
-                order: { nombre_completo: 'ASC' }
+            const query = `
+      SELECT 
+        e.id_ejecutiva,
+        e.dni,
+        e.nombre_completo,
+        e.correo,
+        e.telefono,
+        e.linkedin,
+        e.estado_ejecutiva,
+        e.fecha_creacion,
+        e.fecha_actualizacion,
+        COUNT(DISTINCT cf.id_cliente_final) as total_clientes,
+        COUNT(DISTINCT t.id_trazabilidad) as total_actividades
+      FROM ejecutiva e
+      LEFT JOIN cliente_final cf ON e.id_ejecutiva = cf.id_ejecutiva
+      LEFT JOIN trazabilidad t ON e.id_ejecutiva = t.id_ejecutiva
+      WHERE e.estado_ejecutiva = 'Activo' 
+        AND e.id_empresa_prov IS NULL
+      GROUP BY e.id_ejecutiva, e.dni, e.nombre_completo, e.correo, 
+               e.telefono, e.linkedin, e.estado_ejecutiva,
+               e.fecha_creacion, e.fecha_actualizacion
+      ORDER BY e.nombre_completo ASC
+    `;
+            const ejecutivasDisponibles = await this.ejecutivaRepository.query(query);
+            console.log('✅ [EjecutivasService] Ejecutivas disponibles encontradas:', ejecutivasDisponibles.length);
+            return ejecutivasDisponibles.map(ej => {
+                const nombreParts = ej.nombre_completo?.split(' ') || ['Ejecutiva', ''];
+                return {
+                    id_ejecutiva: ej.id_ejecutiva,
+                    id_usuario: ej.id_ejecutiva,
+                    dni: ej.dni,
+                    nombre_completo: ej.nombre_completo,
+                    nombre: nombreParts[0] || 'Ejecutiva',
+                    apellido: nombreParts.slice(1).join(' ') || '',
+                    correo: ej.correo,
+                    email: ej.correo,
+                    telefono: ej.telefono,
+                    linkedin: ej.linkedin,
+                    estado_ejecutiva: ej.estado_ejecutiva,
+                    activo: ej.estado_ejecutiva === 'Activo',
+                    total_empresas: 0,
+                    total_clientes: parseInt(ej.total_clientes) || 0,
+                    total_actividades: parseInt(ej.total_actividades) || 0,
+                    fecha_creacion: ej.fecha_creacion,
+                    fecha_actualizacion: ej.fecha_actualizacion
+                };
             });
-            console.log('✅ [EjecutivasService] Ejecutivas encontradas:', ejecutivasDisponibles.length);
-            const ejecutivasValidas = ejecutivasDisponibles.filter(ej => ej.id_ejecutiva !== null && ej.id_ejecutiva !== undefined);
-            console.log('✅ [EjecutivasService] Ejecutivas válidas:', ejecutivasValidas.length);
-            if (ejecutivasValidas.length === 0) {
-                return [];
-            }
-            const ejecutivasConStats = await Promise.all(ejecutivasValidas.map(async (ej) => {
-                try {
-                    const [totalClientes, totalActividades] = await Promise.all([
-                        this.clienteRepository.count({
-                            where: { ejecutiva: { id_ejecutiva: ej.id_ejecutiva } }
-                        }),
-                        this.trazabilidadRepository.count({
-                            where: { ejecutiva: { id_ejecutiva: ej.id_ejecutiva } }
-                        })
-                    ]);
-                    const nombreParts = ej.nombre_completo?.split(' ') || ['Ejecutiva', ''];
-                    return {
-                        id_ejecutiva: ej.id_ejecutiva,
-                        id_usuario: ej.id_ejecutiva,
-                        dni: ej.dni,
-                        nombre_completo: ej.nombre_completo,
-                        nombre: nombreParts[0] || 'Ejecutiva',
-                        apellido: nombreParts.slice(1).join(' ') || '',
-                        correo: ej.correo,
-                        email: ej.correo,
-                        telefono: ej.telefono,
-                        linkedin: ej.linkedin,
-                        estado_ejecutiva: ej.estado_ejecutiva,
-                        activo: ej.estado_ejecutiva === 'Activo',
-                        total_empresas: 0,
-                        total_clientes: totalClientes || 0,
-                        total_actividades: totalActividades || 0,
-                        fecha_creacion: ej.fecha_creacion,
-                        fecha_actualizacion: ej.fecha_actualizacion
-                    };
-                }
-                catch (error) {
-                    console.error(`❌ Error procesando ejecutiva ${ej.id_ejecutiva}:`, error);
-                    return null;
-                }
-            }));
-            const resultado = ejecutivasConStats.filter(ej => ej !== null);
-            console.log('✅ [EjecutivasService] Resultado final:', resultado.length);
-            return resultado;
         }
         catch (error) {
             console.error('❌ [EjecutivasService] Error crítico:', error);
-            throw error;
+            return [];
         }
     }
 };

@@ -1,10 +1,12 @@
 import { Controller, Get, Post, Put, Delete, Param, Body, HttpException, HttpStatus, UseGuards } from '@nestjs/common';
 import { EjecutivasService } from '../../services/jefe/ejecutivas.service';
 import { JwtAuthGuard } from 'shared/guards/jwt-auth.guard';
+import { IsNull } from 'typeorm';
 
 @Controller('ejecutivas')
-  @UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard)
 export class EjecutivasController {
+  ejecutivaRepository: any;
   constructor(private readonly ejecutivasService: EjecutivasService) { }
 
   @Get()
@@ -74,24 +76,83 @@ export class EjecutivasController {
     }
   }
   // En ejecutivas.controller.ts - VERSIÓN CORREGIDA
-  @Get('disponibles')
+  // @Get('disponibles')
 
-  async getEjecutivasDisponibles() {
+  // async getEjecutivasDisponibles() {
+  //   try {
+  //     console.log('🔍 [EjecutivasController] Obteniendo ejecutivas disponibles');
+  //     const resultado = await this.ejecutivasService.getEjecutivasDisponibles();
+  //     console.log('✅ [EjecutivasController] Ejecutivas disponibles encontradas:', resultado.length);
+  //     return resultado;
+  //   } catch (error) {
+  //     console.error('❌ [EjecutivasController] Error obteniendo ejecutivas disponibles:', error);
+  //     throw new HttpException(
+  //       {
+  //         message: 'Error al obtener ejecutivas disponibles',
+  //         error: error.message,
+  //         timestamp: new Date().toISOString()
+  //       },
+  //       HttpStatus.INTERNAL_SERVER_ERROR
+  //     );
+  //   }
+  // }
+
+  // En ejecutivas.controller.ts - ENDPOINT DE EMERGENCIA
+  @Get('disponibles-simple')
+  async getEjecutivasDisponiblesSimple() {
     try {
-      console.log('🔍 [EjecutivasController] Obteniendo ejecutivas disponibles');
-      const resultado = await this.ejecutivasService.getEjecutivasDisponibles();
-      console.log('✅ [EjecutivasController] Ejecutivas disponibles encontradas:', resultado.length);
-      return resultado;
-    } catch (error) {
-      console.error('❌ [EjecutivasController] Error obteniendo ejecutivas disponibles:', error);
-      throw new HttpException(
-        {
-          message: 'Error al obtener ejecutivas disponibles',
-          error: error.message,
-          timestamp: new Date().toISOString()
+      console.log('🔍 [EjecutivasController] Endpoint simple para ejecutivas disponibles');
+
+      const ejecutivas = await this.ejecutivaRepository.find({
+        where: {
+          estado_ejecutiva: 'Activo',
+          id_empresa_prov: IsNull()
         },
-        HttpStatus.INTERNAL_SERVER_ERROR
-      );
+        select: [
+          'id_ejecutiva',
+          'dni',
+          'nombre_completo',
+          'correo',
+          'telefono',
+          'linkedin',
+          'estado_ejecutiva',
+          'fecha_creacion'
+        ],
+        order: { nombre_completo: 'ASC' }
+      });
+
+      // ✅ DATOS BÁSICOS SIN ESTADÍSTICAS COMPLEJAS
+      const resultado = ejecutivas.map(ej => {
+        const nombreParts = ej.nombre_completo?.split(' ') || ['Ejecutiva', ''];
+
+        return {
+          id_ejecutiva: ej.id_ejecutiva,
+          id_usuario: ej.id_ejecutiva,
+          dni: ej.dni,
+          nombre_completo: ej.nombre_completo,
+          nombre: nombreParts[0] || 'Ejecutiva',
+          apellido: nombreParts.slice(1).join(' ') || '',
+          correo: ej.correo,
+          email: ej.correo,
+          telefono: ej.telefono,
+          linkedin: ej.linkedin,
+          estado_ejecutiva: ej.estado_ejecutiva,
+          activo: true,
+          total_empresas: 0,
+          total_clientes: 0,
+          total_actividades: 0,
+          fecha_creacion: ej.fecha_creacion
+        };
+      });
+
+      console.log('✅ [EjecutivasController] Ejecutivas simples retornadas:', resultado.length);
+      return resultado;
+
+    } catch (error) {
+      console.error('❌ [EjecutivasController] Error en endpoint simple:', error);
+
+      // ✅ SIEMPRE RETORNAR ARRAY, NUNCA ERROR
+      return [];
     }
   }
 

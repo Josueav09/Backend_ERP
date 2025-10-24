@@ -1,6 +1,7 @@
 import { EjecutivasService } from '../../services/jefe/ejecutivas.service';
 export declare class EjecutivasController {
     private readonly ejecutivasService;
+    ejecutivaRepository: any;
     constructor(ejecutivasService: EjecutivasService);
     getEjecutivas(): Promise<{
         total_clientes: number;
@@ -72,23 +73,5 @@ export declare class EjecutivasController {
     deleteEjecutiva(id: string): Promise<{
         message: string;
     }>;
-    getEjecutivasDisponibles(): Promise<{
-        id_ejecutiva: number;
-        id_usuario: number;
-        dni: string;
-        nombre_completo: string;
-        nombre: string;
-        apellido: string;
-        correo: string;
-        email: string;
-        telefono: string;
-        linkedin: string;
-        estado_ejecutiva: string;
-        activo: boolean;
-        total_empresas: number;
-        total_clientes: number;
-        total_actividades: number;
-        fecha_creacion: Date;
-        fecha_actualizacion: Date;
-    }[]>;
+    getEjecutivasDisponiblesSimple(): Promise<any>;
 }

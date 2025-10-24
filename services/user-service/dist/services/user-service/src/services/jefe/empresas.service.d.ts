@@ -58,26 +58,21 @@ export declare class EmpresasService {
             total_clientes: number;
         }[];
     }>;
+    asignarEjecutivaAEmpresa(idEmpresa: number, idEjecutiva: number): Promise<{
+        success: boolean;
+        message: string;
+        empresa: string;
+        ejecutiva: string;
+    }>;
     addEjecutivaToEmpresa(empresaId: number, ejecutivaId: number): Promise<{
         message: string;
         ejecutiva: {
             id_ejecutiva: number;
             nombre_completo: string;
             correo: string;
-            empresa: string;
         };
     }>;
     removeEjecutivaFromEmpresa(empresaId: number, ejecutivaId: number): Promise<{
         message: string;
-        ejecutiva: {
-            id_ejecutiva: number;
-            nombre_completo: string;
-        };
-    }>;
-    asignarEjecutivaAEmpresa(idEmpresa: number, idEjecutiva: number): Promise<{
-        success: boolean;
-        message: string;
-        empresa: string;
-        ejecutiva: string;
     }>;
 }

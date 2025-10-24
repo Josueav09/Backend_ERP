@@ -255,72 +255,6 @@ let EmpresasService = class EmpresasService {
             ejecutivas: ejecutivasFormateadas
         };
     }
-    async addEjecutivaToEmpresa(empresaId, ejecutivaId) {
-        console.log('➕ [EmpresasService] Asignando ejecutiva:', { empresaId, ejecutivaId });
-        const empresa = await this.empresaRepository.findOne({
-            where: { id_empresa_prov: empresaId }
-        });
-        if (!empresa) {
-            throw new common_1.HttpException('Empresa no encontrada', common_1.HttpStatus.NOT_FOUND);
-        }
-        const ejecutiva = await this.ejecutivaRepository.findOne({
-            where: { id_ejecutiva: ejecutivaId },
-            relations: ['empresa_proveedora']
-        });
-        if (!ejecutiva) {
-            throw new common_1.HttpException('Ejecutiva no encontrada', common_1.HttpStatus.NOT_FOUND);
-        }
-        if (ejecutiva.empresa_proveedora?.id_empresa_prov === empresaId) {
-            throw new common_1.HttpException('Esta ejecutiva ya está asignada a esta empresa', common_1.HttpStatus.BAD_REQUEST);
-        }
-        if (ejecutiva.empresa_proveedora && ejecutiva.empresa_proveedora.id_empresa_prov !== empresaId) {
-            throw new common_1.HttpException(`La ejecutiva ya está asignada a la empresa "${ejecutiva.empresa_proveedora.razon_social}"`, common_1.HttpStatus.BAD_REQUEST);
-        }
-        ejecutiva.empresa_proveedora = empresa;
-        ejecutiva.fecha_actualizacion = new Date();
-        await this.ejecutivaRepository.save(ejecutiva);
-        console.log('✅ [EmpresasService] Ejecutiva asignada exitosamente');
-        return {
-            message: 'Ejecutiva asignada correctamente a la empresa',
-            ejecutiva: {
-                id_ejecutiva: ejecutiva.id_ejecutiva,
-                nombre_completo: ejecutiva.nombre_completo,
-                correo: ejecutiva.correo,
-                empresa: empresa.razon_social
-            }
-        };
-    }
-    async removeEjecutivaFromEmpresa(empresaId, ejecutivaId) {
-        console.log('➖ [EmpresasService] Removiendo ejecutiva:', { empresaId, ejecutivaId });
-        const ejecutiva = await this.ejecutivaRepository.findOne({
-            where: {
-                id_ejecutiva: ejecutivaId,
-                empresa_proveedora: { id_empresa_prov: empresaId }
-            },
-            relations: ['empresa_proveedora']
-        });
-        if (!ejecutiva) {
-            throw new common_1.HttpException('Ejecutiva no encontrada o no está asignada a esta empresa', common_1.HttpStatus.NOT_FOUND);
-        }
-        const clientesCount = await this.clienteRepository.count({
-            where: { ejecutiva: { id_ejecutiva: ejecutivaId } }
-        });
-        if (clientesCount > 0) {
-            throw new common_1.HttpException(`No se puede quitar la ejecutiva porque tiene ${clientesCount} cliente(s) asignado(s). ` +
-                `Primero reasigne los clientes a otra ejecutiva.`, common_1.HttpStatus.BAD_REQUEST);
-        }
-        ejecutiva.empresa_proveedora = null;
-        ejecutiva.fecha_actualizacion = new Date();
-        await this.ejecutivaRepository.save(ejecutiva);
-        console.log('✅ [EmpresasService] Ejecutiva removida exitosamente');
-        return {
-            message: 'Ejecutiva removida correctamente de la empresa',
-            ejecutiva: {
-                id_ejecutiva: ejecutiva.id_ejecutiva,
-                nombre_completo: ejecutiva.nombre_completo
-            }
-        };
-    }
     async asignarEjecutivaAEmpresa(idEmpresa, idEjecutiva) {
         try {
             console.log(`🔗 [EmpresasService] Asignando ejecutiva ${idEjecutiva} a empresa ${idEmpresa}`);
@@ -353,6 +287,50 @@ let EmpresasService = class EmpresasService {
             console.error('❌ [EmpresasService] Error asignando ejecutiva:', error);
             throw new Error(error.message || 'Error al asignar ejecutiva');
         }
+    }
+    async addEjecutivaToEmpresa(empresaId, ejecutivaId) {
+        const empresa = await this.empresaRepository.findOne({
+            where: { id_empresa_prov: empresaId }
+        });
+        if (!empresa) {
+            throw new common_1.HttpException('Empresa no encontrada', common_1.HttpStatus.NOT_FOUND);
+        }
+        const ejecutiva = await this.ejecutivaRepository.findOne({
+            where: { id_ejecutiva: ejecutivaId }
+        });
+        if (!ejecutiva) {
+            throw new common_1.HttpException('Ejecutiva no encontrada', common_1.HttpStatus.NOT_FOUND);
+        }
+        if (ejecutiva.empresa_proveedora && ejecutiva.empresa_proveedora.id_empresa_prov === empresaId) {
+            throw new common_1.HttpException('Esta ejecutiva ya está asignada a esta empresa', common_1.HttpStatus.BAD_REQUEST);
+        }
+        ejecutiva.empresa_proveedora = empresa;
+        ejecutiva.fecha_actualizacion = new Date();
+        await this.ejecutivaRepository.save(ejecutiva);
+        return {
+            message: 'Ejecutiva asignada correctamente a la empresa',
+            ejecutiva: {
+                id_ejecutiva: ejecutiva.id_ejecutiva,
+                nombre_completo: ejecutiva.nombre_completo,
+                correo: ejecutiva.correo
+            }
+        };
+    }
+    async removeEjecutivaFromEmpresa(empresaId, ejecutivaId) {
+        const ejecutiva = await this.ejecutivaRepository.findOne({
+            where: {
+                id_ejecutiva: ejecutivaId,
+                empresa_proveedora: { id_empresa_prov: empresaId }
+            },
+            relations: ['empresa_proveedora']
+        });
+        if (!ejecutiva) {
+            throw new common_1.HttpException('Ejecutiva no encontrada en esta empresa', common_1.HttpStatus.NOT_FOUND);
+        }
+        ejecutiva.empresa_proveedora = null;
+        ejecutiva.fecha_actualizacion = new Date();
+        await this.ejecutivaRepository.save(ejecutiva);
+        return { message: 'Ejecutiva removida correctamente de la empresa' };
     }
 };
 exports.EmpresasService = EmpresasService;

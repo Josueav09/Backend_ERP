@@ -77,34 +77,28 @@ let EmpresasController = class EmpresasController {
             throw new common_1.HttpException('Error al actualizar estado de empresa', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
-    async addEjecutivaToEmpresa(empresaId, ejecutivaId) {
-        console.log('➕ [EmpresasController] Asignando ejecutiva:', {
-            empresaId: parseInt(empresaId),
-            ejecutivaId: parseInt(ejecutivaId)
-        });
+    async addEjecutivaToEmpresa(id, body) {
         try {
-            return await this.empresasService.addEjecutivaToEmpresa(parseInt(empresaId), parseInt(ejecutivaId));
+            const { id_ejecutiva } = body;
+            if (!id_ejecutiva) {
+                throw new common_1.HttpException('ID de ejecutiva es requerido', common_1.HttpStatus.BAD_REQUEST);
+            }
+            return await this.empresasService.addEjecutivaToEmpresa(parseInt(id), parseInt(id_ejecutiva));
         }
         catch (error) {
             if (error instanceof common_1.HttpException)
                 throw error;
-            console.error('❌ Error en addEjecutivaToEmpresa:', error);
-            throw new common_1.HttpException(error.message || 'Error al agregar ejecutiva', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
+            throw new common_1.HttpException('Error al agregar ejecutiva', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
-    async removeEjecutivaFromEmpresa(empresaId, ejecutivaId) {
-        console.log('➖ [EmpresasController] Removiendo ejecutiva:', {
-            empresaId: parseInt(empresaId),
-            ejecutivaId: parseInt(ejecutivaId)
-        });
+    async removeEjecutivaFromEmpresa(id, ejecutivaId) {
         try {
-            return await this.empresasService.removeEjecutivaFromEmpresa(parseInt(empresaId), parseInt(ejecutivaId));
+            return await this.empresasService.removeEjecutivaFromEmpresa(parseInt(id), parseInt(ejecutivaId));
         }
         catch (error) {
             if (error instanceof common_1.HttpException)
                 throw error;
-            console.error('❌ Error en removeEjecutivaFromEmpresa:', error);
-            throw new common_1.HttpException(error.message || 'Error al remover ejecutiva', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
+            throw new common_1.HttpException('Error al remover ejecutiva', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
     async asignarEjecutivaAEmpresa(id, body) {
@@ -156,16 +150,16 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], EmpresasController.prototype, "updateEmpresaEstado", null);
 __decorate([
-    (0, common_1.Post)(':empresaId/ejecutivas/:ejecutivaId'),
-    __param(0, (0, common_1.Param)('empresaId')),
-    __param(1, (0, common_1.Param)('ejecutivaId')),
+    (0, common_1.Post)(':id/ejecutivas'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", Promise)
 ], EmpresasController.prototype, "addEjecutivaToEmpresa", null);
 __decorate([
-    (0, common_1.Delete)(':empresaId/ejecutivas/:ejecutivaId'),
-    __param(0, (0, common_1.Param)('empresaId')),
+    (0, common_1.Post)(':id/ejecutivas/:ejecutivaId/remove'),
+    __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Param)('ejecutivaId')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String, String]),

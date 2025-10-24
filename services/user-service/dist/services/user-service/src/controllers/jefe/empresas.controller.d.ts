@@ -53,21 +53,16 @@ export declare class EmpresasController {
         empresa: import("shared/entities/EmpresaProveedora.entity").EmpresaProveedora;
         message: string;
     }>;
-    addEjecutivaToEmpresa(empresaId: string, ejecutivaId: string): Promise<{
+    addEjecutivaToEmpresa(id: string, body: any): Promise<{
         message: string;
         ejecutiva: {
             id_ejecutiva: number;
             nombre_completo: string;
             correo: string;
-            empresa: string;
         };
     }>;
-    removeEjecutivaFromEmpresa(empresaId: string, ejecutivaId: string): Promise<{
+    removeEjecutivaFromEmpresa(id: string, ejecutivaId: string): Promise<{
         message: string;
-        ejecutiva: {
-            id_ejecutiva: number;
-            nombre_completo: string;
-        };
     }>;
     asignarEjecutivaAEmpresa(id: string, body: {
         id_ejecutiva: number;
