@@ -16,6 +16,7 @@ exports.ApiGatewayController = void 0;
 const common_1 = require("@nestjs/common");
 const axios_1 = require("@nestjs/axios");
 const rxjs_1 = require("rxjs");
+const platform_express_1 = require("@nestjs/platform-express");
 let ApiGatewayController = class ApiGatewayController {
     constructor(httpService) {
         this.httpService = httpService;
@@ -798,6 +799,154 @@ let ApiGatewayController = class ApiGatewayController {
             throw new common_1.HttpException(error.response?.data?.message || 'Error al obtener estadísticas de trazabilidad', error.response?.status || common_1.HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+    async getEmpresaDashboardStats(clienteUsuarioId, req) {
+        try {
+            console.log('📊 [API Gateway] === EMPRESA DASHBOARD STATS ===');
+            console.log('📊 [API Gateway] Query clienteUsuarioId:', clienteUsuarioId);
+            const headers = this.getHeadersWithAuth(req);
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get(`http://localhost:3002/empresa/dashboard/stats?clienteUsuarioId=${clienteUsuarioId}`, { headers }));
+            console.log('✅ [API Gateway] Stats de empresa obtenidas exitosamente');
+            return response.data;
+        }
+        catch (error) {
+            console.error('❌ [API Gateway] Error en empresa/dashboard/stats:', error.response?.data);
+            throw new common_1.HttpException(error.response?.data?.message || 'Error al obtener estadísticas del dashboard', error.response?.status || common_1.HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+    async getEmpresaTrazabilidad(clienteUsuarioId, req) {
+        try {
+            console.log('📋 [API Gateway] === EMPRESA TRAZABILIDAD ===');
+            const headers = this.getHeadersWithAuth(req);
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get(`http://localhost:3002/empresa/trazabilidad?clienteUsuarioId=${clienteUsuarioId}`, { headers }));
+            console.log('✅ [API Gateway] Trazabilidad de empresa obtenida exitosamente');
+            return response.data;
+        }
+        catch (error) {
+            console.error('❌ [API Gateway] Error en empresa/trazabilidad:', error.response?.data);
+            throw new common_1.HttpException(error.response?.data?.message || 'Error al obtener trazabilidad', error.response?.status || common_1.HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+    async getEmpresaEjecutiva(clienteUsuarioId, req) {
+        try {
+            console.log('👩‍💼 [API Gateway] === EMPRESA EJECUTIVA ===');
+            const headers = this.getHeadersWithAuth(req);
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get(`http://localhost:3002/empresa/ejecutiva?clienteUsuarioId=${clienteUsuarioId}`, { headers }));
+            console.log('✅ [API Gateway] Info de ejecutiva obtenida exitosamente');
+            return response.data;
+        }
+        catch (error) {
+            console.error('❌ [API Gateway] Error en empresa/ejecutiva:', error.response?.data);
+            throw new common_1.HttpException(error.response?.data?.message || 'Error al obtener información de la ejecutiva', error.response?.status || common_1.HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+    async getEmpresaActividades(clienteUsuarioId, req) {
+        try {
+            console.log('🔄 [API Gateway] === EMPRESA ACTIVIDADES ===');
+            const headers = this.getHeadersWithAuth(req);
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get(`http://localhost:3002/empresa/actividades?clienteUsuarioId=${clienteUsuarioId}`, { headers }));
+            console.log('✅ [API Gateway] Actividades de empresa obtenidas exitosamente');
+            return response.data;
+        }
+        catch (error) {
+            console.error('❌ [API Gateway] Error en empresa/actividades:', error.response?.data);
+            throw new common_1.HttpException(error.response?.data?.message || 'Error al obtener actividades', error.response?.status || common_1.HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+    async bulkCreateEjecutivaClientes(file, ejecutivaId, req) {
+        try {
+            console.log('📁 [API Gateway] === BULK UPLOAD CLIENTES ===');
+            if (!file) {
+                throw new common_1.HttpException('Archivo no proporcionado', common_1.HttpStatus.BAD_REQUEST);
+            }
+            if (!file.originalname.match(/\.csv$/i)) {
+                throw new common_1.HttpException('Formato de archivo no válido. Use CSV', common_1.HttpStatus.BAD_REQUEST);
+            }
+            console.log('📁 [API Gateway] Archivo recibido:', {
+                nombre: file.originalname,
+                tamaño: file.size,
+                tipo: file.mimetype
+            });
+            const headers = this.getHeadersWithAuth(req);
+            const formData = new FormData();
+            const blob = new Blob([file.buffer], { type: file.mimetype });
+            formData.append('file', blob, file.originalname);
+            formData.append('ejecutivaId', ejecutivaId);
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.post('http://localhost:3002/ejecutiva/clientes/bulk', formData, {
+                headers: {
+                    ...headers,
+                    'Content-Type': 'multipart/form-data'
+                }
+            }));
+            console.log('✅ [API Gateway] Bulk upload completado:', response.data);
+            return response.data;
+        }
+        catch (error) {
+            console.error('❌ [API Gateway] Error en bulk upload:', error.response?.data);
+            throw new common_1.HttpException(error.response?.data?.message || 'Error al procesar archivo de clientes', error.response?.status || common_1.HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+    async downloadEjecutivaPlantillaClientes(ejecutivaId, res, req) {
+        try {
+            console.log('📥 [API Gateway] === DESCARGAR PLANTILLA CLIENTES ===');
+            const headers = this.getHeadersWithAuth(req);
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get(`http://localhost:3002/ejecutiva/clientes/plantilla?ejecutivaId=${ejecutivaId}`, {
+                headers,
+                responseType: 'stream'
+            }));
+            res.setHeader('Content-Type', 'text/csv');
+            res.setHeader('Content-Disposition', 'attachment; filename="plantilla_clientes.csv"');
+            response.data.pipe(res);
+        }
+        catch (error) {
+            console.error('❌ [API Gateway] Error al descargar plantilla:', error.response?.data);
+            const plantillaBasica = this.generarPlantillaBasica();
+            res.setHeader('Content-Type', 'text/csv');
+            res.setHeader('Content-Disposition', 'attachment; filename="plantilla_clientes.csv"');
+            res.send(plantillaBasica);
+        }
+    }
+    generarPlantillaBasica() {
+        const headers = [
+            'razon_social',
+            'ruc',
+            'direccion',
+            'telefono',
+            'correo',
+            'pagina_web',
+            'pais',
+            'departamento',
+            'provincia',
+            'linkedin',
+            'grupo_economico',
+            'rubro',
+            'sub_rubro',
+            'tamanio_empresa',
+            'facturacion_anual',
+            'cantidad_empleados'
+        ];
+        const ejemplo = {
+            razon_social: 'Mi Empresa Ejemplo SAC',
+            ruc: '20123456789',
+            direccion: 'Av. Ejemplo 123, Lima',
+            telefono: '+51 987 654 321',
+            correo: 'contacto@miempresa.com',
+            pagina_web: 'https://miempresa.com',
+            pais: 'Perú',
+            departamento: 'Lima',
+            provincia: 'Lima',
+            linkedin: 'https://linkedin.com/company/miempresa',
+            grupo_economico: 'Grupo Ejemplo',
+            rubro: 'Tecnología',
+            sub_rubro: 'Desarrollo Software',
+            tamanio_empresa: 'Mediana',
+            facturacion_anual: '500000.00',
+            cantidad_empleados: '50'
+        };
+        let csvContent = headers.join(',') + '\n';
+        const row = headers.map(header => `"${ejemplo[header] || ''}"`).join(',');
+        csvContent += row + '\n';
+        return csvContent;
+    }
 };
 exports.ApiGatewayController = ApiGatewayController;
 __decorate([
@@ -1341,6 +1490,57 @@ __decorate([
     __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", Promise)
 ], ApiGatewayController.prototype, "getEjecutivaTrazabilidadStats", null);
+__decorate([
+    (0, common_1.Get)('empresa/dashboard/stats'),
+    __param(0, (0, common_1.Query)('clienteUsuarioId')),
+    __param(1, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", Promise)
+], ApiGatewayController.prototype, "getEmpresaDashboardStats", null);
+__decorate([
+    (0, common_1.Get)('empresa/trazabilidad'),
+    __param(0, (0, common_1.Query)('clienteUsuarioId')),
+    __param(1, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", Promise)
+], ApiGatewayController.prototype, "getEmpresaTrazabilidad", null);
+__decorate([
+    (0, common_1.Get)('empresa/ejecutiva'),
+    __param(0, (0, common_1.Query)('clienteUsuarioId')),
+    __param(1, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", Promise)
+], ApiGatewayController.prototype, "getEmpresaEjecutiva", null);
+__decorate([
+    (0, common_1.Get)('empresa/actividades'),
+    __param(0, (0, common_1.Query)('clienteUsuarioId')),
+    __param(1, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", Promise)
+], ApiGatewayController.prototype, "getEmpresaActividades", null);
+__decorate([
+    (0, common_1.Post)('ejecutiva/clientes/bulk'),
+    (0, common_1.UseInterceptors)((0, platform_express_1.FileInterceptor)('file')),
+    __param(0, (0, common_1.UploadedFile)()),
+    __param(1, (0, common_1.Body)('ejecutivaId')),
+    __param(2, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, String, Object]),
+    __metadata("design:returntype", Promise)
+], ApiGatewayController.prototype, "bulkCreateEjecutivaClientes", null);
+__decorate([
+    (0, common_1.Get)('ejecutiva/clientes/plantilla'),
+    __param(0, (0, common_1.Query)('ejecutivaId')),
+    __param(1, (0, common_1.Res)()),
+    __param(2, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object, Object]),
+    __metadata("design:returntype", Promise)
+], ApiGatewayController.prototype, "downloadEjecutivaPlantillaClientes", null);
 exports.ApiGatewayController = ApiGatewayController = __decorate([
     (0, common_1.Controller)(),
     __metadata("design:paramtypes", [axios_1.HttpService])

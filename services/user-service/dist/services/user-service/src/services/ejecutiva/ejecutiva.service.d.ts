@@ -183,4 +183,23 @@ export declare class EjecutivaService {
         reuniones_agendadas: number;
         inicio_semana: Date;
     }>;
+    bulkCreateClientes(file: any, ejecutivaId: string): Promise<{
+        total: number;
+        creados: number;
+        duplicados_en_archivo: number;
+        invalidos: number;
+        resumen: {
+            exitosos: number;
+            con_errores: number;
+        };
+    }>;
+    private parseCSVFile;
+    private validarClientesCSV;
+    private validarFormatoRUC;
+    private filtrarRUCsDuplicados;
+    private crearClientesEnLote;
+    downloadPlantillaClientes(): Promise<{
+        csv: string;
+        filename: string;
+    }>;
 }

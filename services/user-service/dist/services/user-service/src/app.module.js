@@ -51,6 +51,8 @@ const jefe_controller_1 = require("./controllers/jefe/jefe.controller");
 const ejecutivas_service_1 = require("./services/jefe/ejecutivas.service");
 const empresas_service_1 = require("./services/jefe/empresas.service");
 const jefe_service_1 = require("./services/jefe/jefe.service");
+const dashboard_controller_1 = require("./controllers/cliente/dashboard.controller");
+const dashboard_service_1 = require("./services/cliente/dashboard.service");
 const ejecutiva_controller_1 = require("./controllers/ejecutiva/ejecutiva.controller");
 const ejecutiva_service_1 = require("./services/ejecutiva/ejecutiva.service");
 const Jefe_entity_1 = require("../../../shared/entities/Jefe.entity");
@@ -133,6 +135,7 @@ exports.AppModule = AppModule = __decorate([
             jefe_controller_1.JefeController,
             ejecutiva_controller_1.EjecutivaController,
             clienteFinal_controller_1.ClientesController,
+            dashboard_controller_1.EmpresaDashboardController
         ],
         providers: [
             jefe_service_1.JefeService,
@@ -142,6 +145,7 @@ exports.AppModule = AppModule = __decorate([
             empresas_service_1.EmpresasService,
             ejecutiva_service_1.EjecutivaService,
             clientes_service_1.ClientesService,
+            dashboard_service_1.EmpresaDashboardService
         ],
     })
 ], AppModule);

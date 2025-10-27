@@ -1,4 +1,5 @@
 import { EjecutivaService } from '../../services/ejecutiva/ejecutiva.service';
+import { Response } from 'express';
 export declare class EjecutivaController {
     private readonly ejecutivaService;
     constructor(ejecutivaService: EjecutivaService);
@@ -128,4 +129,15 @@ export declare class EjecutivaController {
         reuniones_agendadas: number;
         inicio_semana: Date;
     }>;
+    bulkCreateClientes(file: any, ejecutivaId: string): Promise<{
+        total: number;
+        creados: number;
+        duplicados_en_archivo: number;
+        invalidos: number;
+        resumen: {
+            exitosos: number;
+            con_errores: number;
+        };
+    }>;
+    downloadPlantilla(_ejecutivaId: string, res: Response): Promise<void>;
 }

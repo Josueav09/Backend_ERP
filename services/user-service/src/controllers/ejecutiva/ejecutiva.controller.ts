@@ -155,8 +155,12 @@
 // }
 
 // backend/services/user-service/src/controllers/ejecutiva/ejecutiva.controller.ts
-import { Controller, Get, Post, Body, Query, HttpException, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Post, Body, Query, HttpException, HttpStatus, UseInterceptors, UploadedFile, Res } from '@nestjs/common';
 import { EjecutivaService } from '../../services/ejecutiva/ejecutiva.service';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { Response } from 'express';
+
+
 
 @Controller('ejecutiva')
 export class EjecutivaController {
@@ -457,5 +461,41 @@ export class EjecutivaController {
       if (error instanceof HttpException) throw error;
       throw new HttpException('Error al obtener KPIs', HttpStatus.INTERNAL_SERVER_ERROR);
     }
+  }
+
+  @Post('clientes/bulk')
+  @UseInterceptors(FileInterceptor('file'))
+  async bulkCreateClientes(
+    @UploadedFile() file: any,
+    @Body('ejecutivaId') ejecutivaId: string
+  ) {
+    if (!file) {
+      throw new HttpException('Archivo no proporcionado', HttpStatus.BAD_REQUEST);
+    }
+
+    if (!file.originalname.match(/\.(csv|xlsx|xls)$/)) {
+      throw new HttpException('Formato de archivo no válido. Use CSV o Excel', HttpStatus.BAD_REQUEST);
+    }
+
+    return this.ejecutivaService.bulkCreateClientes(file, ejecutivaId);
+  }
+
+  /**
+   * ✅ NUEVO: Descargar plantilla CSV
+   */
+   
+  @Get('clientes/plantilla') // ✅ Faltaba el decorador @Get
+  async downloadPlantilla(
+    @Query('ejecutivaId') _ejecutivaId: string,
+    @Res() res: Response
+  ) {
+    const plantilla = await this.ejecutivaService.downloadPlantillaClientes();
+    
+    // Configurar headers para descarga
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename="${plantilla.filename}"`);
+    
+    // Enviar el CSV
+    res.send(plantilla.csv);
   }
 }

@@ -1,15 +1,51 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
     if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.EjecutivaService = void 0;
@@ -21,6 +57,8 @@ const EmpresaProveedora_entity_1 = require("../../../../../shared/entities/Empre
 const ClienteFinal_entity_1 = require("../../../../../shared/entities/ClienteFinal.entity");
 const Trazabilidad_entity_1 = require("../../../../../shared/entities/Trazabilidad.entity");
 const PersonaContacto_entity_1 = require("../../../../../shared/entities/PersonaContacto.entity");
+const csv_parser_1 = __importDefault(require("csv-parser"));
+const stream = __importStar(require("stream"));
 let EjecutivaService = class EjecutivaService {
     constructor(ejecutivaRepository, empresaRepository, clienteRepository, trazabilidadRepository, contactoRepository) {
         this.ejecutivaRepository = ejecutivaRepository;
@@ -442,6 +480,200 @@ let EjecutivaService = class EjecutivaService {
             console.error('Error en getKPIsSemanales:', error);
             throw new common_1.HttpException('Error al obtener KPIs semanales', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
         }
+    }
+    async bulkCreateClientes(file, ejecutivaId) {
+        try {
+            const idEjecutiva = parseInt(ejecutivaId);
+            const ejecutiva = await this.ejecutivaRepository.findOne({
+                where: {
+                    id_ejecutiva: idEjecutiva,
+                    estado_ejecutiva: 'Activo'
+                },
+                relations: ['empresa_proveedora']
+            });
+            if (!ejecutiva) {
+                throw new common_1.HttpException('Ejecutiva no encontrada', common_1.HttpStatus.NOT_FOUND);
+            }
+            if (!ejecutiva.empresa_proveedora) {
+                throw new common_1.HttpException('La ejecutiva no tiene empresa asignada', common_1.HttpStatus.BAD_REQUEST);
+            }
+            const clientesData = await this.parseCSVFile(file);
+            if (clientesData.length === 0) {
+                throw new common_1.HttpException('El archivo está vacío o no contiene datos válidos', common_1.HttpStatus.BAD_REQUEST);
+            }
+            const clientesValidos = this.validarClientesCSV(clientesData);
+            if (clientesValidos.length === 0) {
+                throw new common_1.HttpException('No se encontraron registros válidos en el archivo', common_1.HttpStatus.BAD_REQUEST);
+            }
+            const clientesSinDuplicados = await this.filtrarRUCsDuplicados(clientesValidos, ejecutiva.empresa_proveedora.id_empresa_prov);
+            const clientesCreados = await this.crearClientesEnLote(clientesSinDuplicados, ejecutiva);
+            return {
+                total: clientesData.length,
+                creados: clientesCreados.length,
+                duplicados_en_archivo: clientesValidos.length - clientesSinDuplicados.length,
+                invalidos: clientesData.length - clientesValidos.length,
+                resumen: {
+                    exitosos: clientesCreados.length,
+                    con_errores: (clientesData.length - clientesCreados.length)
+                }
+            };
+        }
+        catch (error) {
+            console.error('Error en bulkCreateClientes:', error);
+            if (error instanceof common_1.HttpException)
+                throw error;
+            throw new common_1.HttpException('Error al procesar archivo de clientes', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+    async parseCSVFile(file) {
+        return new Promise((resolve, reject) => {
+            const results = [];
+            try {
+                const bufferStream = new stream.PassThrough();
+                bufferStream.end(file.buffer);
+                bufferStream
+                    .pipe((0, csv_parser_1.default)())
+                    .on('data', (data) => {
+                    try {
+                        const cleanData = {};
+                        for (const [key, value] of Object.entries(data)) {
+                            const cleanKey = key.toString().trim().toLowerCase();
+                            const cleanValue = value ? value.toString().trim() : '';
+                            cleanData[cleanKey] = cleanValue;
+                        }
+                        if (cleanData.razon_social && cleanData.ruc) {
+                            results.push(cleanData);
+                        }
+                    }
+                    catch (rowError) {
+                        console.warn('Error procesando fila CSV:', rowError);
+                    }
+                })
+                    .on('end', () => {
+                    console.log(`✅ CSV parseado: ${results.length} registros válidos`);
+                    resolve(results);
+                })
+                    .on('error', (error) => {
+                    reject(new common_1.HttpException(`Error al leer el archivo CSV: ${error.message}`, common_1.HttpStatus.BAD_REQUEST));
+                });
+            }
+            catch (error) {
+                reject(new common_1.HttpException('Error al procesar archivo CSV', common_1.HttpStatus.BAD_REQUEST));
+            }
+        });
+    }
+    validarClientesCSV(clientesData) {
+        return clientesData.filter(cliente => {
+            const tieneCamposObligatorios = cliente.razon_social &&
+                cliente.ruc &&
+                cliente.direccion &&
+                cliente.telefono &&
+                cliente.correo;
+            const rucValido = this.validarFormatoRUC(cliente.ruc);
+            return tieneCamposObligatorios && rucValido;
+        });
+    }
+    validarFormatoRUC(ruc) {
+        if (!ruc)
+            return false;
+        const rucRegex = /^[0-9]{11}$/;
+        return rucRegex.test(ruc.replace(/\D/g, ''));
+    }
+    async filtrarRUCsDuplicados(clientesData, idEmpresaProv) {
+        const rucs = clientesData.map(c => c.ruc);
+        const rucsEnArchivo = new Set();
+        const clientesSinDuplicadosEnArchivo = clientesData.filter(cliente => {
+            if (rucsEnArchivo.has(cliente.ruc)) {
+                return false;
+            }
+            rucsEnArchivo.add(cliente.ruc);
+            return true;
+        });
+        const existentes = await this.clienteRepository.find({
+            where: {
+                ruc: (0, typeorm_2.In)(rucs),
+                empresa_proveedora: { id_empresa_prov: idEmpresaProv }
+            },
+            select: ['ruc']
+        });
+        const rucsExistentes = new Set(existentes.map(c => c.ruc));
+        return clientesSinDuplicadosEnArchivo.filter(cliente => !rucsExistentes.has(cliente.ruc));
+    }
+    async crearClientesEnLote(clientesData, ejecutiva) {
+        const clientesACrear = clientesData.map(clienteData => {
+            return this.clienteRepository.create({
+                ruc: clienteData.ruc,
+                razon_social: clienteData.razon_social,
+                pagina_web: clienteData.pagina_web || null,
+                correo: clienteData.correo,
+                telefono: clienteData.telefono,
+                pais: clienteData.pais || 'Perú',
+                departamento: clienteData.departamento || null,
+                provincia: clienteData.provincia || null,
+                direccion: clienteData.direccion,
+                linkedin: clienteData.linkedin || null,
+                grupo_economico: clienteData.grupo_economico || null,
+                rubro: clienteData.rubro || null,
+                sub_rubro: clienteData.sub_rubro || null,
+                tamanio_empresa: clienteData.tamanio_empresa || null,
+                facturacion_anual: clienteData.facturacion_anual ?
+                    parseFloat(clienteData.facturacion_anual) : null,
+                cantidad_empleados: clienteData.cantidad_empleados ?
+                    parseInt(clienteData.cantidad_empleados) : null,
+                ejecutiva: ejecutiva,
+                empresa_proveedora: ejecutiva.empresa_proveedora
+            });
+        });
+        return await this.clienteRepository.save(clientesACrear);
+    }
+    async downloadPlantillaClientes() {
+        const headers = [
+            'razon_social',
+            'ruc',
+            'direccion',
+            'telefono',
+            'correo',
+            'pagina_web',
+            'pais',
+            'departamento',
+            'provincia',
+            'linkedin',
+            'grupo_economico',
+            'rubro',
+            'sub_rubro',
+            'tamanio_empresa',
+            'facturacion_anual',
+            'cantidad_empleados'
+        ];
+        const ejemplos = [
+            {
+                razon_social: 'Ejemplo SAC',
+                ruc: '20123456789',
+                direccion: 'Av. Ejemplo 123',
+                telefono: '+51 987 654 321',
+                correo: 'contacto@ejemplo.com',
+                pagina_web: 'https://ejemplo.com',
+                pais: 'Perú',
+                departamento: 'Lima',
+                provincia: 'Lima',
+                linkedin: 'https://linkedin.com/company/ejemplo',
+                grupo_economico: 'Grupo Ejemplo',
+                rubro: 'Tecnología',
+                sub_rubro: 'Desarrollo Software',
+                tamanio_empresa: 'Mediana',
+                facturacion_anual: '500000.00',
+                cantidad_empleados: '50'
+            }
+        ];
+        let csvContent = headers.join(',') + '\n';
+        ejemplos.forEach(ejemplo => {
+            const row = headers.map(header => `"${ejemplo[header] || ''}"`).join(',');
+            csvContent += row + '\n';
+        });
+        return {
+            csv: csvContent,
+            filename: `plantilla_clientes_${new Date().toISOString().split('T')[0]}.csv`
+        };
     }
 };
 exports.EjecutivaService = EjecutivaService;

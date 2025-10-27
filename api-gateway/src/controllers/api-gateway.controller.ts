@@ -1,7 +1,9 @@
-import { Body, Controller, Get, HttpException, HttpStatus, Post, Put, Delete, Param, Query, Req, Patch } from '@nestjs/common';
+import { Body, Controller, Get, HttpException, HttpStatus, Post, Put, Delete, Param, Query, Req, Patch, UseInterceptors, UploadedFile, Res } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
-import { Request } from 'express';
+import { Request, Response } from 'express';
+import { FileInterceptor } from '@nestjs/platform-express';
+
 
 @Controller()
 export class ApiGatewayController {
@@ -1371,5 +1373,255 @@ export class ApiGatewayController {
       );
     }
   }
+
+  // EMPRESASSSSSS
+
+  @Get('empresa/dashboard/stats')
+  async getEmpresaDashboardStats(@Query('clienteUsuarioId') clienteUsuarioId: string, @Req() req) {
+    try {
+      console.log('📊 [API Gateway] === EMPRESA DASHBOARD STATS ===');
+      console.log('📊 [API Gateway] Query clienteUsuarioId:', clienteUsuarioId);
+
+      const headers = this.getHeadersWithAuth(req);
+
+      // ✅ Redirigir al User Service
+      const response = await firstValueFrom(
+        this.httpService.get(`http://localhost:3002/empresa/dashboard/stats?clienteUsuarioId=${clienteUsuarioId}`, { headers })
+      );
+
+      console.log('✅ [API Gateway] Stats de empresa obtenidas exitosamente');
+      return response.data;
+    } catch (error) {
+      console.error('❌ [API Gateway] Error en empresa/dashboard/stats:', error.response?.data);
+      throw new HttpException(
+        error.response?.data?.message || 'Error al obtener estadísticas del dashboard',
+        error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
+
+  @Get('empresa/trazabilidad')
+  async getEmpresaTrazabilidad(@Query('clienteUsuarioId') clienteUsuarioId: string, @Req() req) {
+    try {
+      console.log('📋 [API Gateway] === EMPRESA TRAZABILIDAD ===');
+
+      const headers = this.getHeadersWithAuth(req);
+
+      const response = await firstValueFrom(
+        this.httpService.get(`http://localhost:3002/empresa/trazabilidad?clienteUsuarioId=${clienteUsuarioId}`, { headers })
+      );
+
+      console.log('✅ [API Gateway] Trazabilidad de empresa obtenida exitosamente');
+      return response.data;
+    } catch (error) {
+      console.error('❌ [API Gateway] Error en empresa/trazabilidad:', error.response?.data);
+      throw new HttpException(
+        error.response?.data?.message || 'Error al obtener trazabilidad',
+        error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
+
+  @Get('empresa/ejecutiva')
+  async getEmpresaEjecutiva(@Query('clienteUsuarioId') clienteUsuarioId: string, @Req() req) {
+    try {
+      console.log('👩‍💼 [API Gateway] === EMPRESA EJECUTIVA ===');
+
+      const headers = this.getHeadersWithAuth(req);
+
+      const response = await firstValueFrom(
+        this.httpService.get(`http://localhost:3002/empresa/ejecutiva?clienteUsuarioId=${clienteUsuarioId}`, { headers })
+      );
+
+      console.log('✅ [API Gateway] Info de ejecutiva obtenida exitosamente');
+      return response.data;
+    } catch (error) {
+      console.error('❌ [API Gateway] Error en empresa/ejecutiva:', error.response?.data);
+      throw new HttpException(
+        error.response?.data?.message || 'Error al obtener información de la ejecutiva',
+        error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
+
+  @Get('empresa/actividades')
+  async getEmpresaActividades(@Query('clienteUsuarioId') clienteUsuarioId: string, @Req() req) {
+    try {
+      console.log('🔄 [API Gateway] === EMPRESA ACTIVIDADES ===');
+
+      const headers = this.getHeadersWithAuth(req);
+
+      const response = await firstValueFrom(
+        this.httpService.get(`http://localhost:3002/empresa/actividades?clienteUsuarioId=${clienteUsuarioId}`, { headers })
+      );
+
+      console.log('✅ [API Gateway] Actividades de empresa obtenidas exitosamente');
+      return response.data;
+    } catch (error) {
+      console.error('❌ [API Gateway] Error en empresa/actividades:', error.response?.data);
+      throw new HttpException(
+        error.response?.data?.message || 'Error al obtener actividades',
+        error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
+
+
+
+  // 👩‍💼 =====================================================
+  // EJECUTIVA - BULK UPLOAD CLIENTES (User Service - Puerto 3002)
+  // =====================================================
+
+  /**
+   * ✅ NUEVO: Subir archivo CSV para crear clientes en lote
+   */
+  @Post('ejecutiva/clientes/bulk')
+  @UseInterceptors(FileInterceptor('file'))
+  async bulkCreateEjecutivaClientes(
+    @UploadedFile() file: any,
+    @Body('ejecutivaId') ejecutivaId: string,
+    @Req() req: Request
+  ) {
+    try {
+      console.log('📁 [API Gateway] === BULK UPLOAD CLIENTES ===');
+
+      if (!file) {
+        throw new HttpException('Archivo no proporcionado', HttpStatus.BAD_REQUEST);
+      }
+
+      if (!file.originalname.match(/\.csv$/i)) {
+        throw new HttpException('Formato de archivo no válido. Use CSV', HttpStatus.BAD_REQUEST);
+      }
+
+      console.log('📁 [API Gateway] Archivo recibido:', {
+        nombre: file.originalname,
+        tamaño: file.size,
+        tipo: file.mimetype
+      });
+
+      const headers = this.getHeadersWithAuth(req);
+
+      // Crear FormData para enviar el archivo
+      const formData = new FormData();
+      const blob = new Blob([file.buffer], { type: file.mimetype });
+      formData.append('file', blob, file.originalname);
+      formData.append('ejecutivaId', ejecutivaId);
+
+      const response = await firstValueFrom(
+        this.httpService.post(
+          'http://localhost:3002/ejecutiva/clientes/bulk',
+          formData,
+          {
+            headers: {
+              ...headers,
+              'Content-Type': 'multipart/form-data'
+            }
+          }
+        )
+      );
+
+      console.log('✅ [API Gateway] Bulk upload completado:', response.data);
+      return response.data;
+
+    } catch (error) {
+      console.error('❌ [API Gateway] Error en bulk upload:', error.response?.data);
+      throw new HttpException(
+        error.response?.data?.message || 'Error al procesar archivo de clientes',
+        error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
+
+  /**
+   * ✅ NUEVO: Descargar plantilla CSV para clientes
+   */
+  @Get('ejecutiva/clientes/plantilla')
+  async downloadEjecutivaPlantillaClientes(
+    @Query('ejecutivaId') ejecutivaId: string,
+    @Res() res: Response,
+    @Req() req: Request
+  ) {
+    try {
+      console.log('📥 [API Gateway] === DESCARGAR PLANTILLA CLIENTES ===');
+
+      const headers = this.getHeadersWithAuth(req);
+
+      const response = await firstValueFrom(
+        this.httpService.get(
+          `http://localhost:3002/ejecutiva/clientes/plantilla?ejecutivaId=${ejecutivaId}`,
+          {
+            headers,
+            responseType: 'stream' // Para manejar la descarga de archivos
+          }
+        )
+      );
+
+      // Configurar headers para descarga
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', 'attachment; filename="plantilla_clientes.csv"');
+
+      // Pipe la respuesta del servicio al response del cliente
+      response.data.pipe(res);
+
+    } catch (error) {
+      console.error('❌ [API Gateway] Error al descargar plantilla:', error.response?.data);
+
+      // Si hay error, generar plantilla básica desde el gateway
+      const plantillaBasica = this.generarPlantillaBasica();
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', 'attachment; filename="plantilla_clientes.csv"');
+      res.send(plantillaBasica);
+    }
+  }
+
+  /**
+   * ✅ MÉTODO AUXILIAR: Generar plantilla básica en caso de error
+   */
+  private generarPlantillaBasica(): string {
+    const headers = [
+      'razon_social',
+      'ruc',
+      'direccion',
+      'telefono',
+      'correo',
+      'pagina_web',
+      'pais',
+      'departamento',
+      'provincia',
+      'linkedin',
+      'grupo_economico',
+      'rubro',
+      'sub_rubro',
+      'tamanio_empresa',
+      'facturacion_anual',
+      'cantidad_empleados'
+    ];
+
+    const ejemplo = {
+      razon_social: 'Mi Empresa Ejemplo SAC',
+      ruc: '20123456789',
+      direccion: 'Av. Ejemplo 123, Lima',
+      telefono: '+51 987 654 321',
+      correo: 'contacto@miempresa.com',
+      pagina_web: 'https://miempresa.com',
+      pais: 'Perú',
+      departamento: 'Lima',
+      provincia: 'Lima',
+      linkedin: 'https://linkedin.com/company/miempresa',
+      grupo_economico: 'Grupo Ejemplo',
+      rubro: 'Tecnología',
+      sub_rubro: 'Desarrollo Software',
+      tamanio_empresa: 'Mediana',
+      facturacion_anual: '500000.00',
+      cantidad_empleados: '50'
+    };
+
+    let csvContent = headers.join(',') + '\n';
+    const row = headers.map(header => `"${ejemplo[header] || ''}"`).join(',');
+    csvContent += row + '\n';
+
+    return csvContent;
+  }
+
 
 }

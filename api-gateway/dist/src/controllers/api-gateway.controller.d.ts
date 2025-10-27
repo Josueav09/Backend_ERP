@@ -1,5 +1,5 @@
 import { HttpService } from '@nestjs/axios';
-import { Request } from 'express';
+import { Request, Response } from 'express';
 export declare class ApiGatewayController {
     private readonly httpService;
     constructor(httpService: HttpService);
@@ -69,4 +69,11 @@ export declare class ApiGatewayController {
     getEjecutivaTrazabilidadActividades(ejecutivaId: string, limit: string, req: Request): Promise<any>;
     updateEjecutivaTrazabilidadEtapa(body: any, req: Request): Promise<any>;
     getEjecutivaTrazabilidadStats(ejecutivaId: string, req: Request): Promise<any>;
+    getEmpresaDashboardStats(clienteUsuarioId: string, req: any): Promise<any>;
+    getEmpresaTrazabilidad(clienteUsuarioId: string, req: any): Promise<any>;
+    getEmpresaEjecutiva(clienteUsuarioId: string, req: any): Promise<any>;
+    getEmpresaActividades(clienteUsuarioId: string, req: any): Promise<any>;
+    bulkCreateEjecutivaClientes(file: any, ejecutivaId: string, req: Request): Promise<any>;
+    downloadEjecutivaPlantillaClientes(ejecutivaId: string, res: Response, req: Request): Promise<void>;
+    private generarPlantillaBasica;
 }

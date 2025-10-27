@@ -15,6 +15,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.EjecutivaController = void 0;
 const common_1 = require("@nestjs/common");
 const ejecutiva_service_1 = require("../../services/ejecutiva/ejecutiva.service");
+const platform_express_1 = require("@nestjs/platform-express");
 let EjecutivaController = class EjecutivaController {
     constructor(ejecutivaService) {
         this.ejecutivaService = ejecutivaService;
@@ -226,6 +227,21 @@ let EjecutivaController = class EjecutivaController {
             throw new common_1.HttpException('Error al obtener KPIs', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+    async bulkCreateClientes(file, ejecutivaId) {
+        if (!file) {
+            throw new common_1.HttpException('Archivo no proporcionado', common_1.HttpStatus.BAD_REQUEST);
+        }
+        if (!file.originalname.match(/\.(csv|xlsx|xls)$/)) {
+            throw new common_1.HttpException('Formato de archivo no válido. Use CSV o Excel', common_1.HttpStatus.BAD_REQUEST);
+        }
+        return this.ejecutivaService.bulkCreateClientes(file, ejecutivaId);
+    }
+    async downloadPlantilla(_ejecutivaId, res) {
+        const plantilla = await this.ejecutivaService.downloadPlantillaClientes();
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', `attachment; filename="${plantilla.filename}"`);
+        res.send(plantilla.csv);
+    }
 };
 exports.EjecutivaController = EjecutivaController;
 __decorate([
@@ -307,6 +323,23 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], EjecutivaController.prototype, "getKPIsSemanales", null);
+__decorate([
+    (0, common_1.Post)('clientes/bulk'),
+    (0, common_1.UseInterceptors)((0, platform_express_1.FileInterceptor)('file')),
+    __param(0, (0, common_1.UploadedFile)()),
+    __param(1, (0, common_1.Body)('ejecutivaId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, String]),
+    __metadata("design:returntype", Promise)
+], EjecutivaController.prototype, "bulkCreateClientes", null);
+__decorate([
+    (0, common_1.Get)('clientes/plantilla'),
+    __param(0, (0, common_1.Query)('ejecutivaId')),
+    __param(1, (0, common_1.Res)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", Promise)
+], EjecutivaController.prototype, "downloadPlantilla", null);
 exports.EjecutivaController = EjecutivaController = __decorate([
     (0, common_1.Controller)('ejecutiva'),
     __metadata("design:paramtypes", [ejecutiva_service_1.EjecutivaService])

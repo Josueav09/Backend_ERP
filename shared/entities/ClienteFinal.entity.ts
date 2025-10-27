@@ -15,7 +15,7 @@ import { Trazabilidad } from './Trazabilidad.entity';
 import { EmpresaProveedora } from './EmpresaProveedora.entity';
 
 
-@Entity('cliente_final') // ✅ Nombre en mayúsculas
+@Entity('cliente_final') 
 export class ClienteFinal {
   @PrimaryGeneratedColumn()
   id_cliente_final: number;
