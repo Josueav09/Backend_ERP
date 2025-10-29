@@ -29,19 +29,21 @@ export declare class EmpresaDashboardService {
         tasaConversion: string;
         ventasGanadas: number;
     }>;
+    private getActividadesCompletadas;
+    private getActividadesEnProceso;
     getTrazabilidad(empresaId: number): Promise<{
-        id_trazabilidad: any;
-        tipo_actividad: any;
-        descripcion: any;
-        fecha_actividad: any;
+        id_trazabilidad: number;
+        tipo_actividad: string;
+        descripcion: string;
+        fecha_actividad: Date;
         resultado_contacto: string;
-        notas: any;
-        informacion_importante: any;
-        resultados_reunion: any;
-        ejecutiva_nombre: any;
-        nombre_empresa: any;
-        cliente_nombre: any;
-        contacto_nombre: any;
+        notas: string;
+        informacion_importante: string;
+        resultados_reunion: string;
+        ejecutiva_nombre: string;
+        nombre_empresa: string;
+        cliente_nombre: string;
+        contacto_nombre: string;
     }[]>;
     getEjecutivaInfo(empresaId: number): Promise<{
         ejecutiva_nombre: string;
@@ -62,6 +64,55 @@ export declare class EmpresaDashboardService {
     private getRevenueTotal;
     private getPipelineOportunidades;
     private getVentasGanadas;
-    private mapEstadoTrazabilidad;
     private getEmptyStats;
+    getClientesRecientes(empresaId: number): Promise<{
+        id_cliente_final: number;
+        razon_social: string;
+        ruc: string;
+        correo: string;
+        telefono: string;
+        pais: string;
+        rubro: string;
+        estado: string;
+        fecha_creacion: Date;
+        ejecutiva_nombre: string;
+        actividades_completadas: number;
+        actividades_en_proceso: number;
+        total_actividades: number;
+    }[]>;
+    private getEstadisticasCliente;
+    private mapEstadoTrazabilidad;
+    getEjecutivaInfoCompleta(empresaId: number): Promise<{
+        ejecutiva_nombre: string;
+        ejecutiva_email: string;
+        telefono: string;
+        linkedin: any;
+        estadisticas?: undefined;
+    } | {
+        ejecutiva_nombre: string;
+        ejecutiva_email: string;
+        telefono: string;
+        linkedin: string;
+        estadisticas: {
+            clientes_activos: number;
+            tasa_conversion: string;
+            ventas_ganadas: number;
+            tiempo_respuesta: string;
+        };
+    }>;
+    private getEstadisticasEjecutiva;
+    getEjecutivasByEmpresa(empresaId: number): Promise<any[]>;
+    getEquipoStats(empresaId: number): Promise<any>;
+    getEmbudoVentasEjecutiva(ejecutivaId: number, empresaId: number): Promise<any[]>;
+    private calcularTasaConversion;
+    getEstadisticasEjecutivaCompleta(ejecutivaId: number, empresaId: number): Promise<any>;
+    private getTotalOportunidadesEjecutiva;
+    getClientesPorEjecutiva(ejecutivaId: number, empresaId: number): Promise<any[]>;
+    private getClientesActivosEjecutiva;
+    private getVentasGanadasEjecutiva;
+    private getTotalActividadesEjecutiva;
+    private getActividadesEsteMesEjecutiva;
+    private getRevenueEjecutiva;
+    private getConversionPromedioEquipo;
+    private calcularTiempoRespuestaPromedio;
 }

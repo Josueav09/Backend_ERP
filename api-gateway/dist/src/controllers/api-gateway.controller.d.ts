@@ -24,10 +24,11 @@ export declare class ApiGatewayController {
     updateJefeEmpresaEstado(id: string, body: any, req: Request): Promise<any>;
     getJefeEmpresaEjecutivas(id: string, req: Request): Promise<any>;
     addJefeEmpresaEjecutiva(id: string, body: any, req: Request): Promise<any>;
-    removeJefeEmpresaEjecutiva(id: string, ejecutivaId: string, req: Request): Promise<any>;
+    removeJefeEmpresaEjecutiva(empresaId: string, ejecutivaId: string, req: Request): Promise<any>;
     asignarEjecutivaAEmpresa(id: string, body: {
         id_ejecutiva: number;
     }, req: Request): Promise<any>;
+    getJefeEmpresasEjecutivasDisponibles(req: Request): Promise<any>;
     getJefeClientes(req: Request): Promise<any>;
     getJefeCliente(id: string, req: Request): Promise<any>;
     createJefeCliente(body: any, req: Request): Promise<any>;
@@ -43,6 +44,24 @@ export declare class ApiGatewayController {
     getJefeTrazabilidadContactosPorTipo(ejecutivaId?: string, fechaDesde?: string, fechaHasta?: string, req?: Request): Promise<any>;
     getJefeTrazabilidadMontosPorEtapa(ejecutivaId?: string, fechaDesde?: string, fechaHasta?: string, req?: Request): Promise<any>;
     getJefeTrazabilidadTasaConversion(fechaDesde?: string, fechaHasta?: string, req?: Request): Promise<any>;
+    getNuevasReuniones(query: any, req: Request): Promise<any>;
+    getNuevasVentas(query: any, req: Request): Promise<any>;
+    getEfectividadCanales(query: any, req: Request): Promise<any>;
+    getResumenSemanal(req: Request): Promise<any>;
+    getEmbudoVentas(query: any, req: Request): Promise<any>;
+    getRankingEjecutivas(query: any, req: Request): Promise<any>;
+    generateTrazabilidadReport(reportDto: any, req: Request): Promise<any>;
+    testReport(req: Request): Promise<{
+        success: boolean;
+        data: string;
+        error?: undefined;
+        status?: undefined;
+    } | {
+        success: boolean;
+        error: any;
+        status: any;
+        data?: undefined;
+    }>;
     getJefeTrazabilidadEtapa1(ejecutivaId?: string, empresaId?: string, clienteId?: string, resultadoContacto?: string, tipoContacto?: string, fechaDesde?: string, fechaHasta?: string, page?: string, limit?: string, req?: Request): Promise<any>;
     getJefeTrazabilidadEtapa2(ejecutivaId?: string, empresaId?: string, clienteId?: string, etapaOportunidad?: string, fechaDesde?: string, fechaHasta?: string, page?: string, limit?: string, req?: Request): Promise<any>;
     getJefeTrazabilidadFilterOptions(req: Request): Promise<any>;
@@ -73,6 +92,12 @@ export declare class ApiGatewayController {
     getEmpresaTrazabilidad(clienteUsuarioId: string, req: any): Promise<any>;
     getEmpresaEjecutiva(clienteUsuarioId: string, req: any): Promise<any>;
     getEmpresaActividades(clienteUsuarioId: string, req: any): Promise<any>;
+    getEmpresaClientes(clienteUsuarioId: string, req: any): Promise<any>;
+    getEmpresaEjecutivas(empresaId: string, req: any): Promise<any>;
+    getEmpresaEquipoStats(empresaId: string, req: any): Promise<any>;
+    getEjecutivaEmbudo(ejecutivaId: string, empresaId: string, req: any): Promise<any>;
+    getEjecutivaEstadisticas(ejecutivaId: string, empresaId: string, req: any): Promise<any>;
+    getEmpresaEjecutivaClientes(ejecutivaId: string, empresaId: string, req: any): Promise<any>;
     bulkCreateEjecutivaClientes(file: any, ejecutivaId: string, req: Request): Promise<any>;
     downloadEjecutivaPlantillaClientes(ejecutivaId: string, res: Response, req: Request): Promise<void>;
     private generarPlantillaBasica;

@@ -87,8 +87,8 @@ export declare class TrazabilidadService {
         data: {
             id: number;
             clienteFinal: string;
-            ejecutiva: string;
             personaContacto: string;
+            ejecutiva: string;
             tipoContacto: string;
             fechaContacto: string;
             resultadoContacto: string;
@@ -124,7 +124,7 @@ export declare class TrazabilidadService {
             tipoOportunidad: string;
             etapaOportunidad: string;
             montoTotal: number;
-            probabilidadCierre: number;
+            probabilidad_cierre: number;
             fechaCierreEsperado: string;
             productoOfrecido: string;
             observaciones: string;
@@ -153,4 +153,60 @@ export declare class TrazabilidadService {
     }>;
     private mapTipoContacto;
     private formatDate;
+    getNuevasReunionesAgendadas(meses?: number, ejecutivaId?: number): Promise<{
+        mes: string;
+        reuniones: number;
+    }[]>;
+    getNuevasVentas(meses?: number, ejecutivaId?: number): Promise<{
+        mes: string;
+        ventas: number;
+    }[]>;
+    getEfectividadCanalesContacto(filters?: {
+        ejecutivaId?: number;
+        fechaDesde?: string;
+        fechaHasta?: string;
+    }): Promise<{
+        canal: string;
+        total_contactos: number;
+        positivos: number;
+        negativos: number;
+        pendientes: number;
+        neutros: number;
+        efectividad: number;
+    }[]>;
+    getResumenSemanalEjecutivas(): Promise<{
+        id_ejecutiva: any;
+        ejecutiva: any;
+        total_actividades: number;
+        reuniones_agendadas: number;
+        ventas_ganadas: number;
+        monto_total: number;
+    }[]>;
+    getEmbudoVentas(filters?: {
+        ejecutivaId?: number;
+        fechaDesde?: string;
+        fechaHasta?: string;
+    }): Promise<{
+        etapa: string;
+        cantidad: number;
+        monto_total: number;
+        tasa_conversion: number;
+        perdida: number;
+    }[]>;
+    private acortarEtapa;
+    getRankingEjecutivas(filters?: {
+        fechaDesde?: string;
+        fechaHasta?: string;
+    }): Promise<{
+        id_ejecutiva: any;
+        ejecutiva: any;
+        ventas_ganadas: number;
+        monto_total: number;
+        clientes_potenciales: number;
+        efectividad: number;
+    }[]>;
+    getEtapa1ForReport(filters: any): Promise<any[]>;
+    getEtapa2ForReport(filters: any): Promise<any[]>;
+    generateReportCSV(filters: any, reportType: 'etapa1' | 'etapa2'): Promise<string>;
+    private formatDateForCSV;
 }

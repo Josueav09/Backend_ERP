@@ -51,19 +51,36 @@ let EmpresaDashboardController = class EmpresaDashboardController {
             throw new common_1.HttpException('Error al obtener trazabilidad', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
-    async getEjecutivaInfo(clienteUsuarioId, req) {
+    async getEjecutivaInfo(clienteUsuarioId) {
         try {
-            console.log('👩‍💼 [EmpresaDashboardController] === OBTENER INFO EJECUTIVA ===');
-            const empresaId = this.getEmpresaId(req, clienteUsuarioId);
-            const ejecutivaInfo = await this.dashboardService.getEjecutivaInfo(empresaId);
-            console.log('✅ [EmpresaDashboardController] Información de ejecutiva obtenida');
-            return ejecutivaInfo;
+            if (!clienteUsuarioId) {
+                throw new common_1.HttpException('clienteUsuarioId es requerido', common_1.HttpStatus.BAD_REQUEST);
+            }
+            const empresaId = parseInt(clienteUsuarioId);
+            if (isNaN(empresaId)) {
+                throw new common_1.HttpException('clienteUsuarioId debe ser un número válido', common_1.HttpStatus.BAD_REQUEST);
+            }
+            return await this.dashboardService.getEjecutivaInfoCompleta(empresaId);
         }
         catch (error) {
             console.error('❌ [EmpresaDashboardController] Error en getEjecutivaInfo:', error);
-            if (error instanceof common_1.HttpException)
-                throw error;
-            throw new common_1.HttpException('Error al obtener información de la ejecutiva', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
+            throw new common_1.HttpException('Error al obtener información de ejecutiva', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+    async getClientesRecientes(clienteUsuarioId) {
+        try {
+            if (!clienteUsuarioId) {
+                throw new common_1.HttpException('clienteUsuarioId es requerido', common_1.HttpStatus.BAD_REQUEST);
+            }
+            const empresaId = parseInt(clienteUsuarioId);
+            if (isNaN(empresaId)) {
+                throw new common_1.HttpException('clienteUsuarioId debe ser un número válido', common_1.HttpStatus.BAD_REQUEST);
+            }
+            return await this.dashboardService.getClientesRecientes(empresaId);
+        }
+        catch (error) {
+            console.error('❌ [EmpresaDashboardController] Error en getClientesRecientes:', error);
+            throw new common_1.HttpException('Error al obtener clientes recientes', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
     async getActividades(clienteUsuarioId, req) {
@@ -97,6 +114,83 @@ let EmpresaDashboardController = class EmpresaDashboardController {
             throw new common_1.HttpException('Empresa no identificada', common_1.HttpStatus.UNAUTHORIZED);
         }
     }
+    async getEjecutivasByEmpresa(empresaId, req) {
+        try {
+            console.log('👥 [EmpresaEquipoController] === OBTENER EJECUTIVAS ===');
+            const idEmpresa = this.getEmpresaId(req, empresaId);
+            const ejecutivas = await this.dashboardService.getEjecutivasByEmpresa(idEmpresa);
+            console.log(`✅ [EmpresaEquipoController] ${ejecutivas.length} ejecutivas obtenidas`);
+            return ejecutivas;
+        }
+        catch (error) {
+            console.error('❌ [EmpresaEquipoController] Error en getEjecutivasByEmpresa:', error);
+            throw new common_1.HttpException('Error al obtener ejecutivas', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+    async getEquipoStats(empresaId, req) {
+        try {
+            console.log('📊 [EmpresaEquipoController] === OBTENER STATS DE EQUIPO ===');
+            const idEmpresa = this.getEmpresaId(req, empresaId);
+            const stats = await this.dashboardService.getEquipoStats(idEmpresa);
+            console.log('✅ [EmpresaEquipoController] Stats de equipo obtenidas');
+            return stats;
+        }
+        catch (error) {
+            console.error('❌ [EmpresaEquipoController] Error en getEquipoStats:', error);
+            throw new common_1.HttpException('Error al obtener estadísticas del equipo', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+    async getEjecutivaEmbudo(ejecutivaId, empresaId, req) {
+        try {
+            console.log('🎯 [EmpresaEquipoController] === OBTENER EMBUDO EJECUTIVA ===');
+            const idEmpresa = this.getEmpresaId(req, empresaId);
+            const idEjecutiva = parseInt(ejecutivaId);
+            if (isNaN(idEjecutiva)) {
+                throw new common_1.HttpException('ID de ejecutiva inválido', common_1.HttpStatus.BAD_REQUEST);
+            }
+            const embudo = await this.dashboardService.getEmbudoVentasEjecutiva(idEjecutiva, idEmpresa);
+            console.log('✅ [EmpresaEquipoController] Embudo de ejecutiva obtenido');
+            return embudo;
+        }
+        catch (error) {
+            console.error('❌ [EmpresaEquipoController] Error en getEjecutivaEmbudo:', error);
+            throw new common_1.HttpException('Error al obtener embudo de ejecutiva', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+    async getEjecutivaEstadisticas(ejecutivaId, empresaId, req) {
+        try {
+            console.log('📈 [EmpresaEquipoController] === OBTENER ESTADÍSTICAS EJECUTIVA ===');
+            const idEmpresa = this.getEmpresaId(req, empresaId);
+            const idEjecutiva = parseInt(ejecutivaId);
+            if (isNaN(idEjecutiva)) {
+                throw new common_1.HttpException('ID de ejecutiva inválido', common_1.HttpStatus.BAD_REQUEST);
+            }
+            const estadisticas = await this.dashboardService.getEstadisticasEjecutivaCompleta(idEjecutiva, idEmpresa);
+            console.log('✅ [EmpresaEquipoController] Estadísticas de ejecutiva obtenidas');
+            return estadisticas;
+        }
+        catch (error) {
+            console.error('❌ [EmpresaEquipoController] Error en getEjecutivaEstadisticas:', error);
+            throw new common_1.HttpException('Error al obtener estadísticas de ejecutiva', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+    async getEmpresaEjecutivaClientes(ejecutivaId, empresaId, req) {
+        try {
+            console.log('👥 [EmpresaEquipoController] === OBTENER CLIENTES EJECUTIVA ===');
+            const idEmpresa = this.getEmpresaId(req, empresaId);
+            const idEjecutiva = parseInt(ejecutivaId);
+            if (isNaN(idEjecutiva)) {
+                throw new common_1.HttpException('ID de ejecutiva inválido', common_1.HttpStatus.BAD_REQUEST);
+            }
+            const clientes = await this.dashboardService.getClientesPorEjecutiva(idEjecutiva, idEmpresa);
+            console.log(`✅ [EmpresaEquipoController] ${clientes.length} clientes de ejecutiva obtenidos`);
+            return clientes;
+        }
+        catch (error) {
+            console.error('❌ [EmpresaEquipoController] Error en getEjecutivaClientes:', error);
+            throw new common_1.HttpException('Error al obtener clientes de ejecutiva', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
 };
 exports.EmpresaDashboardController = EmpresaDashboardController;
 __decorate([
@@ -121,11 +215,18 @@ __decorate([
     (0, common_1.Get)('ejecutiva'),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     __param(0, (0, common_1.Query)('clienteUsuarioId')),
-    __param(1, (0, common_1.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], EmpresaDashboardController.prototype, "getEjecutivaInfo", null);
+__decorate([
+    (0, common_1.Get)('clientes'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    __param(0, (0, common_1.Query)('clienteUsuarioId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], EmpresaDashboardController.prototype, "getClientesRecientes", null);
 __decorate([
     (0, common_1.Get)('actividades'),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
@@ -135,6 +236,54 @@ __decorate([
     __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", Promise)
 ], EmpresaDashboardController.prototype, "getActividades", null);
+__decorate([
+    (0, common_1.Get)('ejecutivas'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    __param(0, (0, common_1.Query)('empresaId')),
+    __param(1, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", Promise)
+], EmpresaDashboardController.prototype, "getEjecutivasByEmpresa", null);
+__decorate([
+    (0, common_1.Get)('equipo/stats'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    __param(0, (0, common_1.Query)('empresaId')),
+    __param(1, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", Promise)
+], EmpresaDashboardController.prototype, "getEquipoStats", null);
+__decorate([
+    (0, common_1.Get)('ejecutiva/:id/embudo'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Query)('empresaId')),
+    __param(2, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, Object]),
+    __metadata("design:returntype", Promise)
+], EmpresaDashboardController.prototype, "getEjecutivaEmbudo", null);
+__decorate([
+    (0, common_1.Get)('ejecutiva/:id/estadisticas'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Query)('empresaId')),
+    __param(2, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, Object]),
+    __metadata("design:returntype", Promise)
+], EmpresaDashboardController.prototype, "getEjecutivaEstadisticas", null);
+__decorate([
+    (0, common_1.Get)('ejecutiva/:id/clientes'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Query)('empresaId')),
+    __param(2, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, Object]),
+    __metadata("design:returntype", Promise)
+], EmpresaDashboardController.prototype, "getEmpresaEjecutivaClientes", null);
 exports.EmpresaDashboardController = EmpresaDashboardController = __decorate([
     (0, common_1.Controller)('empresa'),
     __metadata("design:paramtypes", [dashboard_service_1.EmpresaDashboardService])

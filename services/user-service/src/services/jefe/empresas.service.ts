@@ -50,45 +50,6 @@
 //     return empresasConStats;
 //   }
 
-//   // async createEmpresa(data: any) {
-//   //   const { ruc, razon_social, correo, contraseña, telefono, pagina_web, rubro } = data;
-
-//   //   // Verificar RUC único
-//   //   const existingEmpresa = await this.empresaRepository.findOne({
-//   //     where: { ruc }
-//   //   });
-
-//   //   if (existingEmpresa) {
-//   //     throw new HttpException('Ya existe una empresa con este RUC', HttpStatus.BAD_REQUEST);
-//   //   }
-
-//   //   // Verificar email único
-//   //   const existingEmail = await this.empresaRepository.findOne({
-//   //     where: { correo }
-//   //   });
-
-//   //   if (existingEmail) {
-//   //     throw new HttpException('Ya existe una empresa con este email', HttpStatus.BAD_REQUEST);
-//   //   }
-
-//   //   // Hashear contraseña
-//   //   const bcrypt = require('bcryptjs');
-//   //   const hashedPassword = await bcrypt.hash(contraseña, 10);
-
-//   //   const nuevaEmpresa = this.empresaRepository.create({
-//   //     ruc,
-//   //     razon_social,
-//   //     correo,
-//   //     contraseña: hashedPassword,
-//   //     telefono: telefono || null,
-//   //     pagina_web: pagina_web || null,
-//   //     rubro: rubro || null,
-//   //     estado: 'Activo'
-//   //   });
-
-//   //   return await this.empresaRepository.save(nuevaEmpresa);
-//   // }
-
 //   async createEmpresa(data: any) {
 //     console.log('📥 Datos recibidos para crear empresa:', data); // ← DEBUG
 
@@ -129,7 +90,11 @@
 //     return await this.empresaRepository.save(nuevaEmpresa);
 //   }
 
+//   // En EmpresasService.ts - Método alternativo más simple
+//   // En EmpresasService.ts - MODIFICAR el método updateEmpresaEstado
 //   async updateEmpresaEstado(empresaId: number, activo: boolean) {
+//     console.log('🔄 [EmpresasService] Cambiando estado de empresa:', { empresaId, activo });
+
 //     const empresa = await this.empresaRepository.findOne({
 //       where: { id_empresa_prov: empresaId }
 //     });
@@ -138,22 +103,67 @@
 //       throw new HttpException('Empresa no encontrada', HttpStatus.NOT_FOUND);
 //     }
 
+//     // Guardar el estado anterior para auditoría
+//     const estadoAnterior = empresa.estado;
 //     empresa.estado = activo ? 'Activo' : 'Inactivo';
 //     empresa.fecha_actualizacion = new Date();
 
-//     // Si se desactiva la empresa, desactivar también sus ejecutivas
-//     if (!activo) {
-//       await this.ejecutivaRepository.update(
-//         { empresa_proveedora: { id_empresa_prov: empresaId } },
-//         { estado_ejecutiva: 'Inactivo' }
-//       );
+//     // Obtener IDs de ejecutivas de esta empresa
+//     const ejecutivasEmpresa = await this.ejecutivaRepository.find({
+//       where: { empresa_proveedora: { id_empresa_prov: empresaId } },
+//       select: ['id_ejecutiva']
+//     });
+
+//     const idsEjecutivas = ejecutivasEmpresa.map(ej => ej.id_ejecutiva);
+
+//     if (idsEjecutivas.length > 0) {
+//       if (!activo) {
+//         // ✅ Desactivar empresa: Desactivar clientes
+//         console.log('➖ [EmpresasService] Desactivando clientes de la empresa:', empresaId);
+
+//         const resultDesactivar = await this.clienteRepository
+//           .createQueryBuilder()
+//           .update()
+//           .set({
+//             estado: 'Inactivo',
+//             fecha_actualizacion: new Date()
+//           })
+//           .where('id_ejecutiva IN (:...idsEjecutivas)', { idsEjecutivas })
+//           .execute();
+
+//         console.log('✅ [EmpresasService] Clientes desactivados:', resultDesactivar.affected);
+
+//       } else {
+//         // ✅ Activar empresa: Activar clientes automáticamente
+//         console.log('➕ [EmpresasService] Activando empresa Y clientes:', empresaId);
+
+//         const resultActivar = await this.clienteRepository
+//           .createQueryBuilder()
+//           .update()
+//           .set({
+//             estado: 'Activo',
+//             fecha_actualizacion: new Date()
+//           })
+//           .where('id_ejecutiva IN (:...idsEjecutivas)', { idsEjecutivas })
+//           .andWhere('estado = :estado', { estado: 'Inactivo' }) // Solo activar los que estaban inactivos
+//           .execute();
+
+//         console.log('✅ [EmpresasService] Clientes activados:', resultActivar.affected);
+//       }
+//     } else {
+//       console.log('ℹ️ [EmpresasService] No hay ejecutivas en esta empresa');
 //     }
 
 //     await this.empresaRepository.save(empresa);
 
+//     // ✅ Auditoría
+//     console.log('📝 [EmpresasService] Auditoría: Empresa', empresa.razon_social,
+//       'cambió de', estadoAnterior, 'a', empresa.estado);
+
 //     return {
 //       empresa,
-//       message: `Empresa ${activo ? 'activada' : 'desactivada'} correctamente`
+//       message: `Empresa ${activo ? 'activada' : 'desactivada'} correctamente. ` +
+//         `${!activo ? 'Los clientes asociados han sido desactivados.' : 'Los clientes asociados han sido activados.'}`
 //     };
 //   }
 
@@ -217,33 +227,197 @@
 //   }
 
 //   async getEmpresaEjecutivas(empresaId: number) {
+//     console.log('🏢 [EmpresasService] Obteniendo ejecutivas de empresa:', empresaId);
+
 //     const empresa = await this.empresaRepository.findOne({
-//       where: { id_empresa_prov: empresaId },
-//       relations: ['ejecutivas']
+//       where: { id_empresa_prov: empresaId }
 //     });
 
 //     if (!empresa) {
 //       throw new HttpException('Empresa no encontrada', HttpStatus.NOT_FOUND);
 //     }
 
-//     // Enriquecer ejecutivas con estadísticas
-//     const ejecutivasConStats = await Promise.all(
-//       empresa.ejecutivas.map(async (ejecutiva) => {
+//     // ✅ Obtener ejecutivas ASIGNADAS a esta empresa
+//     const ejecutivasAsignadas = await this.ejecutivaRepository.find({
+//       where: {
+//         empresa_proveedora: { id_empresa_prov: empresaId },
+//         estado_ejecutiva: 'Activo'
+//       },
+//       order: { nombre_completo: 'ASC' }
+//     });
+
+//     console.log('✅ [EmpresasService] Ejecutivas asignadas:', ejecutivasAsignadas.length);
+
+//     // ✅ Formatear para el frontend
+//     const ejecutivasFormateadas = await Promise.all(
+//       ejecutivasAsignadas.map(async (ej) => {
 //         const totalClientes = await this.clienteRepository.count({
-//           where: { ejecutiva: { id_ejecutiva: ejecutiva.id_ejecutiva } }
+//           where: { ejecutiva: { id_ejecutiva: ej.id_ejecutiva } }
 //         });
 
 //         return {
-//           ...ejecutiva,
+//           id_usuario: ej.id_ejecutiva,
+//           nombre: ej.nombre_completo.split(' ')[0] || '',
+//           apellido: ej.nombre_completo.split(' ').slice(1).join(' ') || '',
+//           email: ej.correo,
+//           fecha_asignacion: ej.fecha_actualizacion,
+//           activo: ej.estado_ejecutiva === 'Activo',
 //           total_clientes: totalClientes
 //         };
 //       })
 //     );
 
 //     return {
-//       ...empresa,
-//       ejecutivas: ejecutivasConStats
+//       id_empresa_prov: empresa.id_empresa_prov,
+//       razon_social: empresa.razon_social,
+//       ruc: empresa.ruc,
+//       ejecutivas: ejecutivasFormateadas
 //     };
+//   }
+
+//   // async addEjecutivaToEmpresa(empresaId: number, ejecutivaId: number) {
+//   //   console.log('➕ [EmpresasService] Asignando ejecutiva:', { empresaId, ejecutivaId });
+
+//   //   const empresa = await this.empresaRepository.findOne({
+//   //     where: { id_empresa_prov: empresaId }
+//   //   });
+
+//   //   if (!empresa) {
+//   //     throw new HttpException('Empresa no encontrada', HttpStatus.NOT_FOUND);
+//   //   }
+
+//   //   const ejecutiva = await this.ejecutivaRepository.findOne({
+//   //     where: { id_ejecutiva: ejecutivaId },
+//   //     relations: ['empresa_proveedora'] // ✅ Cargar relación
+//   //   });
+
+//   //   if (!ejecutiva) {
+//   //     throw new HttpException('Ejecutiva no encontrada', HttpStatus.NOT_FOUND);
+//   //   }
+
+//   //   // ✅ Verificar si ya está asignada a ESTA empresa
+//   //   if (ejecutiva.empresa_proveedora?.id_empresa_prov === empresaId) {
+//   //     throw new HttpException('Esta ejecutiva ya está asignada a esta empresa', HttpStatus.BAD_REQUEST);
+//   //   }
+
+//   //   // ✅ Verificar si ya está asignada a OTRA empresa
+//   //   if (ejecutiva.empresa_proveedora && ejecutiva.empresa_proveedora.id_empresa_prov !== empresaId) {
+//   //     throw new HttpException(
+//   //       `La ejecutiva ya está asignada a la empresa "${ejecutiva.empresa_proveedora.razon_social}"`,
+//   //       HttpStatus.BAD_REQUEST
+//   //     );
+//   //   }
+
+//   //   // ✅ Asignar ejecutiva a la empresa
+//   //   ejecutiva.empresa_proveedora = empresa;
+//   //   ejecutiva.fecha_actualizacion = new Date();
+
+//   //   await this.ejecutivaRepository.save(ejecutiva);
+
+//   //   console.log('✅ [EmpresasService] Ejecutiva asignada exitosamente');
+
+//   //   return {
+//   //     message: 'Ejecutiva asignada correctamente a la empresa',
+//   //     ejecutiva: {
+//   //       id_ejecutiva: ejecutiva.id_ejecutiva,
+//   //       nombre_completo: ejecutiva.nombre_completo,
+//   //       correo: ejecutiva.correo,
+//   //       empresa: empresa.razon_social
+//   //     }
+//   //   };
+//   // }
+
+//   // async removeEjecutivaFromEmpresa(empresaId: number, ejecutivaId: number) {
+//   //   console.log('➖ [EmpresasService] Removiendo ejecutiva:', { empresaId, ejecutivaId });
+
+//   //   const ejecutiva = await this.ejecutivaRepository.findOne({
+//   //     where: {
+//   //       id_ejecutiva: ejecutivaId,
+//   //       empresa_proveedora: { id_empresa_prov: empresaId }
+//   //     },
+//   //     relations: ['empresa_proveedora']
+//   //   });
+
+//   //   if (!ejecutiva) {
+//   //     throw new HttpException(
+//   //       'Ejecutiva no encontrada o no está asignada a esta empresa',
+//   //       HttpStatus.NOT_FOUND
+//   //     );
+//   //   }
+
+//   //   // ✅ Verificar si tiene clientes asignados
+//   //   const clientesCount = await this.clienteRepository.count({
+//   //     where: { ejecutiva: { id_ejecutiva: ejecutivaId } }
+//   //   });
+
+//   //   if (clientesCount > 0) {
+//   //     throw new HttpException(
+//   //       `No se puede quitar la ejecutiva porque tiene ${clientesCount} cliente(s) asignado(s). ` +
+//   //       `Primero reasigne los clientes a otra ejecutiva.`,
+//   //       HttpStatus.BAD_REQUEST
+//   //     );
+//   //   }
+
+//   //   // ✅ Remover asignación
+//   //   ejecutiva.empresa_proveedora = null;
+//   //   ejecutiva.fecha_actualizacion = new Date();
+
+//   //   await this.ejecutivaRepository.save(ejecutiva);
+
+//   //   console.log('✅ [EmpresasService] Ejecutiva removida exitosamente');
+
+//   //   return {
+//   //     message: 'Ejecutiva removida correctamente de la empresa',
+//   //     ejecutiva: {
+//   //       id_ejecutiva: ejecutiva.id_ejecutiva,
+//   //       nombre_completo: ejecutiva.nombre_completo
+//   //     }
+//   //   };
+//   // }
+
+//   // En empresas.service.ts (puerto 3002)
+//   async asignarEjecutivaAEmpresa(idEmpresa: number, idEjecutiva: number) {
+//     try {
+//       console.log(`🔗 [EmpresasService] Asignando ejecutiva ${idEjecutiva} a empresa ${idEmpresa}`);
+
+//       // Verificar que la empresa existe
+//       const empresa = await this.empresaRepository.findOne({
+//         where: { id_empresa_prov: idEmpresa }
+//       });
+
+//       if (!empresa) {
+//         throw new Error('Empresa no encontrada');
+//       }
+
+//       // Verificar que la ejecutiva existe y está disponible
+//       const ejecutiva = await this.ejecutivaRepository.findOne({
+//         where: {
+//           id_ejecutiva: idEjecutiva,
+//           estado_ejecutiva: 'Activo'
+//         }
+//       });
+
+//       if (!ejecutiva) {
+//         throw new Error('Ejecutiva no encontrada o no disponible');
+//       }
+
+//       // Asignar la ejecutiva a la empresa
+//       ejecutiva.id_empresa_prov = idEmpresa;
+//       await this.ejecutivaRepository.save(ejecutiva);
+
+//       console.log(`✅ [EmpresasService] Ejecutiva ${idEjecutiva} asignada a empresa ${idEmpresa}`);
+
+//       return {
+//         success: true,
+//         message: 'Ejecutiva asignada correctamente',
+//         empresa: empresa.razon_social,
+//         ejecutiva: ejecutiva.nombre_completo
+//       };
+
+//     } catch (error) {
+//       console.error('❌ [EmpresasService] Error asignando ejecutiva:', error);
+//       throw new Error(error.message || 'Error al asignar ejecutiva');
+//     }
 //   }
 
 //   async addEjecutivaToEmpresa(empresaId: number, ejecutivaId: number) {
@@ -305,6 +479,9 @@
 
 //     return { message: 'Ejecutiva removida correctamente de la empresa' };
 //   }
+
+
+
 // }
 
 import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
@@ -399,12 +576,17 @@ export class EmpresasService {
     return await this.empresaRepository.save(nuevaEmpresa);
   }
 
-  // En EmpresasService.ts - Método alternativo más simple
-  // En EmpresasService.ts - MODIFICAR el método updateEmpresaEstado
-  async updateEmpresaEstado(empresaId: number, activo: boolean) {
-    console.log('🔄 [EmpresasService] Cambiando estado de empresa:', { empresaId, activo });
+async updateEmpresaEstado(empresaId: number, activo: boolean) {
+  console.log('🔄 [EmpresasService] Cambiando estado de empresa:', { empresaId, activo });
 
-    const empresa = await this.empresaRepository.findOne({
+  // ✅ USAR TRANSACCIÓN para atomicidad
+  const queryRunner = this.empresaRepository.manager.connection.createQueryRunner();
+  await queryRunner.connect();
+  await queryRunner.startTransaction();
+
+  try {
+    // ✅ 1. OBTENER EMPRESA
+    const empresa = await queryRunner.manager.findOne(EmpresaProveedora, {
       where: { id_empresa_prov: empresaId }
     });
 
@@ -412,69 +594,74 @@ export class EmpresasService {
       throw new HttpException('Empresa no encontrada', HttpStatus.NOT_FOUND);
     }
 
-    // Guardar el estado anterior para auditoría
     const estadoAnterior = empresa.estado;
-    empresa.estado = activo ? 'Activo' : 'Inactivo';
-    empresa.fecha_actualizacion = new Date();
+    const nuevoEstado = activo ? 'Activo' : 'Inactivo';
+    
+    console.log(`🔄 [EmpresasService] Cambiando estado de "${empresa.razon_social}": ${estadoAnterior} -> ${nuevoEstado}`);
 
-    // Obtener IDs de ejecutivas de esta empresa
-    const ejecutivasEmpresa = await this.ejecutivaRepository.find({
-      where: { empresa_proveedora: { id_empresa_prov: empresaId } },
-      select: ['id_ejecutiva']
+    // ✅ 2. OBTENER EJECUTIVAS DE ESTA EMPRESA (forma más simple)
+    const ejecutivasEmpresa = await queryRunner.manager.find(Ejecutiva, {
+      where: { id_empresa_prov: empresaId }
     });
+
+    console.log(`🔍 [EmpresasService] Ejecutivas encontradas: ${ejecutivasEmpresa.length}`);
 
     const idsEjecutivas = ejecutivasEmpresa.map(ej => ej.id_ejecutiva);
 
+    // ✅ 3. ACTUALIZAR CLIENTES (si hay ejecutivas)
     if (idsEjecutivas.length > 0) {
-      if (!activo) {
-        // ✅ Desactivar empresa: Desactivar clientes
-        console.log('➖ [EmpresasService] Desactivando clientes de la empresa:', empresaId);
-
-        const resultDesactivar = await this.clienteRepository
-          .createQueryBuilder()
-          .update()
-          .set({
-            estado: 'Inactivo',
+      console.log(`🔍 [EmpresasService] Actualizando clientes...`);
+      
+      const nuevoEstadoCliente = activo ? 'Activo' : 'Inactivo';
+      
+      // ✅ FORMA MÁS SEGURA: Actualizar cliente por cliente
+      for (const idEjecutiva of idsEjecutivas) {
+        const result = await queryRunner.manager.update(
+          ClienteFinal,
+          { ejecutiva: { id_ejecutiva: idEjecutiva } },
+          { 
+            estado: nuevoEstadoCliente,
             fecha_actualizacion: new Date()
-          })
-          .where('id_ejecutiva IN (:...idsEjecutivas)', { idsEjecutivas })
-          .execute();
-
-        console.log('✅ [EmpresasService] Clientes desactivados:', resultDesactivar.affected);
-
-      } else {
-        // ✅ Activar empresa: Activar clientes automáticamente
-        console.log('➕ [EmpresasService] Activando empresa Y clientes:', empresaId);
-
-        const resultActivar = await this.clienteRepository
-          .createQueryBuilder()
-          .update()
-          .set({
-            estado: 'Activo',
-            fecha_actualizacion: new Date()
-          })
-          .where('id_ejecutiva IN (:...idsEjecutivas)', { idsEjecutivas })
-          .andWhere('estado = :estado', { estado: 'Inactivo' }) // Solo activar los que estaban inactivos
-          .execute();
-
-        console.log('✅ [EmpresasService] Clientes activados:', resultActivar.affected);
+          }
+        );
+        console.log(`✅ Ejecutiva ${idEjecutiva}: ${result.affected} clientes actualizados`);
       }
-    } else {
-      console.log('ℹ️ [EmpresasService] No hay ejecutivas en esta empresa');
     }
 
-    await this.empresaRepository.save(empresa);
+    // ✅ 4. ACTUALIZAR EMPRESA
+    await queryRunner.manager.update(
+      EmpresaProveedora,
+      { id_empresa_prov: empresaId },
+      { 
+        estado: nuevoEstado,
+        fecha_actualizacion: new Date()
+      }
+    );
 
-    // ✅ Auditoría
-    console.log('📝 [EmpresasService] Auditoría: Empresa', empresa.razon_social,
-      'cambió de', estadoAnterior, 'a', empresa.estado);
+    // ✅ 5. CONFIRMAR TRANSACCIÓN
+    await queryRunner.commitTransaction();
+    console.log('✅ [EmpresasService] Transacción completada exitosamente');
 
     return {
-      empresa,
+      empresa: { ...empresa, estado: nuevoEstado },
       message: `Empresa ${activo ? 'activada' : 'desactivada'} correctamente. ` +
-        `${!activo ? 'Los clientes asociados han sido desactivados.' : 'Los clientes asociados han sido activados.'}`
+        `${idsEjecutivas.length > 0 ? `${idsEjecutivas.length} cliente(s) ${activo ? 'activado(s)' : 'desactivado(s)'}.` : 'No hay clientes asociados.'}`
     };
+
+  } catch (error) {
+    // ✅ 6. REVERTIR EN CASO DE ERROR
+    await queryRunner.rollbackTransaction();
+    console.error('❌ [EmpresasService] Error en transacción - REVERTIDO:', error);
+
+    throw new HttpException(
+      'Error al cambiar estado. Los cambios han sido revertidos.',
+      HttpStatus.INTERNAL_SERVER_ERROR
+    );
+  } finally {
+    // ✅ 7. LIBERAR RECURSOS
+    await queryRunner.release();
   }
+}
 
   // En EmpresasService.ts - agregar este método
   async updateEmpresa(empresaId: number, data: any) {
@@ -584,106 +771,6 @@ export class EmpresasService {
     };
   }
 
-  // async addEjecutivaToEmpresa(empresaId: number, ejecutivaId: number) {
-  //   console.log('➕ [EmpresasService] Asignando ejecutiva:', { empresaId, ejecutivaId });
-
-  //   const empresa = await this.empresaRepository.findOne({
-  //     where: { id_empresa_prov: empresaId }
-  //   });
-
-  //   if (!empresa) {
-  //     throw new HttpException('Empresa no encontrada', HttpStatus.NOT_FOUND);
-  //   }
-
-  //   const ejecutiva = await this.ejecutivaRepository.findOne({
-  //     where: { id_ejecutiva: ejecutivaId },
-  //     relations: ['empresa_proveedora'] // ✅ Cargar relación
-  //   });
-
-  //   if (!ejecutiva) {
-  //     throw new HttpException('Ejecutiva no encontrada', HttpStatus.NOT_FOUND);
-  //   }
-
-  //   // ✅ Verificar si ya está asignada a ESTA empresa
-  //   if (ejecutiva.empresa_proveedora?.id_empresa_prov === empresaId) {
-  //     throw new HttpException('Esta ejecutiva ya está asignada a esta empresa', HttpStatus.BAD_REQUEST);
-  //   }
-
-  //   // ✅ Verificar si ya está asignada a OTRA empresa
-  //   if (ejecutiva.empresa_proveedora && ejecutiva.empresa_proveedora.id_empresa_prov !== empresaId) {
-  //     throw new HttpException(
-  //       `La ejecutiva ya está asignada a la empresa "${ejecutiva.empresa_proveedora.razon_social}"`,
-  //       HttpStatus.BAD_REQUEST
-  //     );
-  //   }
-
-  //   // ✅ Asignar ejecutiva a la empresa
-  //   ejecutiva.empresa_proveedora = empresa;
-  //   ejecutiva.fecha_actualizacion = new Date();
-
-  //   await this.ejecutivaRepository.save(ejecutiva);
-
-  //   console.log('✅ [EmpresasService] Ejecutiva asignada exitosamente');
-
-  //   return {
-  //     message: 'Ejecutiva asignada correctamente a la empresa',
-  //     ejecutiva: {
-  //       id_ejecutiva: ejecutiva.id_ejecutiva,
-  //       nombre_completo: ejecutiva.nombre_completo,
-  //       correo: ejecutiva.correo,
-  //       empresa: empresa.razon_social
-  //     }
-  //   };
-  // }
-
-  // async removeEjecutivaFromEmpresa(empresaId: number, ejecutivaId: number) {
-  //   console.log('➖ [EmpresasService] Removiendo ejecutiva:', { empresaId, ejecutivaId });
-
-  //   const ejecutiva = await this.ejecutivaRepository.findOne({
-  //     where: {
-  //       id_ejecutiva: ejecutivaId,
-  //       empresa_proveedora: { id_empresa_prov: empresaId }
-  //     },
-  //     relations: ['empresa_proveedora']
-  //   });
-
-  //   if (!ejecutiva) {
-  //     throw new HttpException(
-  //       'Ejecutiva no encontrada o no está asignada a esta empresa',
-  //       HttpStatus.NOT_FOUND
-  //     );
-  //   }
-
-  //   // ✅ Verificar si tiene clientes asignados
-  //   const clientesCount = await this.clienteRepository.count({
-  //     where: { ejecutiva: { id_ejecutiva: ejecutivaId } }
-  //   });
-
-  //   if (clientesCount > 0) {
-  //     throw new HttpException(
-  //       `No se puede quitar la ejecutiva porque tiene ${clientesCount} cliente(s) asignado(s). ` +
-  //       `Primero reasigne los clientes a otra ejecutiva.`,
-  //       HttpStatus.BAD_REQUEST
-  //     );
-  //   }
-
-  //   // ✅ Remover asignación
-  //   ejecutiva.empresa_proveedora = null;
-  //   ejecutiva.fecha_actualizacion = new Date();
-
-  //   await this.ejecutivaRepository.save(ejecutiva);
-
-  //   console.log('✅ [EmpresasService] Ejecutiva removida exitosamente');
-
-  //   return {
-  //     message: 'Ejecutiva removida correctamente de la empresa',
-  //     ejecutiva: {
-  //       id_ejecutiva: ejecutiva.id_ejecutiva,
-  //       nombre_completo: ejecutiva.nombre_completo
-  //     }
-  //   };
-  // }
-
   // En empresas.service.ts (puerto 3002)
   async asignarEjecutivaAEmpresa(idEmpresa: number, idEjecutiva: number) {
     try {
@@ -728,8 +815,46 @@ export class EmpresasService {
       throw new Error(error.message || 'Error al asignar ejecutiva');
     }
   }
+  // En EmpresasService.ts - AGREGAR ESTE MÉTODO NUEVO
+    async getEjecutivasDisponibles() {
+      console.log('🔄 [EmpresasService] Buscando ejecutivas disponibles...');
 
-  async addEjecutivaToEmpresa(empresaId: number, ejecutivaId: number) {
+      // ✅ CONSULTA CORREGIDA - Usar QueryBuilder con LEFT JOIN
+      const ejecutivasDisponibles = await this.ejecutivaRepository
+        .createQueryBuilder('ejecutiva')
+        .leftJoinAndSelect('ejecutiva.empresa_proveedora', 'empresa')
+        .where('ejecutiva.estado_ejecutiva = :estado', { estado: 'Activo' })
+        .andWhere('empresa.id_empresa_prov IS NULL') // ← Ejecutivas SIN empresa
+        .orderBy('ejecutiva.nombre_completo', 'ASC')
+        .getMany();
+
+      console.log(`✅ [EmpresasService] Ejecutivas disponibles encontradas: ${ejecutivasDisponibles.length}`);
+
+      // ✅ Formatear para el frontend
+      const ejecutivasFormateadas = ejecutivasDisponibles.map(ejecutiva => ({
+        id_ejecutiva: ejecutiva.id_ejecutiva,
+        id_usuario: ejecutiva.id_ejecutiva,
+        nombre_completo: ejecutiva.nombre_completo,
+        nombre: ejecutiva.nombre_completo?.split(' ')[0] || '',
+        apellido: ejecutiva.nombre_completo?.split(' ').slice(1).join(' ') || '',
+        correo: ejecutiva.correo,
+        email: ejecutiva.correo,
+        telefono: ejecutiva.telefono,
+        dni: ejecutiva.dni,
+        estado_ejecutiva: ejecutiva.estado_ejecutiva,
+        activo: ejecutiva.estado_ejecutiva === 'Activo',
+        rol: 'ejecutiva'
+      }));
+
+      return ejecutivasFormateadas;
+  }
+
+  // En EmpresasService.ts - REVISAR Y CORREGIR
+async addEjecutivaToEmpresa(empresaId: number, ejecutivaId: number) {
+  console.log('➕ [EmpresasService] Asignando ejecutiva:', { empresaId, ejecutivaId });
+
+  try {
+    // ✅ Verificar que la empresa existe
     const empresa = await this.empresaRepository.findOne({
       where: { id_empresa_prov: empresaId }
     });
@@ -738,26 +863,43 @@ export class EmpresasService {
       throw new HttpException('Empresa no encontrada', HttpStatus.NOT_FOUND);
     }
 
+    // ✅ Verificar que la ejecutiva existe y está activa
     const ejecutiva = await this.ejecutivaRepository.findOne({
-      where: { id_ejecutiva: ejecutivaId }
+      where: { 
+        id_ejecutiva: ejecutivaId,
+        estado_ejecutiva: 'Activo'
+      },
+      relations: ['empresa_proveedora'] // ✅ Mantener relations para verificar
     });
 
     if (!ejecutiva) {
-      throw new HttpException('Ejecutiva no encontrada', HttpStatus.NOT_FOUND);
+      throw new HttpException('Ejecutiva no encontrada o inactiva', HttpStatus.NOT_FOUND);
     }
 
-    // Verificar si ya está asignada
-    if (ejecutiva.empresa_proveedora && ejecutiva.empresa_proveedora.id_empresa_prov === empresaId) {
+    // ✅ Verificar si ya está asignada a ESTA empresa
+    if (ejecutiva.empresa_proveedora?.id_empresa_prov === empresaId) {
       throw new HttpException('Esta ejecutiva ya está asignada a esta empresa', HttpStatus.BAD_REQUEST);
     }
 
-    // Asignar ejecutiva a la empresa
+    // ✅ Verificar si está asignada a OTRA empresa
+    if (ejecutiva.empresa_proveedora && ejecutiva.empresa_proveedora.id_empresa_prov !== empresaId) {
+      throw new HttpException(
+        `La ejecutiva ya está asignada a: ${ejecutiva.empresa_proveedora.razon_social}`,
+        HttpStatus.BAD_REQUEST
+      );
+    }
+
+    // ✅ ASIGNAR ejecutiva a la empresa
     ejecutiva.empresa_proveedora = empresa;
     ejecutiva.fecha_actualizacion = new Date();
 
+    // ✅ Guardar usando save (para que funcione el trigger de auditoría)
     await this.ejecutivaRepository.save(ejecutiva);
 
+    console.log('✅ [EmpresasService] Ejecutiva asignada exitosamente');
+
     return {
+      success: true,
       message: 'Ejecutiva asignada correctamente a la empresa',
       ejecutiva: {
         id_ejecutiva: ejecutiva.id_ejecutiva,
@@ -765,8 +907,20 @@ export class EmpresasService {
         correo: ejecutiva.correo
       }
     };
-  }
 
+  } catch (error) {
+    console.error('❌ [EmpresasService] Error asignando ejecutiva:', error);
+    
+    if (error instanceof HttpException) {
+      throw error;
+    }
+    
+    throw new HttpException(
+      'Error interno al asignar ejecutiva',
+      HttpStatus.INTERNAL_SERVER_ERROR
+    );
+  }
+}
   async removeEjecutivaFromEmpresa(empresaId: number, ejecutivaId: number) {
     const ejecutiva = await this.ejecutivaRepository.findOne({
       where: {

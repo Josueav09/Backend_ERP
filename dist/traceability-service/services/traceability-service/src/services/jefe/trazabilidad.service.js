@@ -417,7 +417,6 @@ let TrazabilidadService = class TrazabilidadService {
             .leftJoinAndSelect('t.empresa_proveedora', 'ep')
             .leftJoinAndSelect('t.cliente_final', 'cf')
             .leftJoinAndSelect('t.persona_contacto', 'pc')
-            .where('(t.pasa_embudo_ventas = FALSE OR t.nombre_oportunidad IS NULL)')
             .select([
             't.id_trazabilidad',
             't.fecha_contacto',
@@ -469,18 +468,20 @@ let TrazabilidadService = class TrazabilidadService {
         const etapa1Data = data.map(t => ({
             id: t.id_trazabilidad,
             clienteFinal: t.cliente_final?.razon_social || 'N/A',
-            ejecutiva: t.ejecutiva?.nombre_completo || 'N/A',
             personaContacto: t.persona_contacto?.nombre_completo || 'N/A',
-            tipoContacto: this.mapTipoContacto(t.tipo_contacto),
-            fechaContacto: t.fecha_contacto?.toISOString().split('T')[0] || '',
-            resultadoContacto: t.resultado_contacto || 'Pendiente',
-            pasaEmbudo: t.pasa_embudo_ventas || false,
+            ejecutiva: t.ejecutiva?.nombre_completo || 'N/A',
+            tipoContacto: t.tipo_contacto,
+            fechaContacto: this.formatDate(t.fecha_contacto),
+            resultadoContacto: t.resultado_contacto,
+            pasaEmbudo: t.pasa_embudo_ventas,
             informacionImportante: t.informacion_importante || '',
             fechaReunion: t.fecha_reunion?.toISOString().split('T')[0] || null,
             participantes: t.participantes || null,
             resultadosReunion: t.resultados_reunion || null,
             observaciones: t.observaciones || ''
         }));
+        console.log('📊 [getEtapa1] Total registros encontrados:', total);
+        console.log('📊 [getEtapa1] Tipos de contacto únicos:', [...new Set(data.map(item => item.tipo_contacto))]);
         return {
             data: etapa1Data,
             pagination: {
@@ -549,7 +550,7 @@ let TrazabilidadService = class TrazabilidadService {
             tipoOportunidad: t.tipo_oportunidad || 'N/A',
             etapaOportunidad: t.etapa_oportunidad || 'Prospección',
             montoTotal: Number(t.monto_total_sin_imp) || 0,
-            probabilidadCierre: t.probabilidad_cierre || 0,
+            probabilidad_cierre: t.probabilidad_cierre || 0,
             fechaCierreEsperado: this.formatDate(t.fecha_cierre_esperado),
             productoOfrecido: t.producto_ofrecido || '',
             observaciones: t.observaciones || '',
@@ -638,6 +639,442 @@ let TrazabilidadService = class TrazabilidadService {
         catch (error) {
             console.warn('⚠️ Error formateando fecha:', dateValue, error);
             return '';
+        }
+    }
+    async getNuevasReunionesAgendadas(meses = 6, ejecutivaId) {
+        console.log('🔄 [getNuevasReunionesAgendadas] === INICIANDO ===');
+        const query = this.trazabilidadRepository.createQueryBuilder('t')
+            .select('EXTRACT(MONTH FROM t.fecha_reunion)', 'mes_numero')
+            .addSelect('EXTRACT(YEAR FROM t.fecha_reunion)', 'anio')
+            .addSelect(`CASE 
+        WHEN EXTRACT(MONTH FROM t.fecha_reunion) = 1 THEN 'Ene'
+        WHEN EXTRACT(MONTH FROM t.fecha_reunion) = 2 THEN 'Feb' 
+        WHEN EXTRACT(MONTH FROM t.fecha_reunion) = 3 THEN 'Mar'
+        WHEN EXTRACT(MONTH FROM t.fecha_reunion) = 4 THEN 'Abr'
+        WHEN EXTRACT(MONTH FROM t.fecha_reunion) = 5 THEN 'May'
+        WHEN EXTRACT(MONTH FROM t.fecha_reunion) = 6 THEN 'Jun'
+        WHEN EXTRACT(MONTH FROM t.fecha_reunion) = 7 THEN 'Jul'
+        WHEN EXTRACT(MONTH FROM t.fecha_reunion) = 8 THEN 'Ago'
+        WHEN EXTRACT(MONTH FROM t.fecha_reunion) = 9 THEN 'Sep'
+        WHEN EXTRACT(MONTH FROM t.fecha_reunion) = 10 THEN 'Oct'
+        WHEN EXTRACT(MONTH FROM t.fecha_reunion) = 11 THEN 'Nov'
+        WHEN EXTRACT(MONTH FROM t.fecha_reunion) = 12 THEN 'Dic'
+      END`, 'mes_nombre')
+            .addSelect('COUNT(t.id_trazabilidad)', 'reuniones')
+            .where('t.reunion_agendada = true')
+            .andWhere('t.fecha_reunion IS NOT NULL')
+            .groupBy('EXTRACT(MONTH FROM t.fecha_reunion), EXTRACT(YEAR FROM t.fecha_reunion)')
+            .orderBy('EXTRACT(YEAR FROM t.fecha_reunion), EXTRACT(MONTH FROM t.fecha_reunion)', 'ASC');
+        if (ejecutivaId) {
+            query.andWhere('t.id_ejecutiva = :ejecutivaId', { ejecutivaId });
+        }
+        const data = await query.getRawMany();
+        console.log('📊 [getNuevasReunionesAgendadas] RESULTADO:', data);
+        if (data.length > 0) {
+            return data.map(item => ({
+                mes: `${item.mes_nombre} ${item.anio}`.trim(),
+                reuniones: parseInt(item.reuniones) || 0
+            }));
+        }
+        return [];
+    }
+    async getNuevasVentas(meses = 6, ejecutivaId) {
+        console.log('🔄 [getNuevasVentas] === INICIANDO ===');
+        const query = this.trazabilidadRepository.createQueryBuilder('t')
+            .select('EXTRACT(MONTH FROM t.fecha_contacto)', 'mes_numero')
+            .addSelect('EXTRACT(YEAR FROM t.fecha_contacto)', 'anio')
+            .addSelect(`CASE 
+        WHEN EXTRACT(MONTH FROM t.fecha_contacto) = 1 THEN 'Ene'
+        WHEN EXTRACT(MONTH FROM t.fecha_contacto) = 2 THEN 'Feb' 
+        WHEN EXTRACT(MONTH FROM t.fecha_contacto) = 3 THEN 'Mar'
+        WHEN EXTRACT(MONTH FROM t.fecha_contacto) = 4 THEN 'Abr'
+        WHEN EXTRACT(MONTH FROM t.fecha_contacto) = 5 THEN 'May'
+        WHEN EXTRACT(MONTH FROM t.fecha_contacto) = 6 THEN 'Jun'
+        WHEN EXTRACT(MONTH FROM t.fecha_contacto) = 7 THEN 'Jul'
+        WHEN EXTRACT(MONTH FROM t.fecha_contacto) = 8 THEN 'Ago'
+        WHEN EXTRACT(MONTH FROM t.fecha_contacto) = 9 THEN 'Sep'
+        WHEN EXTRACT(MONTH FROM t.fecha_contacto) = 10 THEN 'Oct'
+        WHEN EXTRACT(MONTH FROM t.fecha_contacto) = 11 THEN 'Nov'
+        WHEN EXTRACT(MONTH FROM t.fecha_contacto) = 12 THEN 'Dic'
+      END`, 'mes_nombre')
+            .addSelect('COUNT(t.id_trazabilidad)', 'ventas')
+            .where('t.etapa_oportunidad = :etapa', { etapa: 'Venta ganada' })
+            .groupBy('EXTRACT(MONTH FROM t.fecha_contacto), EXTRACT(YEAR FROM t.fecha_contacto)')
+            .orderBy('EXTRACT(YEAR FROM t.fecha_contacto), EXTRACT(MONTH FROM t.fecha_contacto)', 'ASC');
+        if (ejecutivaId) {
+            query.andWhere('t.id_ejecutiva = :ejecutivaId', { ejecutivaId });
+        }
+        const data = await query.getRawMany();
+        console.log('📊 [getNuevasVentas] RESULTADO:', data);
+        if (data.length > 0) {
+            return data.map(item => ({
+                mes: `${item.mes_nombre} ${item.anio}`.trim(),
+                ventas: parseInt(item.ventas) || 0
+            }));
+        }
+        return [];
+    }
+    async getEfectividadCanalesContacto(filters) {
+        const query = this.trazabilidadRepository.createQueryBuilder('t')
+            .select('t.tipo_contacto as canal')
+            .addSelect('COUNT(*) as total_contactos')
+            .addSelect(`COUNT(CASE WHEN t.resultado_contacto = 'Positivo' THEN 1 END) as positivos`)
+            .addSelect(`COUNT(CASE WHEN t.resultado_contacto = 'Negativo' THEN 1 END) as negativos`)
+            .addSelect(`COUNT(CASE WHEN t.resultado_contacto = 'Pendiente' THEN 1 END) as pendientes`)
+            .addSelect(`COUNT(CASE WHEN t.resultado_contacto = 'Neutro' THEN 1 END) as neutros`)
+            .groupBy('t.tipo_contacto')
+            .orderBy(`COUNT(CASE WHEN t.resultado_contacto = 'Positivo' THEN 1 END)`, 'DESC');
+        if (filters?.ejecutivaId) {
+            query.andWhere('t.id_ejecutiva = :ejecutivaId', { ejecutivaId: filters.ejecutivaId });
+        }
+        if (filters?.fechaDesde) {
+            query.andWhere('t.fecha_contacto >= :fechaDesde', { fechaDesde: filters.fechaDesde });
+        }
+        if (filters?.fechaHasta) {
+            query.andWhere('t.fecha_contacto <= :fechaHasta', { fechaHasta: filters.fechaHasta });
+        }
+        const data = await query.getRawMany();
+        console.log('📊 [getEfectividadCanalesContacto] Datos:', data);
+        return data.map(item => ({
+            canal: this.mapTipoContacto(item.canal),
+            total_contactos: parseInt(item.total_contactos),
+            positivos: parseInt(item.positivos),
+            negativos: parseInt(item.negativos),
+            pendientes: parseInt(item.pendientes),
+            neutros: parseInt(item.neutros),
+            efectividad: item.total_contactos > 0 ?
+                Math.round((parseInt(item.positivos) / parseInt(item.total_contactos)) * 100) : 0
+        }));
+    }
+    async getResumenSemanalEjecutivas() {
+        const query = this.trazabilidadRepository.createQueryBuilder('t')
+            .leftJoin('t.ejecutiva', 'ej')
+            .select('ej.id_ejecutiva', 'id_ejecutiva')
+            .addSelect('ej.nombre_completo', 'ejecutiva')
+            .addSelect('COUNT(t.id_trazabilidad)', 'total_actividades')
+            .addSelect(`COUNT(CASE WHEN t.reunion_agendada = true THEN 1 END) as reuniones_agendadas`)
+            .addSelect(`COUNT(CASE WHEN t.etapa_oportunidad = 'Venta ganada' THEN 1 END) as ventas_ganadas`)
+            .addSelect(`SUM(CASE WHEN t.etapa_oportunidad = 'Venta ganada' THEN t.monto_cierre_final ELSE 0 END) as monto_total`)
+            .where('t.fecha_contacto IS NOT NULL')
+            .groupBy('ej.id_ejecutiva, ej.nombre_completo')
+            .orderBy('ventas_ganadas', 'DESC')
+            .addOrderBy('reuniones_agendadas', 'DESC');
+        const data = await query.getRawMany();
+        console.log('📊 [getResumenSemanalEjecutivas] Datos reales:', data);
+        return data.map(item => ({
+            id_ejecutiva: item.id_ejecutiva,
+            ejecutiva: item.ejecutiva?.split(' ')[0] || item.ejecutiva || 'Sin nombre',
+            total_actividades: parseInt(item.total_actividades) || 0,
+            reuniones_agendadas: parseInt(item.reuniones_agendadas) || 0,
+            ventas_ganadas: parseInt(item.ventas_ganadas) || 0,
+            monto_total: parseFloat(item.monto_total) || 0
+        }));
+    }
+    async getEmbudoVentas(filters) {
+        const query = this.trazabilidadRepository.createQueryBuilder('t')
+            .select('t.etapa_oportunidad as etapa')
+            .addSelect('COUNT(t.id_trazabilidad) as cantidad')
+            .addSelect('SUM(t.monto_total_sin_imp) as monto_total')
+            .where('t.pasa_embudo_ventas = true')
+            .andWhere('t.etapa_oportunidad IS NOT NULL')
+            .andWhere('t.etapa_oportunidad != :perdida', { perdida: 'Venta perdida' })
+            .groupBy('t.etapa_oportunidad')
+            .orderBy('COUNT(t.id_trazabilidad)', 'DESC');
+        if (filters?.ejecutivaId) {
+            query.andWhere('t.id_ejecutiva = :ejecutivaId', { ejecutivaId: filters.ejecutivaId });
+        }
+        const data = await query.getRawMany();
+        console.log('📊 [getEmbudoVentas] Datos crudos ordenados:', data);
+        const maxCantidad = data.length > 0 ? Math.max(...data.map(d => parseInt(d.cantidad))) : 0;
+        const embudo = data.map(d => {
+            const cantidad = parseInt(d.cantidad);
+            const porcentajeDesdeInicio = maxCantidad > 0 ? Math.round((cantidad / maxCantidad) * 100) : 0;
+            return {
+                etapa: this.acortarEtapa(d.etapa),
+                cantidad: cantidad,
+                monto_total: parseFloat(d.monto_total) || 0,
+                tasa_conversion: porcentajeDesdeInicio,
+                perdida: 0
+            };
+        });
+        console.log('📊 [getEmbudoVentas] Embudo final con % correctos:', embudo);
+        return embudo;
+    }
+    acortarEtapa(etapa) {
+        const acortamientos = {
+            'Prospección': 'Prosp.',
+            'Calificación': 'Calif.',
+            'Detección de necesidades': 'Detección',
+            'Presentación de solución': 'Present. Solución',
+            'Manejo de objeciones': 'Objeciones',
+            'Presentación de propuesta': 'Present. Propuesta',
+            'Negociación': 'Negoc.',
+            'Firma de contrato': 'Firma',
+            'Venta ganada': 'Venta Ganada'
+        };
+        return acortamientos[etapa] || etapa;
+    }
+    async getRankingEjecutivas(filters) {
+        const query = this.trazabilidadRepository.createQueryBuilder('t')
+            .leftJoin('t.ejecutiva', 'ej')
+            .select('ej.id_ejecutiva', 'id_ejecutiva')
+            .addSelect('ej.nombre_completo', 'ejecutiva')
+            .addSelect(`COUNT(CASE WHEN t.etapa_oportunidad = 'Venta ganada' THEN 1 END) as ventas_ganadas`)
+            .addSelect(`SUM(CASE WHEN t.etapa_oportunidad = 'Venta ganada' THEN t.monto_cierre_final ELSE 0 END) as monto_total`)
+            .addSelect(`COUNT(CASE WHEN t.pasa_embudo_ventas = true AND t.etapa_oportunidad != 'Venta ganada' THEN 1 END) as clientes_potenciales`)
+            .where('t.pasa_embudo_ventas = true')
+            .groupBy('ej.id_ejecutiva, ej.nombre_completo')
+            .orderBy('ventas_ganadas', 'DESC')
+            .addOrderBy('monto_total', 'DESC');
+        if (filters?.fechaDesde) {
+            query.andWhere('t.fecha_contacto >= :fechaDesde', { fechaDesde: filters.fechaDesde });
+        }
+        if (filters?.fechaHasta) {
+            query.andWhere('t.fecha_contacto <= :fechaHasta', { fechaHasta: filters.fechaHasta });
+        }
+        const data = await query.getRawMany();
+        return data.map(item => {
+            const ventasGanadas = parseInt(item.ventas_ganadas) || 0;
+            const clientesPotenciales = parseInt(item.clientes_potenciales) || 0;
+            const totalOportunidades = ventasGanadas + clientesPotenciales;
+            return {
+                id_ejecutiva: item.id_ejecutiva,
+                ejecutiva: item.ejecutiva?.split(' ')[0] || item.ejecutiva,
+                ventas_ganadas: ventasGanadas,
+                monto_total: parseFloat(item.monto_total) || 0,
+                clientes_potenciales: clientesPotenciales,
+                efectividad: totalOportunidades > 0 ?
+                    Math.round((ventasGanadas / totalOportunidades) * 100) : 0
+            };
+        });
+    }
+    async getEtapa1ForReport(filters) {
+        console.log('📊 [getEtapa1ForReport] Generando reporte Etapa 1 con filtros:', filters);
+        const query = this.trazabilidadRepository.createQueryBuilder('t')
+            .leftJoinAndSelect('t.ejecutiva', 'ej')
+            .leftJoinAndSelect('t.empresa_proveedora', 'ep')
+            .leftJoinAndSelect('t.cliente_final', 'cf')
+            .leftJoinAndSelect('t.persona_contacto', 'pc')
+            .select([
+            't.id_trazabilidad',
+            't.fecha_contacto',
+            't.tipo_contacto',
+            't.resultado_contacto',
+            't.pasa_embudo_ventas',
+            't.informacion_importante',
+            't.reunion_agendada',
+            't.fecha_reunion',
+            't.participantes',
+            't.se_dio_reunion',
+            't.resultados_reunion',
+            't.observaciones',
+            'ej.nombre_completo',
+            'ep.razon_social',
+            'cf.razon_social',
+            'pc.nombre_completo',
+            'pc.cargo',
+            'pc.correo'
+        ]);
+        if (filters.ejecutivaId) {
+            query.andWhere('t.id_ejecutiva = :ejecutivaId', { ejecutivaId: filters.ejecutivaId });
+        }
+        if (filters.empresaId) {
+            query.andWhere('t.id_empresa_prov = :empresaId', { empresaId: filters.empresaId });
+        }
+        if (filters.clienteId) {
+            query.andWhere('t.id_cliente_final = :clienteId', { clienteId: filters.clienteId });
+        }
+        if (filters.resultadoContacto) {
+            query.andWhere('t.resultado_contacto = :resultado', { resultado: filters.resultadoContacto });
+        }
+        if (filters.tipoContacto) {
+            query.andWhere('t.tipo_contacto = :tipo', { tipo: filters.tipoContacto });
+        }
+        if (filters.fechaDesde) {
+            query.andWhere('t.fecha_contacto >= :fechaDesde', { fechaDesde: filters.fechaDesde });
+        }
+        if (filters.fechaHasta) {
+            query.andWhere('t.fecha_contacto <= :fechaHasta', { fechaHasta: filters.fechaHasta });
+        }
+        query.orderBy('t.fecha_contacto', 'DESC');
+        const data = await query.getMany();
+        console.log('📊 [getEtapa1ForReport] Datos encontrados:', data.length);
+        return data.map(item => ({
+            'ID': item.id_trazabilidad,
+            'Cliente Final': item.cliente_final?.razon_social || 'N/A',
+            'Persona Contacto': item.persona_contacto?.nombre_completo || 'N/A',
+            'Cargo Contacto': item.persona_contacto?.cargo || 'N/A',
+            'Email Contacto': item.persona_contacto?.correo || 'N/A',
+            'Ejecutiva': item.ejecutiva?.nombre_completo || 'N/A',
+            'Empresa Proveedora': item.empresa_proveedora?.razon_social || 'N/A',
+            'Tipo Contacto': this.mapTipoContacto(item.tipo_contacto),
+            'Fecha Contacto': this.formatDateForCSV(item.fecha_contacto),
+            'Resultado': item.resultado_contacto || 'Pendiente',
+            'Pasa Embudo': item.pasa_embudo_ventas ? 'Sí' : 'No',
+            'Información Importante': item.informacion_importante || '',
+            'Reunión Agendada': item.reunion_agendada ? 'Sí' : 'No',
+            'Fecha Reunión': this.formatDateForCSV(item.fecha_reunion),
+            'Participantes': item.participantes || '',
+            'Se Dio Reunión': item.se_dio_reunion ? 'Sí' : (item.se_dio_reunion === false ? 'No' : ''),
+            'Resultados Reunión': item.resultados_reunion || '',
+            'Observaciones': item.observaciones || ''
+        }));
+    }
+    async getEtapa2ForReport(filters) {
+        console.log('📊 [getEtapa2ForReport] Generando reporte Etapa 2 con filtros:', filters);
+        const query = this.trazabilidadRepository.createQueryBuilder('t')
+            .leftJoinAndSelect('t.ejecutiva', 'ej')
+            .leftJoinAndSelect('t.empresa_proveedora', 'ep')
+            .leftJoinAndSelect('t.cliente_final', 'cf')
+            .where('t.pasa_embudo_ventas = true')
+            .andWhere('t.nombre_oportunidad IS NOT NULL')
+            .select([
+            't.id_trazabilidad',
+            't.nombre_oportunidad',
+            't.tipo_oportunidad',
+            't.etapa_oportunidad',
+            't.monto_total_sin_imp',
+            't.probabilidad_cierre',
+            't.fecha_cierre_esperado',
+            't.producto_ofrecido',
+            't.observaciones',
+            't.monto_cierre_final',
+            't.fecha_registro_oportunidad',
+            't.fecha_inicio_etapa',
+            'ej.nombre_completo',
+            'ep.razon_social',
+            'cf.razon_social'
+        ]);
+        if (filters.ejecutivaId) {
+            query.andWhere('t.id_ejecutiva = :ejecutivaId', { ejecutivaId: filters.ejecutivaId });
+        }
+        if (filters.empresaId) {
+            query.andWhere('t.id_empresa_prov = :empresaId', { empresaId: filters.empresaId });
+        }
+        if (filters.clienteId) {
+            query.andWhere('t.id_cliente_final = :clienteId', { clienteId: filters.clienteId });
+        }
+        if (filters.etapaOportunidad && filters.etapaOportunidad !== 'all') {
+            query.andWhere('t.etapa_oportunidad = :etapa', { etapa: filters.etapaOportunidad });
+        }
+        if (filters.fechaDesde) {
+            query.andWhere('t.fecha_registro_oportunidad >= :fechaDesde', { fechaDesde: filters.fechaDesde });
+        }
+        if (filters.fechaHasta) {
+            query.andWhere('t.fecha_registro_oportunidad <= :fechaHasta', { fechaHasta: filters.fechaHasta });
+        }
+        query.orderBy('t.fecha_cierre_esperado', 'ASC');
+        const data = await query.getMany();
+        console.log('📊 [getEtapa2ForReport] Datos encontrados:', data.length);
+        const calcularProbabilidad = (etapa) => {
+            const probabilidades = {
+                'Prospección': 10,
+                'Calificación': 25,
+                'Detección de necesidades': 40,
+                'Presentación de solución': 50,
+                'Manejo de objeciones': 60,
+                'Presentación de propuesta': 75,
+                'Negociación': 85,
+                'Firma de contrato': 95,
+                'Venta ganada': 100,
+                'Venta perdida': 0,
+                'Venta suspendida': 5
+            };
+            return probabilidades[etapa] || 0;
+        };
+        return data.map(item => {
+            const probabilidadCalculada = calcularProbabilidad(item.etapa_oportunidad);
+            return {
+                'ID': item.id_trazabilidad,
+                'Oportunidad': item.nombre_oportunidad || 'Sin nombre',
+                'Cliente Final': item.cliente_final?.razon_social || 'N/A',
+                'Ejecutiva': item.ejecutiva?.nombre_completo || 'N/A',
+                'Empresa Proveedora': item.empresa_proveedora?.razon_social || 'N/A',
+                'Tipo Oportunidad': item.tipo_oportunidad || 'N/A',
+                'Etapa': item.etapa_oportunidad || 'Prospección',
+                'Probabilidad Calculada': `${probabilidadCalculada}%`,
+                'Monto Total': `$${Number(item.monto_total_sin_imp || 0).toLocaleString()}`,
+                'Monto Cierre Final': item.monto_cierre_final ? `$${Number(item.monto_cierre_final).toLocaleString()}` : '',
+                'Fecha Registro': this.formatDateForCSV(item.fecha_registro_oportunidad),
+                'Fecha Inicio Etapa': this.formatDateForCSV(item.fecha_inicio_etapa),
+                'Fecha Cierre Esperado': this.formatDateForCSV(item.fecha_cierre_esperado),
+                'Producto Ofrecido': item.producto_ofrecido || '',
+                'Observaciones': item.observaciones || '',
+                'Estado': item.etapa_oportunidad === 'Venta ganada' ? 'GANADA' :
+                    item.etapa_oportunidad === 'Venta perdida' ? 'PERDIDA' : 'EN PROCESO'
+            };
+        });
+    }
+    async generateReportCSV(filters, reportType) {
+        try {
+            console.log('🔄 [generateReportCSV] Iniciando con:', { filters, reportType });
+            let data;
+            if (reportType === 'etapa1') {
+                console.log('📋 Obteniendo datos para etapa1...');
+                data = await this.getEtapa1ForReport(filters);
+            }
+            else if (reportType === 'etapa2') {
+                console.log('📋 Obteniendo datos para etapa2...');
+                data = await this.getEtapa2ForReport(filters);
+            }
+            else {
+                throw new Error(`Tipo de reporte no válido: ${reportType}`);
+            }
+            console.log('📊 Datos obtenidos:', data.length, 'registros');
+            if (data.length === 0) {
+                console.log('⚠️ No hay datos para generar el reporte');
+                return 'No hay datos para generar el reporte';
+            }
+            const headers = Object.keys(data[0]);
+            const csvRows = [];
+            csvRows.push(headers.join(','));
+            for (const row of data) {
+                const values = headers.map(header => {
+                    const value = row[header];
+                    if (value === null || value === undefined || value === '')
+                        return '';
+                    const stringValue = String(value);
+                    if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')) {
+                        return `"${stringValue.replace(/"/g, '""')}"`;
+                    }
+                    return stringValue;
+                });
+                csvRows.push(values.join(','));
+            }
+            const csvContent = csvRows.join('\n');
+            console.log('✅ CSV generado exitosamente');
+            return csvContent;
+        }
+        catch (error) {
+            console.error('❌ [generateReportCSV] Error:', error);
+            throw new Error(`Error al generar reporte CSV: ${error.message}`);
+        }
+    }
+    formatDateForCSV(dateValue) {
+        if (!dateValue)
+            return '';
+        try {
+            let date;
+            if (typeof dateValue === 'string') {
+                date = new Date(dateValue);
+            }
+            else if (dateValue instanceof Date) {
+                date = dateValue;
+            }
+            else {
+                return String(dateValue);
+            }
+            if (isNaN(date.getTime())) {
+                return String(dateValue);
+            }
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+        catch (error) {
+            console.warn('⚠️ Error formateando fecha para CSV:', dateValue, error);
+            return String(dateValue);
         }
     }
 };

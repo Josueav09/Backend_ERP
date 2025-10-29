@@ -23,43 +23,70 @@ export declare class EmpresaDashboardController {
         ventasGanadas: number;
     }>;
     getTrazabilidad(clienteUsuarioId: string, req: any): Promise<{
-        id_trazabilidad: any;
-        tipo_actividad: any;
-        descripcion: any;
-        fecha_actividad: any;
+        id_trazabilidad: number;
+        tipo_actividad: string;
+        descripcion: string;
+        fecha_actividad: Date;
         resultado_contacto: string;
-        notas: any;
-        informacion_importante: any;
-        resultados_reunion: any;
-        ejecutiva_nombre: any;
-        nombre_empresa: any;
-        cliente_nombre: any;
-        contacto_nombre: any;
+        notas: string;
+        informacion_importante: string;
+        resultados_reunion: string;
+        ejecutiva_nombre: string;
+        nombre_empresa: string;
+        cliente_nombre: string;
+        contacto_nombre: string;
     }[]>;
-    getEjecutivaInfo(clienteUsuarioId: string, req: any): Promise<{
+    getEjecutivaInfo(clienteUsuarioId: string): Promise<{
         ejecutiva_nombre: string;
         ejecutiva_email: string;
         telefono: string;
-        linkedin?: undefined;
+        linkedin: any;
+        estadisticas?: undefined;
     } | {
         ejecutiva_nombre: string;
         ejecutiva_email: string;
         telefono: string;
         linkedin: string;
+        estadisticas: {
+            clientes_activos: number;
+            tasa_conversion: string;
+            ventas_ganadas: number;
+            tiempo_respuesta: string;
+        };
     }>;
+    getClientesRecientes(clienteUsuarioId: string): Promise<{
+        id_cliente_final: number;
+        razon_social: string;
+        ruc: string;
+        correo: string;
+        telefono: string;
+        pais: string;
+        rubro: string;
+        estado: string;
+        fecha_creacion: Date;
+        ejecutiva_nombre: string;
+        actividades_completadas: number;
+        actividades_en_proceso: number;
+        total_actividades: number;
+    }[]>;
     getActividades(clienteUsuarioId: string, req: any): Promise<{
-        id_trazabilidad: any;
-        tipo_actividad: any;
-        descripcion: any;
-        fecha_actividad: any;
+        id_trazabilidad: number;
+        tipo_actividad: string;
+        descripcion: string;
+        fecha_actividad: Date;
         resultado_contacto: string;
-        notas: any;
-        informacion_importante: any;
-        resultados_reunion: any;
-        ejecutiva_nombre: any;
-        nombre_empresa: any;
-        cliente_nombre: any;
-        contacto_nombre: any;
+        notas: string;
+        informacion_importante: string;
+        resultados_reunion: string;
+        ejecutiva_nombre: string;
+        nombre_empresa: string;
+        cliente_nombre: string;
+        contacto_nombre: string;
     }[]>;
     private getEmpresaId;
+    getEjecutivasByEmpresa(empresaId: string, req: any): Promise<any[]>;
+    getEquipoStats(empresaId: string, req: any): Promise<any>;
+    getEjecutivaEmbudo(ejecutivaId: string, empresaId: string, req: any): Promise<any[]>;
+    getEjecutivaEstadisticas(ejecutivaId: string, empresaId: string, req: any): Promise<any>;
+    getEmpresaEjecutivaClientes(ejecutivaId: string, empresaId: string, req: any): Promise<any[]>;
 }

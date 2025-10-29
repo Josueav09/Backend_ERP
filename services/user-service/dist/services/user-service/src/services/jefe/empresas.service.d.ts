@@ -40,7 +40,35 @@ export declare class EmpresasService {
     }[]>;
     createEmpresa(data: any): Promise<EmpresaProveedora>;
     updateEmpresaEstado(empresaId: number, activo: boolean): Promise<{
-        empresa: EmpresaProveedora;
+        empresa: {
+            estado: string;
+            id_empresa_prov: number;
+            ruc: string;
+            razon_social: string;
+            pagina_web: string;
+            correo: string;
+            contraseña: string;
+            telefono: string;
+            pais: string;
+            departamento: string;
+            provincia: string;
+            direccion: string;
+            linkedin: string;
+            grupo_economico: string;
+            rubro: string;
+            sub_rubro: string;
+            tamanio_empresa: string;
+            facturacion_anual: number;
+            cantidad_empleados: number;
+            logo: string;
+            id_ejecutiva_registro: number;
+            ejecutiva_registro: Ejecutiva;
+            fecha_creacion: Date;
+            fecha_actualizacion: Date;
+            ejecutivas: Ejecutiva[];
+            trazabilidades: import("shared/entities/Trazabilidad.entity").Trazabilidad[];
+            clientes_finales: ClienteFinal[];
+        };
         message: string;
     }>;
     updateEmpresa(empresaId: number, data: any): Promise<EmpresaProveedora>;
@@ -64,7 +92,22 @@ export declare class EmpresasService {
         empresa: string;
         ejecutiva: string;
     }>;
+    getEjecutivasDisponibles(): Promise<{
+        id_ejecutiva: number;
+        id_usuario: number;
+        nombre_completo: string;
+        nombre: string;
+        apellido: string;
+        correo: string;
+        email: string;
+        telefono: string;
+        dni: string;
+        estado_ejecutiva: string;
+        activo: boolean;
+        rol: string;
+    }[]>;
     addEjecutivaToEmpresa(empresaId: number, ejecutivaId: number): Promise<{
+        success: boolean;
         message: string;
         ejecutiva: {
             id_ejecutiva: number;

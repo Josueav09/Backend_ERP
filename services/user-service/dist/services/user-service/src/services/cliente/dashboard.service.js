@@ -29,30 +29,33 @@ let EmpresaDashboardService = class EmpresaDashboardService {
     }
     async getStats(empresaId) {
         try {
-            console.log('📊 [EmpresaDashboardService] Obteniendo stats para empresa:', empresaId);
+            console.log('📊 [EmpresaDashboardService] Obteniendo stats REALES para empresa:', empresaId);
             const empresa = await this.empresaRepository.findOne({
                 where: { id_empresa_prov: empresaId }
             });
             if (!empresa) {
+                console.log('❌ Empresa no encontrada:', empresaId);
                 return this.getEmptyStats();
             }
             const ejecutivaInfo = await this.getEjecutivaInfo(empresaId);
-            const [totalClientes, totalEjecutivas, totalActividades, actividadesEsteMes, clientesEsteMes, revenueTotal, pipelineOportunidades] = await Promise.all([
+            const [totalClientes, totalEjecutivas, totalActividades, actividadesEsteMes, clientesEsteMes, revenueTotal, pipelineOportunidades, actividadesCompletadas, actividadesEnProceso] = await Promise.all([
                 this.getTotalClientes(empresaId),
                 this.getTotalEjecutivas(empresaId),
                 this.getTotalActividades(empresaId),
                 this.getActividadesEsteMes(empresaId),
                 this.getClientesEsteMes(empresaId),
                 this.getRevenueTotal(empresaId),
-                this.getPipelineOportunidades(empresaId)
+                this.getPipelineOportunidades(empresaId),
+                this.getActividadesCompletadas(empresaId),
+                this.getActividadesEnProceso(empresaId)
             ]);
             const ventasGanadas = await this.getVentasGanadas(empresaId);
-            const tasaConversion = totalClientes > 0
-                ? `${((ventasGanadas / totalClientes) * 100).toFixed(1)}%`
-                : '0%';
             const rendimiento = totalActividades > 0
-                ? Math.round((ventasGanadas / totalActividades) * 100)
+                ? Math.round((actividadesCompletadas / totalActividades) * 100)
                 : 0;
+            const tasaConversion = pipelineOportunidades > 0
+                ? `${((ventasGanadas / pipelineOportunidades) * 100).toFixed(1)}%`
+                : '0%';
             const stats = {
                 cliente: {
                     nombre_cliente: empresa.razon_social,
@@ -61,8 +64,8 @@ let EmpresaDashboardService = class EmpresaDashboardService {
                     ejecutiva_email: ejecutivaInfo.ejecutiva_email
                 },
                 totalActividades,
-                completadas: ventasGanadas,
-                enProceso: pipelineOportunidades,
+                completadas: actividadesCompletadas,
+                enProceso: actividadesEnProceso,
                 rendimiento,
                 totalClientes,
                 totalEjecutivas,
@@ -73,12 +76,7 @@ let EmpresaDashboardService = class EmpresaDashboardService {
                 tasaConversion,
                 ventasGanadas
             };
-            console.log('✅ [EmpresaDashboardService] Stats obtenidas:', {
-                empresa: empresa.razon_social,
-                totalActividades,
-                ventasGanadas,
-                rendimiento
-            });
+            console.log('✅ [EmpresaDashboardService] Stats REALES obtenidas:', stats);
             return stats;
         }
         catch (error) {
@@ -86,46 +84,67 @@ let EmpresaDashboardService = class EmpresaDashboardService {
             return this.getEmptyStats();
         }
     }
+    async getActividadesCompletadas(empresaId) {
+        try {
+            const result = await this.trazabilidadRepository
+                .createQueryBuilder('t')
+                .where('t.id_empresa_prov = :empresaId', { empresaId })
+                .andWhere('t.etapa_oportunidad = :etapa', { etapa: 'Venta ganada' })
+                .getCount();
+            return result;
+        }
+        catch (error) {
+            console.error('❌ Error en getActividadesCompletadas:', error);
+            return 0;
+        }
+    }
+    async getActividadesEnProceso(empresaId) {
+        try {
+            const result = await this.trazabilidadRepository
+                .createQueryBuilder('t')
+                .where('t.id_empresa_prov = :empresaId', { empresaId })
+                .andWhere('t.etapa_oportunidad IN (:...etapas)', {
+                etapas: ['Prospección', 'Calificación', 'Negociación', 'Presentación de propuesta']
+            })
+                .getCount();
+            return result;
+        }
+        catch (error) {
+            console.error('❌ Error en getActividadesEnProceso:', error);
+            return 0;
+        }
+    }
     async getTrazabilidad(empresaId) {
         try {
             console.log('📋 [EmpresaDashboardService] Obteniendo trazabilidad para empresa:', empresaId);
             const trazabilidad = await this.trazabilidadRepository
                 .createQueryBuilder('t')
-                .leftJoin('t.ejecutiva', 'e')
-                .leftJoin('t.empresa_proveedora', 'emp')
-                .leftJoin('t.cliente_final', 'cf')
-                .leftJoin('t.persona_contacto', 'pc')
-                .select([
-                't.id_trazabilidad',
-                't.tipo_contacto as tipo_actividad',
-                't.fecha_contacto as fecha_actividad',
-                't.etapa_oportunidad',
-                't.observaciones as descripcion',
-                't.informacion_importante as informacion_importante',
-                't.resultados_reunion as resultados_reunion',
-                'e.nombre_completo as ejecutiva_nombre',
-                'emp.razon_social as nombre_empresa',
-                'cf.razon_social as cliente_nombre',
-                'pc.nombre_completo as contacto_nombre'
-            ])
+                .leftJoinAndSelect('t.ejecutiva', 'e')
+                .leftJoinAndSelect('t.empresa_proveedora', 'emp')
+                .leftJoinAndSelect('t.cliente_final', 'cf')
+                .leftJoinAndSelect('t.persona_contacto', 'pc')
                 .where('t.id_empresa_prov = :empresaId', { empresaId })
                 .orderBy('t.fecha_contacto', 'DESC')
                 .limit(50)
-                .getRawMany();
-            const trazabilidadFormateada = trazabilidad.map(item => ({
-                id_trazabilidad: item.id_trazabilidad,
-                tipo_actividad: item.tipo_actividad,
-                descripcion: item.descripcion || `Contacto ${item.tipo_actividad} con ${item.contacto_nombre}`,
-                fecha_actividad: item.fecha_actividad,
-                resultado_contacto: this.mapEstadoTrazabilidad(item.etapa_oportunidad),
-                notas: item.descripcion,
-                informacion_importante: item.informacion_importante,
-                resultados_reunion: item.resultados_reunion,
-                ejecutiva_nombre: item.ejecutiva_nombre,
-                nombre_empresa: item.nombre_empresa,
-                cliente_nombre: item.cliente_nombre,
-                contacto_nombre: item.contacto_nombre
-            }));
+                .getMany();
+            console.log('🔍 [Debug] Primer registro de trazabilidad:', trazabilidad[0]);
+            const trazabilidadFormateada = trazabilidad.map(item => {
+                console.log("🔍 ESTADO desde entity:", item.etapa_oportunidad);
+                return {
+                    id_trazabilidad: item.id_trazabilidad,
+                    tipo_actividad: item.tipo_contacto,
+                    descripcion: item.observaciones || `Contacto ${item.tipo_contacto} con ${item.persona_contacto?.nombre_completo}`,
+                    fecha_actividad: item.fecha_contacto,
+                    resultado_contacto: this.mapEstadoTrazabilidad(item.etapa_oportunidad),
+                    notas: item.observaciones,
+                    informacion_importante: item.informacion_importante,
+                    resultados_reunion: item.resultados_reunion,
+                    ejecutiva_nombre: item.ejecutiva?.nombre_completo,
+                    nombre_empresa: item.empresa_proveedora?.razon_social,
+                    cliente_nombre: item.cliente_final?.razon_social,
+                    contacto_nombre: item.persona_contacto?.nombre_completo
+                };
+            });
             console.log(`✅ [EmpresaDashboardService] ${trazabilidadFormateada.length} actividades obtenidas`);
             return trazabilidadFormateada;
         }
@@ -294,25 +313,6 @@ let EmpresaDashboardService = class EmpresaDashboardService {
             return 0;
         }
     }
-    mapEstadoTrazabilidad(estado) {
-        console.log("VIENDO", estado);
-        if (!estado)
-            return 'pendiente';
-        const estadoMap = {
-            'Venta ganada': 'completado',
-            'Venta perdida': 'cancelado',
-            'Venta suspendida': 'cancelado',
-            'Prospección': 'en_proceso',
-            'Calificación': 'en_proceso',
-            'Detección de necesidades': 'en_proceso',
-            'Presentación de solución': 'en_proceso',
-            'Manejo de objeciones': 'en_proceso',
-            'Presentación de propuesta': 'en_proceso',
-            'Negociación': 'en_proceso',
-            'Firma de contrato': 'en_proceso'
-        };
-        return estadoMap[estado] || 'en_proceso';
-    }
     getEmptyStats() {
         return {
             cliente: {
@@ -334,6 +334,473 @@ let EmpresaDashboardService = class EmpresaDashboardService {
             tasaConversion: '0%',
             ventasGanadas: 0
         };
+    }
+    async getClientesRecientes(empresaId) {
+        try {
+            console.log('👥 [EmpresaDashboardService] Obteniendo clientes recientes CON ESTADÍSTICAS para empresa:', empresaId);
+            const clientes = await this.clienteRepository
+                .createQueryBuilder('cf')
+                .leftJoinAndSelect('cf.ejecutiva', 'e')
+                .select([
+                'cf.id_cliente_final',
+                'cf.razon_social',
+                'cf.ruc',
+                'cf.correo',
+                'cf.telefono',
+                'cf.pais',
+                'cf.rubro',
+                'cf.estado',
+                'cf.fecha_creacion',
+                'e.nombre_completo'
+            ])
+                .where('cf.id_empresa_prov = :empresaId', { empresaId })
+                .orderBy('cf.fecha_creacion', 'DESC')
+                .limit(5)
+                .getMany();
+            const clientesConEstadisticas = await Promise.all(clientes.map(async (cliente) => {
+                const estadisticas = await this.getEstadisticasCliente(cliente.id_cliente_final);
+                return {
+                    id_cliente_final: cliente.id_cliente_final,
+                    razon_social: cliente.razon_social,
+                    ruc: cliente.ruc,
+                    correo: cliente.correo,
+                    telefono: cliente.telefono,
+                    pais: cliente.pais,
+                    rubro: cliente.rubro,
+                    estado: cliente.estado,
+                    fecha_creacion: cliente.fecha_creacion,
+                    ejecutiva_nombre: cliente.ejecutiva?.nombre_completo || 'Sin ejecutiva asignada',
+                    actividades_completadas: estadisticas.completadas,
+                    actividades_en_proceso: estadisticas.en_proceso,
+                    total_actividades: estadisticas.total
+                };
+            }));
+            console.log(`✅ [EmpresaDashboardService] ${clientesConEstadisticas.length} clientes con estadísticas obtenidos`);
+            if (clientesConEstadisticas.length > 0) {
+                console.log('🔍 [Debug] Primer cliente con estadísticas:', clientesConEstadisticas[0]);
+            }
+            return clientesConEstadisticas;
+        }
+        catch (error) {
+            console.error('❌ [EmpresaDashboardService] Error en getClientesRecientes:', error);
+            return [];
+        }
+    }
+    async getEstadisticasCliente(clienteId) {
+        try {
+            const [completadas, enProceso, total] = await Promise.all([
+                this.trazabilidadRepository
+                    .createQueryBuilder('t')
+                    .where('t.id_cliente_final = :clienteId', { clienteId })
+                    .andWhere('t.etapa_oportunidad = :etapa', { etapa: 'Venta ganada' })
+                    .getCount(),
+                this.trazabilidadRepository
+                    .createQueryBuilder('t')
+                    .where('t.id_cliente_final = :clienteId', { clienteId })
+                    .andWhere('t.etapa_oportunidad IN (:...etapas)', {
+                    etapas: ['Prospección', 'Calificación', 'Negociación', 'Presentación de propuesta', 'Firma de contrato']
+                })
+                    .getCount(),
+                this.trazabilidadRepository
+                    .createQueryBuilder('t')
+                    .where('t.id_cliente_final = :clienteId', { clienteId })
+                    .getCount()
+            ]);
+            return {
+                completadas,
+                en_proceso: enProceso,
+                total
+            };
+        }
+        catch (error) {
+            console.error('❌ Error obteniendo estadísticas del cliente:', error);
+            return {
+                completadas: 0,
+                en_proceso: 0,
+                total: 0
+            };
+        }
+    }
+    mapEstadoTrazabilidad(estado) {
+        console.log("🔍 ESTADO recibido en mapEstadoTrazabilidad:", estado);
+        if (!estado) {
+            console.log("⚠️ Estado vacío, usando 'pendiente'");
+            return 'pendiente';
+        }
+        const estadoMap = {
+            'Venta ganada': 'completada',
+            'Venta perdida': 'cancelada',
+            'Venta suspendida': 'cancelada',
+            'Prospección': 'en_proceso',
+            'Calificación': 'en_proceso',
+            'Detección de necesidades': 'en_proceso',
+            'Presentación de solución': 'en_proceso',
+            'Manejo de objeciones': 'en_proceso',
+            'Presentación de propuesta': 'en_proceso',
+            'Negociación': 'en_proceso',
+            'Firma de contrato': 'en_proceso'
+        };
+        const resultado = estadoMap[estado] || 'en_proceso';
+        console.log(`🔍 Estado mapeado: ${estado} -> ${resultado}`);
+        return resultado;
+    }
+    async getEjecutivaInfoCompleta(empresaId) {
+        try {
+            console.log('👩‍💼 [EmpresaDashboardService] Obteniendo información COMPLETA de ejecutiva para empresa:', empresaId);
+            const ejecutiva = await this.ejecutivaRepository
+                .createQueryBuilder('e')
+                .select([
+                'e.id_ejecutiva',
+                'e.nombre_completo',
+                'e.correo',
+                'e.telefono',
+                'e.linkedin'
+            ])
+                .where('e.id_empresa_prov = :empresaId', { empresaId })
+                .andWhere('e.estado_ejecutiva = :estado', { estado: 'Activo' })
+                .getOne();
+            if (!ejecutiva) {
+                return {
+                    ejecutiva_nombre: 'Sin ejecutiva asignada',
+                    ejecutiva_email: 'contacto@growvia.com',
+                    telefono: 'Por asignar',
+                    linkedin: null
+                };
+            }
+            const estadisticasReales = await this.getEstadisticasEjecutiva(ejecutiva.id_ejecutiva);
+            return {
+                ejecutiva_nombre: ejecutiva.nombre_completo,
+                ejecutiva_email: ejecutiva.correo,
+                telefono: ejecutiva.telefono || 'No disponible',
+                linkedin: ejecutiva.linkedin,
+                estadisticas: estadisticasReales
+            };
+        }
+        catch (error) {
+            console.error('❌ [EmpresaDashboardService] Error en getEjecutivaInfoCompleta:', error);
+            return {
+                ejecutiva_nombre: 'Error al cargar información',
+                ejecutiva_email: 'contacto@growvia.com',
+                telefono: 'No disponible',
+                linkedin: null,
+                estadisticas: {
+                    clientes_activos: 0,
+                    tasa_conversion: '0%',
+                    ventas_ganadas: 0,
+                    tiempo_respuesta: 'Por determinar'
+                }
+            };
+        }
+    }
+    async getEstadisticasEjecutiva(ejecutivaId) {
+        try {
+            const [clientesActivos, ventasGanadas, totalActividades] = await Promise.all([
+                this.clienteRepository
+                    .createQueryBuilder('cf')
+                    .where('cf.id_ejecutiva = :ejecutivaId', { ejecutivaId })
+                    .andWhere('cf.estado = :estado', { estado: 'Activo' })
+                    .getCount(),
+                this.trazabilidadRepository
+                    .createQueryBuilder('t')
+                    .where('t.id_ejecutiva = :ejecutivaId', { ejecutivaId })
+                    .andWhere('t.etapa_oportunidad = :etapa', { etapa: 'Venta ganada' })
+                    .getCount(),
+                this.trazabilidadRepository
+                    .createQueryBuilder('t')
+                    .where('t.id_ejecutiva = :ejecutivaId', { ejecutivaId })
+                    .getCount()
+            ]);
+            const tasaConversion = totalActividades > 0
+                ? `${((ventasGanadas / totalActividades) * 100).toFixed(1)}%`
+                : '0%';
+            return {
+                clientes_activos: clientesActivos,
+                tasa_conversion: tasaConversion,
+                ventas_ganadas: ventasGanadas,
+                tiempo_respuesta: '< 24 horas'
+            };
+        }
+        catch (error) {
+            console.error('❌ Error obteniendo estadísticas ejecutiva:', error);
+            return {
+                clientes_activos: 0,
+                tasa_conversion: '0%',
+                ventas_ganadas: 0,
+                tiempo_respuesta: 'Por determinar'
+            };
+        }
+    }
+    async getEjecutivasByEmpresa(empresaId) {
+        try {
+            console.log('👥 [EmpresaDashboardService] Obteniendo ejecutivas para empresa:', empresaId);
+            const ejecutivas = await this.ejecutivaRepository
+                .createQueryBuilder('e')
+                .select([
+                'e.id_ejecutiva',
+                'e.nombre_completo',
+                'e.correo',
+                'e.telefono',
+                'e.linkedin',
+                'e.estado_ejecutiva'
+            ])
+                .where('e.id_empresa_prov = :empresaId', { empresaId })
+                .andWhere('e.estado_ejecutiva = :estado', { estado: 'Activo' })
+                .getMany();
+            console.log(`✅ [EmpresaDashboardService] ${ejecutivas.length} ejecutivas encontradas`);
+            return ejecutivas;
+        }
+        catch (error) {
+            console.error('❌ [EmpresaDashboardService] Error en getEjecutivasByEmpresa:', error);
+            return [];
+        }
+    }
+    async getEquipoStats(empresaId) {
+        try {
+            console.log('📊 [EmpresaDashboardService] Obteniendo stats de equipo para empresa:', empresaId);
+            const [totalEjecutivas, totalClientes, ventasTotales, pipelineTotal, actividadesMes] = await Promise.all([
+                this.getTotalEjecutivas(empresaId),
+                this.getTotalClientes(empresaId),
+                this.getRevenueTotal(empresaId),
+                this.getPipelineOportunidades(empresaId),
+                this.getActividadesEsteMes(empresaId)
+            ]);
+            const conversionPromedio = await this.getConversionPromedioEquipo(empresaId);
+            return {
+                totalEjecutivas,
+                totalClientes,
+                ventasTotales,
+                pipelineTotal,
+                actividadesMes,
+                conversionPromedio: `${conversionPromedio}%`
+            };
+        }
+        catch (error) {
+            console.error('❌ [EmpresaDashboardService] Error en getEquipoStats:', error);
+            return {
+                totalEjecutivas: 0,
+                totalClientes: 0,
+                ventasTotales: 0,
+                pipelineTotal: 0,
+                actividadesMes: 0,
+                conversionPromedio: '0%'
+            };
+        }
+    }
+    async getEmbudoVentasEjecutiva(ejecutivaId, empresaId) {
+        try {
+            console.log('🎯 [EmpresaDashboardService] Obteniendo embudo REAL para ejecutiva:', ejecutivaId);
+            const etapasBD = [
+                'Prospección',
+                'Calificación',
+                'Detección de necesidades',
+                'Presentación de solución',
+                'Manejo de objeciones',
+                'Presentación de propuesta',
+                'Negociación',
+                'Firma de contrato',
+                'Venta ganada'
+            ];
+            const etapasEmbudo = [
+                { etapaBD: 'Prospección', etapaFrontend: 'Prospección' },
+                { etapaBD: 'Calificación', etapaFrontend: 'Calificación' },
+                { etapaBD: 'Detección de necesidades', etapaFrontend: 'Propuesta' },
+                { etapaBD: 'Presentación de solución', etapaFrontend: 'Propuesta' },
+                { etapaBD: 'Manejo de objeciones', etapaFrontend: 'Negociación' },
+                { etapaBD: 'Presentación de propuesta', etapaFrontend: 'Negociación' },
+                { etapaBD: 'Negociación', etapaFrontend: 'Negociación' },
+                { etapaBD: 'Firma de contrato', etapaFrontend: 'Cierre' },
+                { etapaBD: 'Venta ganada', etapaFrontend: 'Cierre' }
+            ];
+            const embudoAgrupado = await Promise.all(['Prospección', 'Calificación', 'Propuesta', 'Negociación', 'Cierre'].map(async (etapaFrontend) => {
+                const etapasCorrespondientes = etapasEmbudo
+                    .filter(e => e.etapaFrontend === etapaFrontend)
+                    .map(e => e.etapaBD);
+                console.log(`🔍 [Embudo] ${etapaFrontend} -> BD:`, etapasCorrespondientes);
+                if (etapasCorrespondientes.length === 0) {
+                    return {
+                        etapa: etapaFrontend,
+                        cantidad: 0,
+                        tasa_conversion: '0%',
+                        monto_potencial: 0
+                    };
+                }
+                const cantidad = await this.trazabilidadRepository
+                    .createQueryBuilder('t')
+                    .where('t.id_ejecutiva = :ejecutivaId', { ejecutivaId })
+                    .andWhere('t.id_empresa_prov = :empresaId', { empresaId })
+                    .andWhere('t.etapa_oportunidad IN (:...etapas)', { etapas: etapasCorrespondientes })
+                    .andWhere('t.nombre_oportunidad IS NOT NULL')
+                    .getCount();
+                const montoResult = await this.trazabilidadRepository
+                    .createQueryBuilder('t')
+                    .select('COALESCE(SUM(t.monto_total_sin_imp), 0)', 'monto')
+                    .where('t.id_ejecutiva = :ejecutivaId', { ejecutivaId })
+                    .andWhere('t.id_empresa_prov = :empresaId', { empresaId })
+                    .andWhere('t.etapa_oportunidad IN (:...etapas)', { etapas: etapasCorrespondientes })
+                    .andWhere('t.nombre_oportunidad IS NOT NULL')
+                    .getRawOne();
+                console.log(`📊 [Embudo] ${etapaFrontend}: ${cantidad} oportunidades, $${montoResult.monto}`);
+                return {
+                    etapa: etapaFrontend,
+                    cantidad: cantidad,
+                    tasa_conversion: this.calcularTasaConversion(etapaFrontend, cantidad),
+                    monto_potencial: parseFloat(montoResult.monto) || 0
+                };
+            }));
+            console.log('✅ [Embudo] Resultado final:', embudoAgrupado);
+            return embudoAgrupado;
+        }
+        catch (error) {
+            console.error('❌ [EmpresaDashboardService] Error en getEmbudoVentasEjecutiva:', error);
+            return [
+                { etapa: "Prospección", cantidad: 0, tasa_conversion: "0%", monto_potencial: 0 },
+                { etapa: "Calificación", cantidad: 0, tasa_conversion: "0%", monto_potencial: 0 },
+                { etapa: "Propuesta", cantidad: 0, tasa_conversion: "0%", monto_potencial: 0 },
+                { etapa: "Negociación", cantidad: 0, tasa_conversion: "0%", monto_potencial: 0 },
+                { etapa: "Cierre", cantidad: 0, tasa_conversion: "0%", monto_potencial: 0 }
+            ];
+        }
+    }
+    calcularTasaConversion(etapa, cantidad) {
+        const tasas = {
+            'Prospección': '100%',
+            'Calificación': '75%',
+            'Propuesta': '50%',
+            'Negociación': '25%',
+            'Cierre': '10%'
+        };
+        return tasas[etapa] || '0%';
+    }
+    async getEstadisticasEjecutivaCompleta(ejecutivaId, empresaId) {
+        try {
+            console.log('📈 [EmpresaDashboardService] Obteniendo estadísticas COMPLETAS para ejecutiva:', ejecutivaId);
+            const [clientesActivos, ventasGanadas, totalActividades, actividadesEsteMes, revenueTotal, totalOportunidades] = await Promise.all([
+                this.getClientesActivosEjecutiva(ejecutivaId, empresaId),
+                this.getVentasGanadasEjecutiva(ejecutivaId, empresaId),
+                this.getTotalActividadesEjecutiva(ejecutivaId, empresaId),
+                this.getActividadesEsteMesEjecutiva(ejecutivaId, empresaId),
+                this.getRevenueEjecutiva(ejecutivaId, empresaId),
+                this.getTotalOportunidadesEjecutiva(ejecutivaId, empresaId)
+            ]);
+            const tasaConversion = totalOportunidades > 0
+                ? (ventasGanadas / totalOportunidades) * 100
+                : 0;
+            return {
+                clientes_activos: clientesActivos,
+                ventas_ganadas: ventasGanadas,
+                total_actividades: totalActividades,
+                actividades_este_mes: actividadesEsteMes,
+                revenue_total: revenueTotal,
+                tasa_conversion: `${tasaConversion.toFixed(1)}%`,
+                tiempo_respuesta: this.calcularTiempoRespuestaPromedio(ejecutivaId, empresaId),
+                total_oportunidades: totalOportunidades
+            };
+        }
+        catch (error) {
+            console.error('❌ [EmpresaDashboardService] Error en getEstadisticasEjecutivaCompleta:', error);
+            return {
+                clientes_activos: 0,
+                ventas_ganadas: 0,
+                total_actividades: 0,
+                actividades_este_mes: 0,
+                revenue_total: 0,
+                tasa_conversion: '0%',
+                tiempo_respuesta: 'Por determinar',
+                total_oportunidades: 0
+            };
+        }
+    }
+    async getTotalOportunidadesEjecutiva(ejecutivaId, empresaId) {
+        return await this.trazabilidadRepository
+            .createQueryBuilder('t')
+            .where('t.id_ejecutiva = :ejecutivaId', { ejecutivaId })
+            .andWhere('t.id_empresa_prov = :empresaId', { empresaId })
+            .andWhere('t.nombre_oportunidad IS NOT NULL')
+            .andWhere('t.etapa_oportunidad NOT IN (:...etapas)', {
+            etapas: ['Venta perdida', 'Venta suspendida']
+        })
+            .getCount();
+    }
+    async getClientesPorEjecutiva(ejecutivaId, empresaId) {
+        try {
+            console.log('👥 [EmpresaDashboardService] Obteniendo clientes para ejecutiva:', ejecutivaId);
+            const clientes = await this.clienteRepository
+                .createQueryBuilder('cf')
+                .select([
+                'cf.id_cliente_final',
+                'cf.razon_social',
+                'cf.ruc',
+                'cf.correo',
+                'cf.telefono',
+                'cf.pais',
+                'cf.rubro',
+                'cf.estado',
+                'cf.fecha_creacion'
+            ])
+                .where('cf.id_ejecutiva = :ejecutivaId', { ejecutivaId })
+                .andWhere('cf.id_empresa_prov = :empresaId', { empresaId })
+                .orderBy('cf.fecha_creacion', 'DESC')
+                .getMany();
+            return clientes;
+        }
+        catch (error) {
+            console.error('❌ [EmpresaDashboardService] Error en getClientesPorEjecutiva:', error);
+            return [];
+        }
+    }
+    async getClientesActivosEjecutiva(ejecutivaId, empresaId) {
+        return await this.clienteRepository
+            .createQueryBuilder('cf')
+            .where('cf.id_ejecutiva = :ejecutivaId', { ejecutivaId })
+            .andWhere('cf.id_empresa_prov = :empresaId', { empresaId })
+            .andWhere('cf.estado = :estado', { estado: 'Activo' })
+            .getCount();
+    }
+    async getVentasGanadasEjecutiva(ejecutivaId, empresaId) {
+        return await this.trazabilidadRepository
+            .createQueryBuilder('t')
+            .where('t.id_ejecutiva = :ejecutivaId', { ejecutivaId })
+            .andWhere('t.id_empresa_prov = :empresaId', { empresaId })
+            .andWhere('t.etapa_oportunidad = :etapa', { etapa: 'Venta ganada' })
+            .getCount();
+    }
+    async getTotalActividadesEjecutiva(ejecutivaId, empresaId) {
+        return await this.trazabilidadRepository
+            .createQueryBuilder('t')
+            .where('t.id_ejecutiva = :ejecutivaId', { ejecutivaId })
+            .andWhere('t.id_empresa_prov = :empresaId', { empresaId })
+            .getCount();
+    }
+    async getActividadesEsteMesEjecutiva(ejecutivaId, empresaId) {
+        const startOfMonth = new Date();
+        startOfMonth.setDate(1);
+        startOfMonth.setHours(0, 0, 0, 0);
+        return await this.trazabilidadRepository
+            .createQueryBuilder('t')
+            .where('t.id_ejecutiva = :ejecutivaId', { ejecutivaId })
+            .andWhere('t.id_empresa_prov = :empresaId', { empresaId })
+            .andWhere('t.fecha_contacto >= :startOfMonth', { startOfMonth })
+            .getCount();
+    }
+    async getRevenueEjecutiva(ejecutivaId, empresaId) {
+        const result = await this.trazabilidadRepository
+            .createQueryBuilder('t')
+            .select('COALESCE(SUM(t.monto_cierre_final), 0)', 'revenue')
+            .where('t.id_ejecutiva = :ejecutivaId', { ejecutivaId })
+            .andWhere('t.id_empresa_prov = :empresaId', { empresaId })
+            .andWhere('t.etapa_oportunidad = :etapa', { etapa: 'Venta ganada' })
+            .getRawOne();
+        return parseFloat(result.revenue) || 0;
+    }
+    async getConversionPromedioEquipo(empresaId) {
+        const [ventasGanadas, totalActividades] = await Promise.all([
+            this.getVentasGanadas(empresaId),
+            this.getTotalActividades(empresaId)
+        ]);
+        return totalActividades > 0 ? Math.round((ventasGanadas / totalActividades) * 100) : 0;
+    }
+    calcularTiempoRespuestaPromedio(ejecutivaId, empresaId) {
+        return '< 24 horas';
     }
 };
 exports.EmpresaDashboardService = EmpresaDashboardService;

@@ -91,13 +91,14 @@ let EmpresasController = class EmpresasController {
             throw new common_1.HttpException('Error al agregar ejecutiva', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
-    async removeEjecutivaFromEmpresa(id, ejecutivaId) {
+    async removeEjecutivaFromEmpresa(empresaId, ejecutivaId) {
         try {
-            return await this.empresasService.removeEjecutivaFromEmpresa(parseInt(id), parseInt(ejecutivaId));
+            return await this.empresasService.removeEjecutivaFromEmpresa(parseInt(empresaId), parseInt(ejecutivaId));
         }
         catch (error) {
             if (error instanceof common_1.HttpException)
                 throw error;
+            console.error('❌ Error en removeEjecutivaFromEmpresa:', error);
             throw new common_1.HttpException('Error al remover ejecutiva', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
@@ -109,6 +110,15 @@ let EmpresasController = class EmpresasController {
         catch (error) {
             console.error('❌ [EmpresasController] Error asignando ejecutiva:', error);
             throw new common_1.HttpException(error.message || 'Error al asignar ejecutiva', common_1.HttpStatus.BAD_REQUEST);
+        }
+    }
+    async getEjecutivasDisponibles() {
+        try {
+            return await this.empresasService.getEjecutivasDisponibles();
+        }
+        catch (error) {
+            console.error('❌ Error en getEjecutivasDisponibles:', error);
+            throw new common_1.HttpException('Error al obtener ejecutivas disponibles', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 };
@@ -158,8 +168,8 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], EmpresasController.prototype, "addEjecutivaToEmpresa", null);
 __decorate([
-    (0, common_1.Post)(':id/ejecutivas/:ejecutivaId/remove'),
-    __param(0, (0, common_1.Param)('id')),
+    (0, common_1.Delete)(':empresaId/ejecutivas/:ejecutivaId'),
+    __param(0, (0, common_1.Param)('empresaId')),
     __param(1, (0, common_1.Param)('ejecutivaId')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String, String]),
@@ -173,6 +183,12 @@ __decorate([
     __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", Promise)
 ], EmpresasController.prototype, "asignarEjecutivaAEmpresa", null);
+__decorate([
+    (0, common_1.Get)('ejecutivas/disponibles'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], EmpresasController.prototype, "getEjecutivasDisponibles", null);
 exports.EmpresasController = EmpresasController = __decorate([
     (0, common_1.Controller)('empresas'),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),

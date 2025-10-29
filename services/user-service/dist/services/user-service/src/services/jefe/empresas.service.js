@@ -113,59 +113,55 @@ let EmpresasService = class EmpresasService {
     }
     async updateEmpresaEstado(empresaId, activo) {
         console.log('🔄 [EmpresasService] Cambiando estado de empresa:', { empresaId, activo });
-        const empresa = await this.empresaRepository.findOne({
-            where: { id_empresa_prov: empresaId }
-        });
-        if (!empresa) {
-            throw new common_1.HttpException('Empresa no encontrada', common_1.HttpStatus.NOT_FOUND);
-        }
-        const estadoAnterior = empresa.estado;
-        empresa.estado = activo ? 'Activo' : 'Inactivo';
-        empresa.fecha_actualizacion = new Date();
-        const ejecutivasEmpresa = await this.ejecutivaRepository.find({
-            where: { empresa_proveedora: { id_empresa_prov: empresaId } },
-            select: ['id_ejecutiva']
-        });
-        const idsEjecutivas = ejecutivasEmpresa.map(ej => ej.id_ejecutiva);
-        if (idsEjecutivas.length > 0) {
-            if (!activo) {
-                console.log('➖ [EmpresasService] Desactivando clientes de la empresa:', empresaId);
-                const resultDesactivar = await this.clienteRepository
-                    .createQueryBuilder()
-                    .update()
-                    .set({
-                    estado: 'Inactivo',
-                    fecha_actualizacion: new Date()
-                })
-                    .where('id_ejecutiva IN (:...idsEjecutivas)', { idsEjecutivas })
-                    .execute();
-                console.log('✅ [EmpresasService] Clientes desactivados:', resultDesactivar.affected);
+        const queryRunner = this.empresaRepository.manager.connection.createQueryRunner();
+        await queryRunner.connect();
+        await queryRunner.startTransaction();
+        try {
+            const empresa = await queryRunner.manager.findOne(EmpresaProveedora_entity_1.EmpresaProveedora, {
+                where: { id_empresa_prov: empresaId }
+            });
+            if (!empresa) {
+                throw new common_1.HttpException('Empresa no encontrada', common_1.HttpStatus.NOT_FOUND);
             }
-            else {
-                console.log('➕ [EmpresasService] Activando empresa Y clientes:', empresaId);
-                const resultActivar = await this.clienteRepository
-                    .createQueryBuilder()
-                    .update()
-                    .set({
-                    estado: 'Activo',
-                    fecha_actualizacion: new Date()
-                })
-                    .where('id_ejecutiva IN (:...idsEjecutivas)', { idsEjecutivas })
-                    .andWhere('estado = :estado', { estado: 'Inactivo' })
-                    .execute();
-                console.log('✅ [EmpresasService] Clientes activados:', resultActivar.affected);
+            const estadoAnterior = empresa.estado;
+            const nuevoEstado = activo ? 'Activo' : 'Inactivo';
+            console.log(`🔄 [EmpresasService] Cambiando estado de "${empresa.razon_social}": ${estadoAnterior} -> ${nuevoEstado}`);
+            const ejecutivasEmpresa = await queryRunner.manager.find(Ejecutiva_entity_1.Ejecutiva, {
+                where: { id_empresa_prov: empresaId }
+            });
+            console.log(`🔍 [EmpresasService] Ejecutivas encontradas: ${ejecutivasEmpresa.length}`);
+            const idsEjecutivas = ejecutivasEmpresa.map(ej => ej.id_ejecutiva);
+            if (idsEjecutivas.length > 0) {
+                console.log(`🔍 [EmpresasService] Actualizando clientes...`);
+                const nuevoEstadoCliente = activo ? 'Activo' : 'Inactivo';
+                for (const idEjecutiva of idsEjecutivas) {
+                    const result = await queryRunner.manager.update(ClienteFinal_entity_1.ClienteFinal, { ejecutiva: { id_ejecutiva: idEjecutiva } }, {
+                        estado: nuevoEstadoCliente,
+                        fecha_actualizacion: new Date()
+                    });
+                    console.log(`✅ Ejecutiva ${idEjecutiva}: ${result.affected} clientes actualizados`);
+                }
             }
+            await queryRunner.manager.update(EmpresaProveedora_entity_1.EmpresaProveedora, { id_empresa_prov: empresaId }, {
+                estado: nuevoEstado,
+                fecha_actualizacion: new Date()
+            });
+            await queryRunner.commitTransaction();
+            console.log('✅ [EmpresasService] Transacción completada exitosamente');
+            return {
+                empresa: { ...empresa, estado: nuevoEstado },
+                message: `Empresa ${activo ? 'activada' : 'desactivada'} correctamente. ` +
+                    `${idsEjecutivas.length > 0 ? `${idsEjecutivas.length} cliente(s) ${activo ? 'activado(s)' : 'desactivado(s)'}.` : 'No hay clientes asociados.'}`
+            };
         }
-        else {
-            console.log('ℹ️ [EmpresasService] No hay ejecutivas en esta empresa');
+        catch (error) {
+            await queryRunner.rollbackTransaction();
+            console.error('❌ [EmpresasService] Error en transacción - REVERTIDO:', error);
+            throw new common_1.HttpException('Error al cambiar estado. Los cambios han sido revertidos.', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
         }
-        await this.empresaRepository.save(empresa);
-        console.log('📝 [EmpresasService] Auditoría: Empresa', empresa.razon_social, 'cambió de', estadoAnterior, 'a', empresa.estado);
-        return {
-            empresa,
-            message: `Empresa ${activo ? 'activada' : 'desactivada'} correctamente. ` +
-                `${!activo ? 'Los clientes asociados han sido desactivados.' : 'Los clientes asociados han sido activados.'}`
-        };
+        finally {
+            await queryRunner.release();
+        }
     }
     async updateEmpresa(empresaId, data) {
         console.log('📝 Actualizando empresa ID:', empresaId, 'con datos:', data);
@@ -288,33 +284,78 @@ let EmpresasService = class EmpresasService {
             throw new Error(error.message || 'Error al asignar ejecutiva');
         }
     }
+    async getEjecutivasDisponibles() {
+        console.log('🔄 [EmpresasService] Buscando ejecutivas disponibles...');
+        const ejecutivasDisponibles = await this.ejecutivaRepository
+            .createQueryBuilder('ejecutiva')
+            .leftJoinAndSelect('ejecutiva.empresa_proveedora', 'empresa')
+            .where('ejecutiva.estado_ejecutiva = :estado', { estado: 'Activo' })
+            .andWhere('empresa.id_empresa_prov IS NULL')
+            .orderBy('ejecutiva.nombre_completo', 'ASC')
+            .getMany();
+        console.log(`✅ [EmpresasService] Ejecutivas disponibles encontradas: ${ejecutivasDisponibles.length}`);
+        const ejecutivasFormateadas = ejecutivasDisponibles.map(ejecutiva => ({
+            id_ejecutiva: ejecutiva.id_ejecutiva,
+            id_usuario: ejecutiva.id_ejecutiva,
+            nombre_completo: ejecutiva.nombre_completo,
+            nombre: ejecutiva.nombre_completo?.split(' ')[0] || '',
+            apellido: ejecutiva.nombre_completo?.split(' ').slice(1).join(' ') || '',
+            correo: ejecutiva.correo,
+            email: ejecutiva.correo,
+            telefono: ejecutiva.telefono,
+            dni: ejecutiva.dni,
+            estado_ejecutiva: ejecutiva.estado_ejecutiva,
+            activo: ejecutiva.estado_ejecutiva === 'Activo',
+            rol: 'ejecutiva'
+        }));
+        return ejecutivasFormateadas;
+    }
     async addEjecutivaToEmpresa(empresaId, ejecutivaId) {
-        const empresa = await this.empresaRepository.findOne({
-            where: { id_empresa_prov: empresaId }
-        });
-        if (!empresa) {
-            throw new common_1.HttpException('Empresa no encontrada', common_1.HttpStatus.NOT_FOUND);
-        }
-        const ejecutiva = await this.ejecutivaRepository.findOne({
-            where: { id_ejecutiva: ejecutivaId }
-        });
-        if (!ejecutiva) {
-            throw new common_1.HttpException('Ejecutiva no encontrada', common_1.HttpStatus.NOT_FOUND);
-        }
-        if (ejecutiva.empresa_proveedora && ejecutiva.empresa_proveedora.id_empresa_prov === empresaId) {
-            throw new common_1.HttpException('Esta ejecutiva ya está asignada a esta empresa', common_1.HttpStatus.BAD_REQUEST);
-        }
-        ejecutiva.empresa_proveedora = empresa;
-        ejecutiva.fecha_actualizacion = new Date();
-        await this.ejecutivaRepository.save(ejecutiva);
-        return {
-            message: 'Ejecutiva asignada correctamente a la empresa',
-            ejecutiva: {
-                id_ejecutiva: ejecutiva.id_ejecutiva,
-                nombre_completo: ejecutiva.nombre_completo,
-                correo: ejecutiva.correo
+        console.log('➕ [EmpresasService] Asignando ejecutiva:', { empresaId, ejecutivaId });
+        try {
+            const empresa = await this.empresaRepository.findOne({
+                where: { id_empresa_prov: empresaId }
+            });
+            if (!empresa) {
+                throw new common_1.HttpException('Empresa no encontrada', common_1.HttpStatus.NOT_FOUND);
             }
-        };
+            const ejecutiva = await this.ejecutivaRepository.findOne({
+                where: {
+                    id_ejecutiva: ejecutivaId,
+                    estado_ejecutiva: 'Activo'
+                },
+                relations: ['empresa_proveedora']
+            });
+            if (!ejecutiva) {
+                throw new common_1.HttpException('Ejecutiva no encontrada o inactiva', common_1.HttpStatus.NOT_FOUND);
+            }
+            if (ejecutiva.empresa_proveedora?.id_empresa_prov === empresaId) {
+                throw new common_1.HttpException('Esta ejecutiva ya está asignada a esta empresa', common_1.HttpStatus.BAD_REQUEST);
+            }
+            if (ejecutiva.empresa_proveedora && ejecutiva.empresa_proveedora.id_empresa_prov !== empresaId) {
+                throw new common_1.HttpException(`La ejecutiva ya está asignada a: ${ejecutiva.empresa_proveedora.razon_social}`, common_1.HttpStatus.BAD_REQUEST);
+            }
+            ejecutiva.empresa_proveedora = empresa;
+            ejecutiva.fecha_actualizacion = new Date();
+            await this.ejecutivaRepository.save(ejecutiva);
+            console.log('✅ [EmpresasService] Ejecutiva asignada exitosamente');
+            return {
+                success: true,
+                message: 'Ejecutiva asignada correctamente a la empresa',
+                ejecutiva: {
+                    id_ejecutiva: ejecutiva.id_ejecutiva,
+                    nombre_completo: ejecutiva.nombre_completo,
+                    correo: ejecutiva.correo
+                }
+            };
+        }
+        catch (error) {
+            console.error('❌ [EmpresasService] Error asignando ejecutiva:', error);
+            if (error instanceof common_1.HttpException) {
+                throw error;
+            }
+            throw new common_1.HttpException('Error interno al asignar ejecutiva', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
     async removeEjecutivaFromEmpresa(empresaId, ejecutivaId) {
         const ejecutiva = await this.ejecutivaRepository.findOne({

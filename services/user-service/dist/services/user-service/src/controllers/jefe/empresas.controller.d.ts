@@ -50,10 +50,39 @@ export declare class EmpresasController {
     createEmpresa(body: any): Promise<import("shared/entities/EmpresaProveedora.entity").EmpresaProveedora>;
     updateEmpresa(id: string, data: any): Promise<import("shared/entities/EmpresaProveedora.entity").EmpresaProveedora>;
     updateEmpresaEstado(id: string, body: any): Promise<{
-        empresa: import("shared/entities/EmpresaProveedora.entity").EmpresaProveedora;
+        empresa: {
+            estado: string;
+            id_empresa_prov: number;
+            ruc: string;
+            razon_social: string;
+            pagina_web: string;
+            correo: string;
+            contraseña: string;
+            telefono: string;
+            pais: string;
+            departamento: string;
+            provincia: string;
+            direccion: string;
+            linkedin: string;
+            grupo_economico: string;
+            rubro: string;
+            sub_rubro: string;
+            tamanio_empresa: string;
+            facturacion_anual: number;
+            cantidad_empleados: number;
+            logo: string;
+            id_ejecutiva_registro: number;
+            ejecutiva_registro: import("shared/entities/Ejecutiva.entity").Ejecutiva;
+            fecha_creacion: Date;
+            fecha_actualizacion: Date;
+            ejecutivas: import("shared/entities/Ejecutiva.entity").Ejecutiva[];
+            trazabilidades: import("shared/entities/Trazabilidad.entity").Trazabilidad[];
+            clientes_finales: import("shared/entities/ClienteFinal.entity").ClienteFinal[];
+        };
         message: string;
     }>;
     addEjecutivaToEmpresa(id: string, body: any): Promise<{
+        success: boolean;
         message: string;
         ejecutiva: {
             id_ejecutiva: number;
@@ -61,7 +90,7 @@ export declare class EmpresasController {
             correo: string;
         };
     }>;
-    removeEjecutivaFromEmpresa(id: string, ejecutivaId: string): Promise<{
+    removeEjecutivaFromEmpresa(empresaId: string, ejecutivaId: string): Promise<{
         message: string;
     }>;
     asignarEjecutivaAEmpresa(id: string, body: {
@@ -72,4 +101,18 @@ export declare class EmpresasController {
         empresa: string;
         ejecutiva: string;
     }>;
+    getEjecutivasDisponibles(): Promise<{
+        id_ejecutiva: number;
+        id_usuario: number;
+        nombre_completo: string;
+        nombre: string;
+        apellido: string;
+        correo: string;
+        email: string;
+        telefono: string;
+        dni: string;
+        estado_ejecutiva: string;
+        activo: boolean;
+        rol: string;
+    }[]>;
 }

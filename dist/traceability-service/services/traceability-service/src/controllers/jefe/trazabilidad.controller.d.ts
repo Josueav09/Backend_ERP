@@ -1,3 +1,4 @@
+import { Response } from 'express';
 import { TrazabilidadService } from '../../services/jefe/trazabilidad.service';
 export declare class TrazabilidadController {
     private readonly trazabilidadService;
@@ -53,8 +54,8 @@ export declare class TrazabilidadController {
         data: {
             id: number;
             clienteFinal: string;
-            ejecutiva: string;
             personaContacto: string;
+            ejecutiva: string;
             tipoContacto: string;
             fechaContacto: string;
             resultadoContacto: string;
@@ -81,7 +82,7 @@ export declare class TrazabilidadController {
             tipoOportunidad: string;
             etapaOportunidad: string;
             montoTotal: number;
-            probabilidadCierre: number;
+            probabilidad_cierre: number;
             fechaCierreEsperado: string;
             productoOfrecido: string;
             observaciones: string;
@@ -108,4 +109,50 @@ export declare class TrazabilidadController {
             razon_social: string;
         }[];
     }>;
+    getNuevasReuniones(req: any, meses?: string, ejecutivaId?: string): Promise<{
+        mes: string;
+        reuniones: number;
+    }[]>;
+    getNuevasVentas(req: any, meses?: string, ejecutivaId?: string): Promise<{
+        mes: string;
+        ventas: number;
+    }[]>;
+    getEfectividadCanales(req: any, ejecutivaId?: string, fechaDesde?: string, fechaHasta?: string): Promise<{
+        canal: string;
+        total_contactos: number;
+        positivos: number;
+        negativos: number;
+        pendientes: number;
+        neutros: number;
+        efectividad: number;
+    }[]>;
+    getResumenSemanal(req: any): Promise<{
+        id_ejecutiva: any;
+        ejecutiva: any;
+        total_actividades: number;
+        reuniones_agendadas: number;
+        ventas_ganadas: number;
+        monto_total: number;
+    }[]>;
+    getEmbudoVentas(req: any, ejecutivaId?: string, fechaDesde?: string, fechaHasta?: string): Promise<{
+        etapa: string;
+        cantidad: number;
+        monto_total: number;
+        tasa_conversion: number;
+        perdida: number;
+    }[]>;
+    getRankingEjecutivas(req: any, fechaDesde?: string, fechaHasta?: string): Promise<{
+        id_ejecutiva: any;
+        ejecutiva: any;
+        ventas_ganadas: number;
+        monto_total: number;
+        clientes_potenciales: number;
+        efectividad: number;
+    }[]>;
+    generateReport(reportDto: {
+        filters: any;
+        reportType: 'etapa1' | 'etapa2';
+        format?: 'csv';
+    }, res: Response): Promise<Response<any, Record<string, any>>>;
+    private convertToCSV;
 }

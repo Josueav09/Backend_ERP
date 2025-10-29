@@ -257,13 +257,22 @@ let ApiGatewayController = class ApiGatewayController {
             throw new common_1.HttpException(error.response?.data?.message || 'Error al asignar ejecutiva', error.response?.status || common_1.HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
-    async removeJefeEmpresaEjecutiva(id, ejecutivaId, req) {
+    async removeJefeEmpresaEjecutiva(empresaId, ejecutivaId, req) {
         try {
+            console.log('➖ [API Gateway] Removiendo ejecutiva de empresa:', { empresaId, ejecutivaId });
             const headers = this.getHeadersWithAuth(req);
-            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.post(`http://localhost:3002/empresas/${id}/ejecutivas/${ejecutivaId}/remove`, {}, { headers }));
+            const url = `http://localhost:3002/empresas/${empresaId}/ejecutivas/${ejecutivaId}`;
+            console.log('🔍 [API Gateway] URL destino:', url);
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.delete(url, { headers }));
+            console.log('✅ [API Gateway] Ejecutiva removida exitosamente');
             return response.data;
         }
         catch (error) {
+            console.error('❌ [API Gateway] Error removiendo ejecutiva:', {
+                message: error.message,
+                status: error.response?.status,
+                data: error.response?.data
+            });
             throw new common_1.HttpException(error.response?.data?.message || 'Error al remover ejecutiva', error.response?.status || common_1.HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
@@ -275,6 +284,32 @@ let ApiGatewayController = class ApiGatewayController {
         }
         catch (error) {
             throw new common_1.HttpException(error.response?.data?.message || 'Error al asignar ejecutiva', error.response?.status || common_1.HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+    async getJefeEmpresasEjecutivasDisponibles(req) {
+        try {
+            console.log('🔍 [API Gateway] Solicitando ejecutivas disponibles para empresas...');
+            const headers = this.getHeadersWithAuth(req);
+            const url = 'http://localhost:3002/empresas/ejecutivas/disponibles';
+            console.log('🔍 [API Gateway] URL destino:', url);
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get(url, {
+                headers,
+                timeout: 10000
+            }));
+            console.log('✅ [API Gateway] Ejecutivas disponibles recibidas:', response.data?.length || 0);
+            return response.data;
+        }
+        catch (error) {
+            console.error('❌ [API Gateway] Error:', {
+                message: error.message,
+                status: error.response?.status,
+                data: error.response?.data
+            });
+            if (error.response?.status === 404 || error.response?.status === 500) {
+                console.log('ℹ️ [API Gateway] No hay ejecutivas disponibles');
+                return [];
+            }
+            throw new common_1.HttpException(error.response?.data || 'Error interno del servidor', error.response?.status || common_1.HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
     async getJefeClientes(req) {
@@ -488,6 +523,144 @@ let ApiGatewayController = class ApiGatewayController {
         }
         catch (error) {
             throw new common_1.HttpException(error.response?.data?.message || 'Error al obtener tasa de conversión', error.response?.status || common_1.HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+    async getNuevasReuniones(query, req) {
+        try {
+            const headers = this.getHeadersWithAuth(req);
+            const { meses, ejecutivaId } = query;
+            const params = new URLSearchParams();
+            if (meses)
+                params.append('meses', meses);
+            if (ejecutivaId)
+                params.append('ejecutivaId', ejecutivaId);
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get(`http://localhost:3007/jefe/trazabilidad/kpis/nuevas-reuniones?${params.toString()}`, { headers }));
+            return response.data;
+        }
+        catch (error) {
+            console.error('❌ [API Gateway] Error en getNuevasReuniones:', error.response?.data);
+            throw new common_1.HttpException(error.response?.data?.message || 'Error al obtener nuevas reuniones', error.response?.status || common_1.HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+    async getNuevasVentas(query, req) {
+        try {
+            const headers = this.getHeadersWithAuth(req);
+            const { meses, ejecutivaId } = query;
+            const params = new URLSearchParams();
+            if (meses)
+                params.append('meses', meses);
+            if (ejecutivaId)
+                params.append('ejecutivaId', ejecutivaId);
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get(`http://localhost:3007/jefe/trazabilidad/kpis/nuevas-ventas?${params.toString()}`, { headers }));
+            return response.data;
+        }
+        catch (error) {
+            console.error('❌ [API Gateway] Error en getNuevasVentas:', error.response?.data);
+            throw new common_1.HttpException(error.response?.data?.message || 'Error al obtener nuevas ventas', error.response?.status || common_1.HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+    async getEfectividadCanales(query, req) {
+        try {
+            const headers = this.getHeadersWithAuth(req);
+            const { ejecutivaId, fechaDesde, fechaHasta } = query;
+            const params = new URLSearchParams();
+            if (ejecutivaId)
+                params.append('ejecutivaId', ejecutivaId);
+            if (fechaDesde)
+                params.append('fechaDesde', fechaDesde);
+            if (fechaHasta)
+                params.append('fechaHasta', fechaHasta);
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get(`http://localhost:3007/jefe/trazabilidad/kpis/efectividad-canales?${params.toString()}`, { headers }));
+            return response.data;
+        }
+        catch (error) {
+            console.error('❌ [API Gateway] Error en getEfectividadCanales:', error.response?.data);
+            throw new common_1.HttpException(error.response?.data?.message || 'Error al obtener efectividad de canales', error.response?.status || common_1.HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+    async getResumenSemanal(req) {
+        try {
+            const headers = this.getHeadersWithAuth(req);
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get('http://localhost:3007/jefe/trazabilidad/kpis/resumen-semanal', { headers }));
+            return response.data;
+        }
+        catch (error) {
+            console.error('❌ [API Gateway] Error en getResumenSemanal:', error.response?.data);
+            throw new common_1.HttpException(error.response?.data?.message || 'Error al obtener resumen semanal', error.response?.status || common_1.HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+    async getEmbudoVentas(query, req) {
+        try {
+            const headers = this.getHeadersWithAuth(req);
+            const { ejecutivaId, fechaDesde, fechaHasta } = query;
+            const params = new URLSearchParams();
+            if (ejecutivaId)
+                params.append('ejecutivaId', ejecutivaId);
+            if (fechaDesde)
+                params.append('fechaDesde', fechaDesde);
+            if (fechaHasta)
+                params.append('fechaHasta', fechaHasta);
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get(`http://localhost:3007/jefe/trazabilidad/kpis/embudo-ventas?${params.toString()}`, { headers }));
+            return response.data;
+        }
+        catch (error) {
+            console.error('❌ [API Gateway] Error en getEmbudoVentas:', error.response?.data);
+            throw new common_1.HttpException(error.response?.data?.message || 'Error al obtener embudo de ventas', error.response?.status || common_1.HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+    async getRankingEjecutivas(query, req) {
+        try {
+            const headers = this.getHeadersWithAuth(req);
+            const { fechaDesde, fechaHasta } = query;
+            const params = new URLSearchParams();
+            if (fechaDesde)
+                params.append('fechaDesde', fechaDesde);
+            if (fechaHasta)
+                params.append('fechaHasta', fechaHasta);
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get(`http://localhost:3007/jefe/trazabilidad/kpis/ranking-ejecutivas?${params.toString()}`, { headers }));
+            return response.data;
+        }
+        catch (error) {
+            console.error('❌ [API Gateway] Error en getRankingEjecutivas:', error.response?.data);
+            throw new common_1.HttpException(error.response?.data?.message || 'Error al obtener ranking de ejecutivas', error.response?.status || common_1.HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+    async generateTrazabilidadReport(reportDto, req) {
+        try {
+            console.log('📊 [API Gateway] Solicitando reporte:', reportDto.reportType);
+            const headers = this.getHeadersWithAuth(req);
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.post('http://localhost:3007/jefe/trazabilidad/report', reportDto, {
+                headers,
+                responseType: 'text'
+            }));
+            return response.data;
+        }
+        catch (error) {
+            console.error('❌ [API Gateway] Error generando reporte:', error);
+            throw new common_1.HttpException(error.response?.data?.message || 'Error al generar reporte', error.response?.status || common_1.HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+    async testReport(req) {
+        try {
+            console.log('🧪 Probando endpoint de reporte...');
+            const headers = this.getHeadersWithAuth(req);
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.post('http://localhost:3007/jefe/trazabilidad/report', {
+                reportType: 'etapa1',
+                filters: {},
+                format: 'csv'
+            }, {
+                headers,
+                responseType: 'text'
+            }));
+            return { success: true, data: response.data.substring(0, 100) + '...' };
+        }
+        catch (error) {
+            console.error('❌ Error en test:', error.response?.data || error.message);
+            return {
+                success: false,
+                error: error.response?.data || error.message,
+                status: error.response?.status
+            };
         }
     }
     async getJefeTrazabilidadEtapa1(ejecutivaId, empresaId, clienteId, resultadoContacto, tipoContacto, fechaDesde, fechaHasta, page, limit, req) {
@@ -852,6 +1025,90 @@ let ApiGatewayController = class ApiGatewayController {
             throw new common_1.HttpException(error.response?.data?.message || 'Error al obtener actividades', error.response?.status || common_1.HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+    async getEmpresaClientes(clienteUsuarioId, req) {
+        try {
+            console.log('👥 [API Gateway] === EMPRESA CLIENTES ===');
+            console.log('👥 [API Gateway] Query clienteUsuarioId:', clienteUsuarioId);
+            const headers = this.getHeadersWithAuth(req);
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get(`http://localhost:3002/empresa/clientes?clienteUsuarioId=${clienteUsuarioId}`, { headers }));
+            console.log('✅ [API Gateway] Clientes de empresa obtenidos exitosamente');
+            return response.data;
+        }
+        catch (error) {
+            console.error('❌ [API Gateway] Error en empresa/clientes:', error.response?.data);
+            throw new common_1.HttpException(error.response?.data?.message || 'Error al obtener clientes', error.response?.status || common_1.HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+    async getEmpresaEjecutivas(empresaId, req) {
+        try {
+            console.log('👥 [API Gateway] === EMPRESA EJECUTIVAS ===');
+            console.log('👥 [API Gateway] Query empresaId:', empresaId);
+            const headers = this.getHeadersWithAuth(req);
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get(`http://localhost:3002/empresa/ejecutivas?empresaId=${empresaId}`, { headers }));
+            console.log('✅ [API Gateway] Ejecutivas de empresa obtenidas exitosamente');
+            return response.data;
+        }
+        catch (error) {
+            console.error('❌ [API Gateway] Error en empresa/ejecutivas:', error.response?.data);
+            throw new common_1.HttpException(error.response?.data?.message || 'Error al obtener ejecutivas', error.response?.status || common_1.HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+    async getEmpresaEquipoStats(empresaId, req) {
+        try {
+            console.log('📊 [API Gateway] === EMPRESA EQUIPO STATS ===');
+            console.log('📊 [API Gateway] Query empresaId:', empresaId);
+            const headers = this.getHeadersWithAuth(req);
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get(`http://localhost:3002/empresa/equipo/stats?empresaId=${empresaId}`, { headers }));
+            console.log('✅ [API Gateway] Stats de equipo obtenidas exitosamente');
+            return response.data;
+        }
+        catch (error) {
+            console.error('❌ [API Gateway] Error en empresa/equipo/stats:', error.response?.data);
+            throw new common_1.HttpException(error.response?.data?.message || 'Error al obtener estadísticas del equipo', error.response?.status || common_1.HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+    async getEjecutivaEmbudo(ejecutivaId, empresaId, req) {
+        try {
+            console.log('🎯 [API Gateway] === EJECUTIVA EMBUDO ===');
+            console.log('🎯 [API Gateway] Ejecutiva ID:', ejecutivaId, 'Empresa ID:', empresaId);
+            const headers = this.getHeadersWithAuth(req);
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get(`http://localhost:3002/empresa/ejecutiva/${ejecutivaId}/embudo?empresaId=${empresaId}`, { headers }));
+            console.log('✅ [API Gateway] Embudo de ejecutiva obtenido exitosamente');
+            return response.data;
+        }
+        catch (error) {
+            console.error('❌ [API Gateway] Error en empresa/ejecutiva/:id/embudo:', error.response?.data);
+            throw new common_1.HttpException(error.response?.data?.message || 'Error al obtener embudo de ejecutiva', error.response?.status || common_1.HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+    async getEjecutivaEstadisticas(ejecutivaId, empresaId, req) {
+        try {
+            console.log('📈 [API Gateway] === EJECUTIVA ESTADÍSTICAS ===');
+            console.log('📈 [API Gateway] Ejecutiva ID:', ejecutivaId, 'Empresa ID:', empresaId);
+            const headers = this.getHeadersWithAuth(req);
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get(`http://localhost:3002/empresa/ejecutiva/${ejecutivaId}/estadisticas?empresaId=${empresaId}`, { headers }));
+            console.log('✅ [API Gateway] Estadísticas de ejecutiva obtenidas exitosamente');
+            return response.data;
+        }
+        catch (error) {
+            console.error('❌ [API Gateway] Error en empresa/ejecutiva/:id/estadisticas:', error.response?.data);
+            throw new common_1.HttpException(error.response?.data?.message || 'Error al obtener estadísticas de ejecutiva', error.response?.status || common_1.HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+    async getEmpresaEjecutivaClientes(ejecutivaId, empresaId, req) {
+        try {
+            console.log('👥 [API Gateway] === EJECUTIVA CLIENTES ===');
+            console.log('👥 [API Gateway] Ejecutiva ID:', ejecutivaId, 'Empresa ID:', empresaId);
+            const headers = this.getHeadersWithAuth(req);
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get(`http://localhost:3002/empresa/ejecutiva/${ejecutivaId}/clientes?empresaId=${empresaId}`, { headers }));
+            console.log('✅ [API Gateway] Clientes de ejecutiva obtenidos exitosamente');
+            return response.data;
+        }
+        catch (error) {
+            console.error('❌ [API Gateway] Error en empresa/ejecutiva/:id/clientes:', error.response?.data);
+            throw new common_1.HttpException(error.response?.data?.message || 'Error al obtener clientes de ejecutiva', error.response?.status || common_1.HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
     async bulkCreateEjecutivaClientes(file, ejecutivaId, req) {
         try {
             console.log('📁 [API Gateway] === BULK UPLOAD CLIENTES ===');
@@ -1108,8 +1365,8 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], ApiGatewayController.prototype, "addJefeEmpresaEjecutiva", null);
 __decorate([
-    (0, common_1.Post)('jefe/empresas/:id/ejecutivas/:ejecutivaId/remove'),
-    __param(0, (0, common_1.Param)('id')),
+    (0, common_1.Delete)('jefe/empresas/:empresaId/ejecutivas/:ejecutivaId'),
+    __param(0, (0, common_1.Param)('empresaId')),
     __param(1, (0, common_1.Param)('ejecutivaId')),
     __param(2, (0, common_1.Req)()),
     __metadata("design:type", Function),
@@ -1125,6 +1382,13 @@ __decorate([
     __metadata("design:paramtypes", [String, Object, Object]),
     __metadata("design:returntype", Promise)
 ], ApiGatewayController.prototype, "asignarEjecutivaAEmpresa", null);
+__decorate([
+    (0, common_1.Get)('jefe/empresas/ejecutivas/disponibles'),
+    __param(0, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], ApiGatewayController.prototype, "getJefeEmpresasEjecutivasDisponibles", null);
 __decorate([
     (0, common_1.Get)('jefe/clientes'),
     __param(0, (0, common_1.Req)()),
@@ -1264,6 +1528,68 @@ __decorate([
     __metadata("design:paramtypes", [String, String, Object]),
     __metadata("design:returntype", Promise)
 ], ApiGatewayController.prototype, "getJefeTrazabilidadTasaConversion", null);
+__decorate([
+    (0, common_1.Get)('jefe/trazabilidad/kpis/nuevas-reuniones'),
+    __param(0, (0, common_1.Query)()),
+    __param(1, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Object]),
+    __metadata("design:returntype", Promise)
+], ApiGatewayController.prototype, "getNuevasReuniones", null);
+__decorate([
+    (0, common_1.Get)('jefe/trazabilidad/kpis/nuevas-ventas'),
+    __param(0, (0, common_1.Query)()),
+    __param(1, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Object]),
+    __metadata("design:returntype", Promise)
+], ApiGatewayController.prototype, "getNuevasVentas", null);
+__decorate([
+    (0, common_1.Get)('jefe/trazabilidad/kpis/efectividad-canales'),
+    __param(0, (0, common_1.Query)()),
+    __param(1, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Object]),
+    __metadata("design:returntype", Promise)
+], ApiGatewayController.prototype, "getEfectividadCanales", null);
+__decorate([
+    (0, common_1.Get)('jefe/trazabilidad/kpis/resumen-semanal'),
+    __param(0, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], ApiGatewayController.prototype, "getResumenSemanal", null);
+__decorate([
+    (0, common_1.Get)('jefe/trazabilidad/kpis/embudo-ventas'),
+    __param(0, (0, common_1.Query)()),
+    __param(1, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Object]),
+    __metadata("design:returntype", Promise)
+], ApiGatewayController.prototype, "getEmbudoVentas", null);
+__decorate([
+    (0, common_1.Get)('jefe/trazabilidad/kpis/ranking-ejecutivas'),
+    __param(0, (0, common_1.Query)()),
+    __param(1, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Object]),
+    __metadata("design:returntype", Promise)
+], ApiGatewayController.prototype, "getRankingEjecutivas", null);
+__decorate([
+    (0, common_1.Post)('jefe/trazabilidad/report'),
+    __param(0, (0, common_1.Body)()),
+    __param(1, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Object]),
+    __metadata("design:returntype", Promise)
+], ApiGatewayController.prototype, "generateTrazabilidadReport", null);
+__decorate([
+    (0, common_1.Get)('jefe/trazabilidad/report-test'),
+    __param(0, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], ApiGatewayController.prototype, "testReport", null);
 __decorate([
     (0, common_1.Get)('jefe/trazabilidad/etapa1'),
     __param(0, (0, common_1.Query)('ejecutivaId')),
@@ -1522,6 +1848,57 @@ __decorate([
     __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", Promise)
 ], ApiGatewayController.prototype, "getEmpresaActividades", null);
+__decorate([
+    (0, common_1.Get)('empresa/clientes'),
+    __param(0, (0, common_1.Query)('clienteUsuarioId')),
+    __param(1, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", Promise)
+], ApiGatewayController.prototype, "getEmpresaClientes", null);
+__decorate([
+    (0, common_1.Get)('empresa/ejecutivas'),
+    __param(0, (0, common_1.Query)('empresaId')),
+    __param(1, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", Promise)
+], ApiGatewayController.prototype, "getEmpresaEjecutivas", null);
+__decorate([
+    (0, common_1.Get)('empresa/equipo/stats'),
+    __param(0, (0, common_1.Query)('empresaId')),
+    __param(1, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", Promise)
+], ApiGatewayController.prototype, "getEmpresaEquipoStats", null);
+__decorate([
+    (0, common_1.Get)('empresa/ejecutiva/:id/embudo'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Query)('empresaId')),
+    __param(2, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, Object]),
+    __metadata("design:returntype", Promise)
+], ApiGatewayController.prototype, "getEjecutivaEmbudo", null);
+__decorate([
+    (0, common_1.Get)('empresa/ejecutiva/:id/estadisticas'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Query)('empresaId')),
+    __param(2, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, Object]),
+    __metadata("design:returntype", Promise)
+], ApiGatewayController.prototype, "getEjecutivaEstadisticas", null);
+__decorate([
+    (0, common_1.Get)('empresa/ejecutiva/:id/clientes'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Query)('empresaId')),
+    __param(2, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, Object]),
+    __metadata("design:returntype", Promise)
+], ApiGatewayController.prototype, "getEmpresaEjecutivaClientes", null);
 __decorate([
     (0, common_1.Post)('ejecutiva/clientes/bulk'),
     (0, common_1.UseInterceptors)((0, platform_express_1.FileInterceptor)('file')),
