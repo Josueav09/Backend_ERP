@@ -344,11 +344,7 @@ async activate(id: number) {
     }
   }
 
-  /**
-   * Eliminar un cliente final (soft delete - solo marcarlo como inactivo en auditoría)
-   */
-  // En clientes.service.ts - modifica el método remove
-  /**
+ /**
  * Desactivar un cliente final (soft delete - cambiar estado a Inactivo)
  */
   async remove(id: number) {

@@ -75,28 +75,6 @@ export class EjecutivasController {
       throw new HttpException('Error al desactivar ejecutiva', HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
-  // En ejecutivas.controller.ts - VERSIÓN CORREGIDA
-  // @Get('disponibles')
-
-  // async getEjecutivasDisponibles() {
-  //   try {
-  //     console.log('🔍 [EjecutivasController] Obteniendo ejecutivas disponibles');
-  //     const resultado = await this.ejecutivasService.getEjecutivasDisponibles();
-  //     console.log('✅ [EjecutivasController] Ejecutivas disponibles encontradas:', resultado.length);
-  //     return resultado;
-  //   } catch (error) {
-  //     console.error('❌ [EjecutivasController] Error obteniendo ejecutivas disponibles:', error);
-  //     throw new HttpException(
-  //       {
-  //         message: 'Error al obtener ejecutivas disponibles',
-  //         error: error.message,
-  //         timestamp: new Date().toISOString()
-  //       },
-  //       HttpStatus.INTERNAL_SERVER_ERROR
-  //     );
-  //   }
-  // }
-
   // En ejecutivas.controller.ts - ENDPOINT DE EMERGENCIA
   @Get('disponibles-simple')
   async getEjecutivasDisponiblesSimple() {

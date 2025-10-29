@@ -635,33 +635,6 @@ export class EmpresaDashboardService {
   }
 
 
-  // BACKEND - Agrega este método al EmpresaDashboardService
-  // async getEjecutivasByEmpresa(empresaId: number): Promise<any[]> {
-  //   try {
-  //     console.log('👥 [EmpresaDashboardService] Obteniendo ejecutivas para empresa:', empresaId);
-
-  //     const ejecutivas = await this.ejecutivaRepository
-  //       .createQueryBuilder('e')
-  //       .select([
-  //         'e.id_ejecutiva',
-  //         'e.nombre_completo',
-  //         'e.correo',
-  //         'e.telefono',
-  //         'e.linkedin',
-  //         'e.estado_ejecutiva'
-  //       ])
-  //       .where('e.id_empresa_prov = :empresaId', { empresaId })
-  //       .andWhere('e.estado_ejecutiva = :estado', { estado: 'Activo' })
-  //       .getMany();
-
-  //     console.log(`✅ [EmpresaDashboardService] ${ejecutivas.length} ejecutivas encontradas`);
-  //     return ejecutivas;
-  //   } catch (error) {
-  //     console.error('❌ [EmpresaDashboardService] Error en getEjecutivasByEmpresa:', error);
-  //     return [];
-  //   }
-  // }
-
   async getEjecutivasByEmpresa(empresaId: number): Promise<any[]> {
     try {
       console.log('👥 [EmpresaDashboardService] Obteniendo ejecutivas para empresa:', empresaId);
@@ -729,44 +702,6 @@ export class EmpresaDashboardService {
       };
     }
   }
-
-  // async getEmbudoVentasEjecutiva(ejecutivaId: number, empresaId: number): Promise<any[]> {
-  //   try {
-  //     console.log('🎯 [EmpresaDashboardService] Obteniendo embudo para ejecutiva:', ejecutivaId);
-
-  //     const etapas = ['Prospección', 'Calificación', 'Propuesta', 'Negociación', 'Cierre'];
-  //     const embudo = await Promise.all(
-  //       etapas.map(async (etapa, index) => {
-  //         const cantidad = await this.trazabilidadRepository
-  //           .createQueryBuilder('t')
-  //           .where('t.id_ejecutiva = :ejecutivaId', { ejecutivaId })
-  //           .andWhere('t.id_empresa_prov = :empresaId', { empresaId })
-  //           .andWhere('t.etapa_oportunidad = :etapa', { etapa })
-  //           .getCount();
-
-  //         const monto = await this.trazabilidadRepository
-  //           .createQueryBuilder('t')
-  //           .select('COALESCE(SUM(t.monto_total_sin_imp), 0)', 'monto')
-  //           .where('t.id_ejecutiva = :ejecutivaId', { ejecutivaId })
-  //           .andWhere('t.id_empresa_prov = :empresaId', { empresaId })
-  //           .andWhere('t.etapa_oportunidad = :etapa', { etapa })
-  //           .getRawOne();
-
-  //         return {
-  //           etapa,
-  //           cantidad,
-  //           tasa_conversion: '0%', // Se calcularía basado en el total
-  //           monto_potencial: parseFloat(monto.monto) || 0
-  //         };
-  //       })
-  //     );
-
-  //     return embudo;
-  //   } catch (error) {
-  //     console.error('❌ [EmpresaDashboardService] Error en getEmbudoVentasEjecutiva:', error);
-  //     return [];
-  //   }
-  // }
 
   async getEmbudoVentasEjecutiva(ejecutivaId: number, empresaId: number): Promise<any[]> {
     try {
@@ -878,52 +813,6 @@ export class EmpresaDashboardService {
 
     return tasas[etapa] || '0%';
   }
-
-
-  // async getEstadisticasEjecutivaCompleta(ejecutivaId: number, empresaId: number): Promise<any> {
-  //   try {
-  //     console.log('📈 [EmpresaDashboardService] Obteniendo estadísticas completas para ejecutiva:', ejecutivaId);
-
-  //     const [
-  //       clientesActivos,
-  //       ventasGanadas,
-  //       totalActividades,
-  //       actividadesEsteMes,
-  //       revenueTotal
-  //     ] = await Promise.all([
-  //       this.getClientesActivosEjecutiva(ejecutivaId, empresaId),
-  //       this.getVentasGanadasEjecutiva(ejecutivaId, empresaId),
-  //       this.getTotalActividadesEjecutiva(ejecutivaId, empresaId),
-  //       this.getActividadesEsteMesEjecutiva(ejecutivaId, empresaId),
-  //       this.getRevenueEjecutiva(ejecutivaId, empresaId)
-  //     ]);
-
-  //     const tasaConversion = totalActividades > 0
-  //       ? (ventasGanadas / totalActividades) * 100
-  //       : 0;
-
-  //     return {
-  //       clientes_activos: clientesActivos,
-  //       ventas_ganadas: ventasGanadas,
-  //       total_actividades: totalActividades,
-  //       actividades_este_mes: actividadesEsteMes,
-  //       revenue_total: revenueTotal,
-  //       tasa_conversion: `${tasaConversion.toFixed(1)}%`,
-  //       tiempo_respuesta: this.calcularTiempoRespuestaPromedio(ejecutivaId, empresaId)
-  //     };
-  //   } catch (error) {
-  //     console.error('❌ [EmpresaDashboardService] Error en getEstadisticasEjecutivaCompleta:', error);
-  //     return {
-  //       clientes_activos: 0,
-  //       ventas_ganadas: 0,
-  //       total_actividades: 0,
-  //       actividades_este_mes: 0,
-  //       revenue_total: 0,
-  //       tasa_conversion: '0%',
-  //       tiempo_respuesta: 'Por determinar'
-  //     };
-  //   }
-  // }
 
   async getEstadisticasEjecutivaCompleta(ejecutivaId: number, empresaId: number): Promise<any> {
     try {

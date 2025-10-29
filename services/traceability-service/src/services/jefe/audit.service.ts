@@ -9,57 +9,6 @@ export class AuditService {
     @InjectRepository(AuditoriaCambios)
     private auditoriaRepository: Repository<AuditoriaCambios>,
   ) { }
-
-  // async getAuditoriaContratos(filters?: any) {
-  //   const { fechaInicio, fechaFin, accion, usuario } = filters || {};
-
-  //   const query = this.auditoriaRepository
-  //     .createQueryBuilder('auditoria')
-  //     .leftJoinAndSelect('auditoria.empresa_proveedora', 'empresa')
-  //     .leftJoinAndSelect('auditoria.cliente_final', 'cliente')
-  //     .leftJoinAndSelect('auditoria.ejecutiva', 'ejecutiva')
-  //     .leftJoinAndSelect('auditoria.ejecutiva_anterior', 'ejecutiva_anterior')
-  //     .leftJoinAndSelect('auditoria.ejecutiva_nueva', 'ejecutiva_nueva')
-  //     .orderBy('auditoria.fecha_accion', 'DESC');
-
-  //   if (fechaInicio && fechaFin) {
-  //     query.andWhere('auditoria.fecha_accion BETWEEN :fechaInicio AND :fechaFin', {
-  //       fechaInicio,
-  //       fechaFin: `${fechaFin} 23:59:59`
-  //     });
-  //   }
-
-  //   if (accion) {
-  //     query.andWhere('auditoria.accion = :accion', { accion });
-  //   }
-
-  //   if (usuario) {
-  //     query.andWhere('auditoria.usuario_responsable ILIKE :usuario', { 
-  //       usuario: `%${usuario}%` 
-  //     });
-  //   }
-
-  //   const auditorias = await query.getMany();
-
-  //   // Formatear respuesta para mejor legibilidad
-  //   return auditorias.map(audit => ({
-  //     id_auditoria: audit.id_auditoria,
-  //     accion: audit.accion,
-  //     detalles: audit.detalles,
-  //     fecha_accion: audit.fecha_accion,
-  //     usuario_responsable: audit.usuario_responsable,
-  //     empresa: audit.empresa_proveedora?.razon_social || 'N/A',
-  //     cliente: audit.cliente_final?.razon_social || 'N/A',
-  //     ejecutiva: audit.ejecutiva?.nombre_completo || 'N/A',
-  //     ejecutiva_anterior: audit.ejecutiva_anterior?.nombre_completo || 'N/A',
-  //     ejecutiva_nueva: audit.ejecutiva_nueva?.nombre_completo || 'N/A',
-  //     estado_anterior: audit.estado_anterior,
-  //     estado_nuevo: audit.estado_nuevo,
-  //     motivo_desvinculacion: audit.motivo_desvinculacion,
-  //     observaciones_adicionales: audit.observaciones_adicionales
-  //   }));
-  // }
-
   async getAuditoriaContratos(filters?: any) {
     const { fechaInicio, fechaFin, accion, usuario } = filters || {};
 

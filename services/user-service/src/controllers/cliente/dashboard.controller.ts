@@ -136,28 +136,6 @@ export class EmpresaDashboardController {
     }
   }
 
-
-  // BACKEND - Agrega este método al EmpresaDashboardController
-  // @Get('ejecutivas')
-  // @UseGuards(JwtAuthGuard)
-  // async getEjecutivasByEmpresa(@Query('empresaId') empresaId: string, @Req() req) {
-  //   try {
-  //     console.log('👥 [EmpresaDashboardController] === OBTENER EJECUTIVAS ===');
-
-  //     const idEmpresa = this.getEmpresaId(req, empresaId);
-  //     const ejecutivas = await this.dashboardService.getEjecutivasByEmpresa(idEmpresa);
-
-  //     console.log(`✅ [EmpresaDashboardController] ${ejecutivas.length} ejecutivas obtenidas`);
-  //     return ejecutivas;
-  //   } catch (error) {
-  //     console.error('❌ [EmpresaDashboardController] Error en getEjecutivasByEmpresa:', error);
-  //     throw new HttpException(
-  //       'Error al obtener ejecutivas',
-  //       HttpStatus.INTERNAL_SERVER_ERROR
-  //     );
-  //   }
-  // }
-
   @Get('ejecutivas')
   @UseGuards(JwtAuthGuard)
   async getEjecutivasByEmpresa(@Query('empresaId') empresaId: string, @Req() req) {
