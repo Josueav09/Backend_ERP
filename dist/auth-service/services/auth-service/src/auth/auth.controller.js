@@ -22,13 +22,34 @@ let AuthController = class AuthController {
         this.authService = authService;
     }
     async getCaptcha() {
-        return this.authService.generateCaptcha();
+        try {
+            return this.authService.generateCaptcha();
+        }
+        catch (error) {
+            throw new common_1.HttpException('Error al generar captcha', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
     async login(loginDto, clientIp) {
-        return this.authService.login(loginDto, clientIp);
+        try {
+            return await this.authService.login(loginDto, clientIp);
+        }
+        catch (error) {
+            if (error instanceof common_1.HttpException) {
+                throw error;
+            }
+            throw new common_1.HttpException(error.message || 'Error al iniciar sesión', common_1.HttpStatus.BAD_REQUEST);
+        }
     }
     async verifyEmail(verifyDto) {
-        return this.authService.verifyEmailCode(verifyDto);
+        try {
+            return await this.authService.verifyEmailCode(verifyDto);
+        }
+        catch (error) {
+            if (error instanceof common_1.HttpException) {
+                throw error;
+            }
+            throw new common_1.HttpException(error.message || 'Error al verificar código', common_1.HttpStatus.BAD_REQUEST);
+        }
     }
 };
 exports.AuthController = AuthController;

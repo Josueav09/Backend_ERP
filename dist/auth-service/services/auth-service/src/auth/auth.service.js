@@ -77,80 +77,86 @@ let AuthService = class AuthService {
     }
     async login(loginDto, clientIp) {
         const { email, password, captchaToken, captchaResponse } = loginDto;
-        if (!captchaToken || !captchaResponse) {
-            throw new common_1.BadRequestException('Por favor complete el captcha');
-        }
-        this.validateCaptcha(captchaToken, captchaResponse);
-        this.checkBlockedAttempts(email, clientIp);
-        let user = null;
-        let userType = '';
-        user = await this.jefeRepository.findOne({ where: { correo: email } });
-        if (user) {
-            userType = 'jefe';
-            user.rol = user.rol || 'jefe';
-            console.log('🔐 Login - Rol del usuario en BD:', user.rol);
-        }
-        else {
-            user = await this.empresaRepository.findOne({
-                where: {
-                    correo: email,
-                    estado: 'Activo'
-                }
-            });
+        try {
+            if (!captchaToken || !captchaResponse) {
+                throw new common_1.BadRequestException('Por favor complete el captcha');
+            }
+            try {
+                this.validateCaptcha(captchaToken, captchaResponse);
+            }
+            catch (error) {
+                throw new common_1.BadRequestException('Captcha incorrecto. Por favor intente nuevamente');
+            }
+            this.checkBlockedAttempts(email, clientIp);
+            let user = null;
+            let userType = '';
+            user = await this.jefeRepository.findOne({ where: { correo: email } });
             if (user) {
-                userType = 'empresa';
-                user.rol = 'empresa';
+                userType = 'jefe';
+                user.rol = user.rol || 'jefe';
             }
             else {
-                user = await this.ejecutivaRepository.findOne({
-                    where: {
-                        correo: email,
-                        estado_ejecutiva: 'Activo'
-                    }
+                user = await this.empresaRepository.findOne({
+                    where: { correo: email, estado: 'Activo' }
                 });
                 if (user) {
-                    userType = 'ejecutiva';
-                    user.rol = 'ejecutiva';
+                    userType = 'empresa';
+                    user.rol = 'empresa';
+                }
+                else {
+                    user = await this.ejecutivaRepository.findOne({
+                        where: { correo: email, estado_ejecutiva: 'Activo' }
+                    });
+                    if (user) {
+                        userType = 'ejecutiva';
+                        user.rol = 'ejecutiva';
+                    }
                 }
             }
-        }
-        if (!user) {
-            this.recordFailedAttempt(email, clientIp);
-            throw new common_1.UnauthorizedException('Usuario no encontrado o inactivo');
-        }
-        const validPassword = await bcrypt.compare(password, user.contraseña);
-        console.log('🔐 Password debug:');
-        console.log('Input password:', password);
-        console.log('Stored hash:', user.contraseña);
-        console.log('Comparison result:', validPassword);
-        if (!validPassword) {
-            this.recordFailedAttempt(email, clientIp);
-            const remaining = this.getRemainingAttempts(email, clientIp);
-            throw new common_1.UnauthorizedException(`Contraseña incorrecta. ${remaining.user} intentos restantes para el usuario. ${remaining.ip} intentos restantes para esta IP.`);
-        }
-        this.clearFailedAttempts(email, clientIp);
-        const code = Math.floor(100000 + Math.random() * 900000).toString();
-        this.tempEmailCodes.set(email, code);
-        setTimeout(() => {
-            this.tempEmailCodes.delete(email);
-        }, this.CAPTCHA_EXPIRY);
-        try {
-            await this.emailService.sendVerificationCode(email, code);
-            console.log(`✅ Código enviado a ${email}: ${code}`);
+            if (!user) {
+                this.recordFailedAttempt(email, clientIp);
+                const remaining = this.getRemainingAttempts(email, clientIp);
+                throw new common_1.UnauthorizedException(`Credenciales incorrectas. ${remaining.user} intentos restantes`);
+            }
+            const validPassword = await bcrypt.compare(password, user.contraseña);
+            if (!validPassword) {
+                this.recordFailedAttempt(email, clientIp);
+                const remaining = this.getRemainingAttempts(email, clientIp);
+                throw new common_1.UnauthorizedException(`Contraseña incorrecta. ${remaining.user} intentos restantes para el usuario`);
+            }
+            this.clearFailedAttempts(email, clientIp);
+            const code = Math.floor(100000 + Math.random() * 900000).toString();
+            this.tempEmailCodes.set(email, code);
+            setTimeout(() => {
+                this.tempEmailCodes.delete(email);
+            }, this.CAPTCHA_EXPIRY);
+            try {
+                await this.emailService.sendVerificationCode(email, code);
+                console.log(`✅ Código enviado a ${email}: ${code}`);
+            }
+            catch (error) {
+                console.error('❌ Error enviando email:', error);
+                throw new common_1.HttpException('No se pudo enviar el código de verificación. Intente nuevamente', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
+            }
+            return {
+                success: true,
+                requiresEmailVerification: true,
+                email: email,
+                userId: this.getUserId(user, userType),
+                rol: user.rol,
+                name: user.nombre_completo,
+                userType: userType,
+            };
         }
         catch (error) {
-            console.error('❌ Error enviando email:', error);
-            throw new common_1.HttpException('No se pudo enviar el código de verificación', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
+            if (error instanceof common_1.BadRequestException ||
+                error instanceof common_1.UnauthorizedException ||
+                error instanceof common_1.HttpException) {
+                throw error;
+            }
+            console.error('❌ Error en login:', error);
+            throw new common_1.HttpException('Error al procesar la solicitud. Intente nuevamente', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
         }
-        return {
-            success: true,
-            requiresEmailVerification: true,
-            email: email,
-            userId: this.getUserId(user, userType),
-            rol: user.rol,
-            name: user.nombre_completo,
-            userType: userType,
-        };
     }
     async verifyEmailCode(verifyDto) {
         const { email, code } = verifyDto;

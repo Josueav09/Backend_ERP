@@ -1074,11 +1074,6 @@ export class ApiGatewayController {
     }
   }
 
-
-
-
-
-
   // ============================================
   // ENDPOINTS PARA ETAPAS
   // ============================================
@@ -1836,9 +1831,6 @@ async getEmpresaEjecutivaClientes(@Param('id') ejecutivaId: string, @Query('empr
     );
   }
 }
-
-
-
 
 
   // 👩‍💼 =====================================================
