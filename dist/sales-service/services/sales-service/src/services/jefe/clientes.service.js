@@ -80,49 +80,84 @@ let ClientesService = class ClientesService {
             personas_contacto: cliente.personas_contacto
         };
     }
-    async createCliente(data) {
-        const { ruc, razon_social, correo, telefono, direccion, id_ejecutiva, persona_contacto } = data;
-        if (ruc) {
-            const existingCliente = await this.clienteRepository.findOne({
-                where: { ruc }
-            });
-            if (existingCliente) {
-                throw new common_1.HttpException('Ya existe un cliente con este RUC', common_1.HttpStatus.BAD_REQUEST);
+    async create(data) {
+        try {
+            console.log('➕ [ClientesService] Creando nuevo cliente:', data.razon_social);
+            if (!data.razon_social) {
+                throw new common_1.HttpException('La razón social es obligatoria', common_1.HttpStatus.BAD_REQUEST);
             }
-        }
-        let ejecutiva = null;
-        if (id_ejecutiva) {
-            ejecutiva = await this.ejecutivaRepository.findOne({
-                where: { id_ejecutiva: id_ejecutiva }
+            if (!data.id_ejecutiva) {
+                throw new common_1.HttpException('Debe asignar una ejecutiva', common_1.HttpStatus.BAD_REQUEST);
+            }
+            if (!data.id_empresa_prov) {
+                throw new common_1.HttpException('Debe asignar una empresa proveedora', common_1.HttpStatus.BAD_REQUEST);
+            }
+            const ejecutiva = await this.ejecutivaRepository.findOne({
+                where: {
+                    id_ejecutiva: data.id_ejecutiva,
+                    empresa_proveedora: { id_empresa_prov: data.id_empresa_prov }
+                },
+                relations: ['empresa_proveedora']
             });
             if (!ejecutiva) {
-                throw new common_1.HttpException('Ejecutiva no encontrada', common_1.HttpStatus.BAD_REQUEST);
+                throw new common_1.HttpException('La ejecutiva seleccionada no pertenece a la empresa proveedora especificada', common_1.HttpStatus.BAD_REQUEST);
             }
-        }
-        const nuevoCliente = this.clienteRepository.create({
-            ruc: ruc || null,
-            razon_social,
-            correo: correo || null,
-            telefono: telefono || null,
-            direccion: direccion || null,
-            ejecutiva: ejecutiva,
-            pais: 'Perú'
-        });
-        const clienteGuardado = await this.clienteRepository.save(nuevoCliente);
-        if (persona_contacto && persona_contacto.nombre_completo) {
-            const nuevoContacto = this.contactoRepository.create({
-                nombre_completo: persona_contacto.nombre_completo,
-                cargo: persona_contacto.cargo || null,
-                correo: persona_contacto.correo || null,
-                telefono: persona_contacto.telefono || null,
-                cliente_final: clienteGuardado
+            const empresa = await this.empresaRepository.findOne({
+                where: { id_empresa_prov: data.id_empresa_prov }
             });
-            await this.contactoRepository.save(nuevoContacto);
+            if (!empresa) {
+                throw new common_1.HttpException('La empresa proveedora seleccionada no existe', common_1.HttpStatus.BAD_REQUEST);
+            }
+            if (data.ruc) {
+                const existeRuc = await this.clienteRepository.findOne({
+                    where: {
+                        ruc: data.ruc,
+                        empresa_proveedora: { id_empresa_prov: data.id_empresa_prov }
+                    }
+                });
+                if (existeRuc) {
+                    throw new common_1.HttpException('Ya existe un cliente con ese RUC en esta empresa', common_1.HttpStatus.CONFLICT);
+                }
+            }
+            const nuevoCliente = this.clienteRepository.create({
+                ruc: data.ruc || null,
+                razon_social: data.razon_social,
+                pagina_web: data.pagina_web || null,
+                correo: data.correo || null,
+                telefono: data.telefono || null,
+                pais: data.pais || 'Perú',
+                departamento: data.departamento || null,
+                provincia: data.provincia || null,
+                direccion: data.direccion || null,
+                linkedin: data.linkedin || null,
+                grupo_economico: data.grupo_economico || null,
+                rubro: data.rubro || null,
+                sub_rubro: data.sub_rubro || null,
+                tamanio_empresa: data.tamanio_empresa || null,
+                facturacion_anual: data.facturacion_anual || null,
+                cantidad_empleados: data.cantidad_empleados || null,
+                logo: data.logo || null,
+                ejecutiva: ejecutiva,
+                empresa_proveedora: empresa,
+                estado: 'Activo'
+            });
+            const clienteGuardado = await this.clienteRepository.save(nuevoCliente);
+            console.log(`✅ [ClientesService] Cliente creado con ID: ${clienteGuardado.id_cliente_final}`);
+            return {
+                ...clienteGuardado,
+                ejecutiva_nombre: ejecutiva.nombre_completo,
+                empresa_nombre: empresa.razon_social,
+                total_actividades: 0,
+                estado: 'Activo'
+            };
         }
-        return await this.clienteRepository.findOne({
-            where: { id_cliente_final: clienteGuardado.id_cliente_final },
-            relations: ['ejecutiva', 'personas_contacto']
-        });
+        catch (error) {
+            console.error('❌ [ClientesService] Error al crear cliente:', error);
+            if (error instanceof common_1.HttpException) {
+                throw error;
+            }
+            throw new common_1.HttpException(error.message || 'Error al crear el cliente', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
     async updateCliente(id, data) {
         const cliente = await this.clienteRepository.findOne({
@@ -164,16 +199,6 @@ let ClientesService = class ClientesService {
             cliente.sub_rubro = data.sub_rubro;
         cliente.fecha_actualizacion = new Date();
         return await this.clienteRepository.save(cliente);
-    }
-    async deleteCliente(id) {
-        const cliente = await this.clienteRepository.findOne({
-            where: { id_cliente_final: id }
-        });
-        if (!cliente) {
-            throw new common_1.HttpException('Cliente no encontrado', common_1.HttpStatus.NOT_FOUND);
-        }
-        await this.clienteRepository.remove(cliente);
-        return { message: 'Cliente eliminado correctamente' };
     }
 };
 exports.ClientesService = ClientesService;

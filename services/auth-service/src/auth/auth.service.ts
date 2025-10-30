@@ -20,7 +20,9 @@ export class AuthService {
   private tempEmailCodes = new Map<string, string>();
   private userAttempts = new Map<string, { count: number; lastAttempt: number }>();
   private ipAttempts = new Map<string, { count: number; lastAttempt: number }>();
+  private tokenBlacklist = new Set<string>();
 
+  private readonly TOKEN_BLACKLIST_EXPIRY = 24 * 60 * 60 * 1000; // 24 horas
   private readonly MAX_USER_ATTEMPTS = 7;
   private readonly MAX_IP_ATTEMPTS = 5;
   private readonly BLOCK_DURATION = 30 * 60 * 1000;
@@ -365,6 +367,62 @@ export class AuthService {
 
     return response;
   }
+
+  /**
+   * 🔐 LOGOUT - Invalidar token y limpiar sesión
+   */
+  async logout(token: string): Promise<{ success: boolean; message: string }> {
+    try {
+      // 1️⃣ Verificar si el token es válido antes de invalidarlo
+      if (token) {
+        try {
+          const decoded = this.jwtService.verify(token);
+          console.log(`🔐 Logout para usuario: ${decoded.email} (${decoded.rol})`);
+
+          // 2️⃣ Agregar token a la blacklist
+          this.tokenBlacklist.add(token);
+
+          // 3️⃣ Programar eliminación automática de la blacklist después de 24h
+          setTimeout(() => {
+            this.tokenBlacklist.delete(token);
+          }, this.TOKEN_BLACKLIST_EXPIRY);
+
+        } catch (error) {
+          console.log('⚠️ Token inválido o expirado durante logout:', error.message);
+        }
+      }
+
+      return {
+        success: true,
+        message: 'Sesión cerrada exitosamente'
+      };
+
+    } catch (error) {
+      console.error('❌ Error en logout:', error);
+      throw new HttpException(
+        'Error al cerrar sesión',
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
+
+  /**
+   * 🔍 Verificar si un token está en la blacklist
+   */
+  isTokenBlacklisted(token: string): boolean {
+    return this.tokenBlacklist.has(token);
+  }
+
+  /**
+   * 🧹 Limpiar blacklist antigua (para mantenimiento)
+   */
+  cleanExpiredBlacklist() {
+    // Esta función podría ser llamada periódicamente
+    // Para mantener la blacklist bajo control
+    console.log(`🧹 Blacklist actual: ${this.tokenBlacklist.size} tokens`);
+  }
+
+
 
   /**
    * 🔍 Obtener ID según el tipo de usuario

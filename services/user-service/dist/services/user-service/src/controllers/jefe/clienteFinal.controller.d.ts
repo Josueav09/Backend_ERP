@@ -100,6 +100,7 @@ export declare class ClientesController {
     }>;
     update(id: string, body: any): Promise<{
         ejecutiva_nombre: string;
+        empresa_nombre: string;
         estado: string;
         id_cliente_final: number;
         ruc: string;
@@ -129,6 +130,7 @@ export declare class ClientesController {
         fecha_actualizacion: Date;
     }>;
     activate(id: string): Promise<{
+        success: boolean;
         message: string;
         cliente: {
             id_cliente_final: number;
@@ -136,7 +138,8 @@ export declare class ClientesController {
             estado: string;
         };
     }>;
-    remove(id: string): Promise<{
+    deactivate(id: string): Promise<{
+        success: boolean;
         message: string;
         cliente: {
             id_cliente_final: number;

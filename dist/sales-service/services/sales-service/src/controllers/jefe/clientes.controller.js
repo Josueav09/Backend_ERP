@@ -45,7 +45,7 @@ let ClientesController = class ClientesController {
             if (!razon_social) {
                 throw new common_1.HttpException('Razón social es requerida', common_1.HttpStatus.BAD_REQUEST);
             }
-            return await this.clientesService.createCliente(body);
+            return await this.clientesService.create(body);
         }
         catch (error) {
             if (error instanceof common_1.HttpException)
@@ -65,17 +65,6 @@ let ClientesController = class ClientesController {
             if (error instanceof common_1.HttpException)
                 throw error;
             throw new common_1.HttpException('Error al actualizar cliente', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-    async deleteCliente(id) {
-        try {
-            const result = await this.clientesService.deleteCliente(parseInt(id));
-            return result;
-        }
-        catch (error) {
-            if (error instanceof common_1.HttpException)
-                throw error;
-            throw new common_1.HttpException('Error al eliminar cliente', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 };
@@ -108,13 +97,6 @@ __decorate([
     __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", Promise)
 ], ClientesController.prototype, "updateCliente", null);
-__decorate([
-    (0, common_1.Delete)(':id'),
-    __param(0, (0, common_1.Param)('id')),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
-    __metadata("design:returntype", Promise)
-], ClientesController.prototype, "deleteCliente", null);
 exports.ClientesController = ClientesController = __decorate([
     (0, common_1.Controller)('clientes'),
     __metadata("design:paramtypes", [clientes_service_1.ClientesService])

@@ -22,6 +22,9 @@ let ApiGatewayController = class ApiGatewayController {
         this.httpService = httpService;
     }
     getHeadersWithAuth(req) {
+        console.log('🛣️ [ApiGateway] Rutas configuradas:');
+        console.log('🛣️ [ApiGateway] PATCH /jefe/clientes/:id/activate');
+        console.log('🛣️ [ApiGateway] PATCH /jefe/clientes/:id/deactivate');
         const headers = {
             'Content-Type': 'application/json',
             'Accept': 'application/json',
@@ -64,6 +67,26 @@ let ApiGatewayController = class ApiGatewayController {
         }
         catch (error) {
             throw new common_1.HttpException(error.response?.data?.message || 'Error en verificación', error.response?.status || common_1.HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+    async logout(body, req, headers) {
+        try {
+            console.log('🔐 Procesando logout en API Gateway');
+            const authHeaders = {
+                ...this.getHeadersWithAuth(req),
+                'Content-Type': 'application/json'
+            };
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.post('http://localhost:3001/auth/logout', body, {
+                headers: authHeaders
+            }));
+            return response.data;
+        }
+        catch (error) {
+            console.error('❌ Error en logout (gateway):', error);
+            return {
+                success: true,
+                message: 'Sesión cerrada exitosamente'
+            };
         }
     }
     async getJefePerfil(req) {
@@ -352,14 +375,30 @@ let ApiGatewayController = class ApiGatewayController {
             throw new common_1.HttpException(error.response?.data?.message || 'Error al actualizar cliente', error.response?.status || common_1.HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
-    async deleteJefeCliente(id, req) {
+    async activateJefeCliente(id, req) {
         try {
+            console.log(`🔄 [ApiGateway] Activando cliente ID: ${id}`);
             const headers = this.getHeadersWithAuth(req);
-            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.delete(`http://localhost:3003/clientes/${id}`, { headers }));
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.patch(`http://localhost:3002/clientes/${id}/activate`, {}, { headers }));
+            console.log(`✅ [ApiGateway] Cliente ${id} activado exitosamente`);
             return response.data;
         }
         catch (error) {
-            throw new common_1.HttpException(error.response?.data?.message || 'Error al eliminar cliente', error.response?.status || common_1.HttpStatus.INTERNAL_SERVER_ERROR);
+            console.error(`❌ [ApiGateway] Error al activar cliente ${id}:`, error);
+            throw new common_1.HttpException(error.response?.data?.message || 'Error al activar cliente', error.response?.status || common_1.HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+    async deactivateJefeCliente(id, req) {
+        try {
+            console.log(`🗑️ [ApiGateway] Desactivando cliente ID: ${id}`);
+            const headers = this.getHeadersWithAuth(req);
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.patch(`http://localhost:3002/clientes/${id}/deactivate`, {}, { headers }));
+            console.log(`✅ [ApiGateway] Cliente ${id} desactivado exitosamente`);
+            return response.data;
+        }
+        catch (error) {
+            console.error(`❌ [ApiGateway] Error al desactivar cliente ${id}:`, error);
+            throw new common_1.HttpException(error.response?.data?.message || 'Error al desactivar cliente', error.response?.status || common_1.HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
     async getJefeTrazabilidad(empresaId, ejecutivaId, clienteId, fechaInicio, fechaFin, tipoContacto, etapaOportunidad, etapa, req) {
@@ -1230,6 +1269,15 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], ApiGatewayController.prototype, "verifyEmail", null);
 __decorate([
+    (0, common_1.Post)('auth/logout'),
+    __param(0, (0, common_1.Body)()),
+    __param(1, (0, common_1.Req)()),
+    __param(2, (0, common_1.Headers)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Object, Object]),
+    __metadata("design:returntype", Promise)
+], ApiGatewayController.prototype, "logout", null);
+__decorate([
     (0, common_1.Get)('jefe/perfil'),
     __param(0, (0, common_1.Req)()),
     __metadata("design:type", Function),
@@ -1422,13 +1470,21 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], ApiGatewayController.prototype, "updateJefeCliente", null);
 __decorate([
-    (0, common_1.Delete)('jefe/clientes/:id'),
+    (0, common_1.Patch)('jefe/clientes/:id/activate'),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Req)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", Promise)
-], ApiGatewayController.prototype, "deleteJefeCliente", null);
+], ApiGatewayController.prototype, "activateJefeCliente", null);
+__decorate([
+    (0, common_1.Patch)('jefe/clientes/:id/deactivate'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", Promise)
+], ApiGatewayController.prototype, "deactivateJefeCliente", null);
 __decorate([
     (0, common_1.Get)('jefe/trazabilidad'),
     __param(0, (0, common_1.Query)('empresa')),

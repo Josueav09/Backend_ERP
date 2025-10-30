@@ -66,6 +66,8 @@ let AuthService = class AuthService {
         this.tempEmailCodes = new Map();
         this.userAttempts = new Map();
         this.ipAttempts = new Map();
+        this.tokenBlacklist = new Set();
+        this.TOKEN_BLACKLIST_EXPIRY = 24 * 60 * 60 * 1000;
         this.MAX_USER_ATTEMPTS = 7;
         this.MAX_IP_ATTEMPTS = 5;
         this.BLOCK_DURATION = 30 * 60 * 1000;
@@ -228,6 +230,37 @@ let AuthService = class AuthService {
         };
         console.log('📤 Respuesta verifyEmail:', response);
         return response;
+    }
+    async logout(token) {
+        try {
+            if (token) {
+                try {
+                    const decoded = this.jwtService.verify(token);
+                    console.log(`🔐 Logout para usuario: ${decoded.email} (${decoded.rol})`);
+                    this.tokenBlacklist.add(token);
+                    setTimeout(() => {
+                        this.tokenBlacklist.delete(token);
+                    }, this.TOKEN_BLACKLIST_EXPIRY);
+                }
+                catch (error) {
+                    console.log('⚠️ Token inválido o expirado durante logout:', error.message);
+                }
+            }
+            return {
+                success: true,
+                message: 'Sesión cerrada exitosamente'
+            };
+        }
+        catch (error) {
+            console.error('❌ Error en logout:', error);
+            throw new common_1.HttpException('Error al cerrar sesión', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+    isTokenBlacklisted(token) {
+        return this.tokenBlacklist.has(token);
+    }
+    cleanExpiredBlacklist() {
+        console.log(`🧹 Blacklist actual: ${this.tokenBlacklist.size} tokens`);
     }
     getUserId(user, userType) {
         switch (userType) {

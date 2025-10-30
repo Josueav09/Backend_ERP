@@ -72,7 +72,7 @@ let ClientesController = class ClientesController {
         }
     }
     async activate(id) {
-        console.log('🔄 [ClientesController] PATCH /jefe/clientes/:id/activate -', id);
+        console.log('🔄 [ClientesController] PATCH /clientes/:id/activate -', id);
         try {
             return await this.clientesService.activate(parseInt(id));
         }
@@ -83,16 +83,16 @@ let ClientesController = class ClientesController {
             throw new common_1.HttpException('Error al activar cliente', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
-    async remove(id) {
-        console.log('🗑️ [ClientesController] DELETE /jefe/clientes/:id -', id);
+    async deactivate(id) {
+        console.log('🔄 [ClientesController] PATCH /clientes/:id/deactivate -', id);
         try {
-            return await this.clientesService.remove(parseInt(id));
+            return await this.clientesService.deactivate(parseInt(id));
         }
         catch (error) {
             if (error instanceof common_1.HttpException)
                 throw error;
-            console.error('❌ [ClientesController] Error en remove:', error);
-            throw new common_1.HttpException('Error al eliminar cliente', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
+            console.error('❌ [ClientesController] Error en deactivate:', error);
+            throw new common_1.HttpException('Error al desactivar cliente', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 };
@@ -134,14 +134,14 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], ClientesController.prototype, "activate", null);
 __decorate([
-    (0, common_1.Delete)(':id'),
+    (0, common_1.Patch)(':id/deactivate'),
     __param(0, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
-], ClientesController.prototype, "remove", null);
+], ClientesController.prototype, "deactivate", null);
 exports.ClientesController = ClientesController = __decorate([
-    (0, common_1.Controller)('/clientes'),
+    (0, common_1.Controller)('clientes'),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     __metadata("design:paramtypes", [clientes_service_1.ClientesService])
 ], ClientesController);

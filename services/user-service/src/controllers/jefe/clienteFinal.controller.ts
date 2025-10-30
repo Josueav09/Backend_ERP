@@ -1,12 +1,12 @@
-import { 
-  Controller, 
-  Get, 
-  Post, 
-  Put, 
-  Delete, 
-  Param, 
-  Body, 
-  HttpException, 
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Param,
+  Body,
+  HttpException,
   HttpStatus,
   UseGuards,
   Patch,
@@ -15,17 +15,17 @@ import {
 import { ClientesService } from '../../services/jefe/clientes.service';
 import { JwtAuthGuard } from '../../../../../shared/guards/jwt-auth.guard';
 
-@Controller('/clientes')  // ✅ CAMBIADO: Agregar 'jefe/'
+@Controller('clientes')  // ✅ CAMBIADO: Agregar 'jefe/'
 @UseGuards(JwtAuthGuard)
 export class ClientesController {
-  constructor(private readonly clientesService: ClientesService) {}
+  constructor(private readonly clientesService: ClientesService) { }
 
   @Get()
   async findAll(@Request() req) {
     console.log('🚀 [ClientesController] === FINDALL INICIADO ===');
     console.log('📍 Ruta: /jefe/clientes');
     console.log('👤 Usuario:', req.user);
-    
+
     try {
       console.log('🔄 Llamando a clientesService.findAll()...');
       const clientes = await this.clientesService.findAll();
@@ -85,9 +85,12 @@ export class ClientesController {
     }
   }
 
-  @Patch(':id/activate')
+  /**
+   * ✅ ACTIVAR CLIENTE
+   */
+  @Patch(':id/activate') // ✅ Ruta: PATCH /clientes/:id/activate
   async activate(@Param('id') id: string) {
-    console.log('🔄 [ClientesController] PATCH /jefe/clientes/:id/activate -', id);
+    console.log('🔄 [ClientesController] PATCH /clientes/:id/activate -', id);
     try {
       return await this.clientesService.activate(parseInt(id));
     } catch (error) {
@@ -100,20 +103,22 @@ export class ClientesController {
     }
   }
 
-  @Delete(':id')
-  async remove(@Param('id') id: string) {
-    console.log('🗑️ [ClientesController] DELETE /jefe/clientes/:id -', id);
+  /**
+   * ✅ DESACTIVAR CLIENTE
+   */
+  @Patch(':id/deactivate') // ✅ Ruta: PATCH /clientes/:id/deactivate
+  async deactivate(@Param('id') id: string) {
+    console.log('🔄 [ClientesController] PATCH /clientes/:id/deactivate -', id);
     try {
-      return await this.clientesService.remove(parseInt(id));
+      return await this.clientesService.deactivate(parseInt(id));
     } catch (error) {
       if (error instanceof HttpException) throw error;
-      console.error('❌ [ClientesController] Error en remove:', error);
+      console.error('❌ [ClientesController] Error en deactivate:', error);
       throw new HttpException(
-        'Error al eliminar cliente',
+        'Error al desactivar cliente',
         HttpStatus.INTERNAL_SERVER_ERROR
       );
     }
   }
-  
 
 }

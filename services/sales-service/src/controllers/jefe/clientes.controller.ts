@@ -36,7 +36,7 @@ export class ClientesController {
         throw new HttpException('Razón social es requerida', HttpStatus.BAD_REQUEST);
       }
 
-      return await this.clientesService.createCliente(body);
+      return await this.clientesService.create(body);
     } catch (error) {
       if (error instanceof HttpException) throw error;
       throw new HttpException('Error al crear cliente', HttpStatus.INTERNAL_SERVER_ERROR);
@@ -57,14 +57,4 @@ export class ClientesController {
     }
   }
 
-  @Delete(':id')
-  async deleteCliente(@Param('id') id: string) {
-    try {
-      const result = await this.clientesService.deleteCliente(parseInt(id));
-      return result;
-    } catch (error) {
-      if (error instanceof HttpException) throw error;
-      throw new HttpException('Error al eliminar cliente', HttpStatus.INTERNAL_SERVER_ERROR);
-    }
-  }
 }

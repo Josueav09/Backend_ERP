@@ -16,6 +16,8 @@ export declare class AuthService {
     private tempEmailCodes;
     private userAttempts;
     private ipAttempts;
+    private tokenBlacklist;
+    private readonly TOKEN_BLACKLIST_EXPIRY;
     private readonly MAX_USER_ATTEMPTS;
     private readonly MAX_IP_ATTEMPTS;
     private readonly BLOCK_DURATION;
@@ -39,6 +41,12 @@ export declare class AuthService {
         userType: string;
         accessToken: string;
     }>;
+    logout(token: string): Promise<{
+        success: boolean;
+        message: string;
+    }>;
+    isTokenBlacklisted(token: string): boolean;
+    cleanExpiredBlacklist(): void;
     private getUserId;
     private validateCaptcha;
     private checkBlockedAttempts;

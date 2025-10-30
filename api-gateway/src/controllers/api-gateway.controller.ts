@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpException, HttpStatus, Post, Put, Delete, Param, Query, Req, Patch, UseInterceptors, UploadedFile, Res } from '@nestjs/common';
+import { Body, Controller, Get, HttpException, HttpStatus, Post, Put, Delete, Param, Query, Req, Patch, UseInterceptors, UploadedFile, Res, Headers } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
 import { Request, Response } from 'express';
@@ -11,6 +11,9 @@ export class ApiGatewayController {
 
   // 🔐 FUNCIÓN AUXILIAR PARA PROPAGAR HEADERS
   private getHeadersWithAuth(req?: Request) {
+        console.log('🛣️ [ApiGateway] Rutas configuradas:');
+    console.log('🛣️ [ApiGateway] PATCH /jefe/clientes/:id/activate');
+    console.log('🛣️ [ApiGateway] PATCH /jefe/clientes/:id/deactivate');
     const headers: any = {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
@@ -80,6 +83,35 @@ export class ApiGatewayController {
         error.response?.data?.message || 'Error en verificación',
         error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR
       );
+    }
+  }
+
+  @Post('auth/logout')
+  async logout(@Body() body: any, @Req() req: Request, @Headers() headers: any) {
+    try {
+      console.log('🔐 Procesando logout en API Gateway');
+
+      // Pasar el header de autorización al servicio de auth
+      const authHeaders = {
+        ...this.getHeadersWithAuth(req),
+        'Content-Type': 'application/json'
+      };
+
+      const response = await firstValueFrom(
+        this.httpService.post('http://localhost:3001/auth/logout', body, {
+          headers: authHeaders
+        })
+      );
+
+      return response.data;
+    } catch (error) {
+      console.error('❌ Error en logout (gateway):', error);
+
+      // ✅ IMPORTANTE: Siempre retornar éxito para permitir limpieza del frontend
+      return {
+        success: true,
+        message: 'Sesión cerrada exitosamente'
+      };
     }
   }
 
@@ -237,23 +269,7 @@ export class ApiGatewayController {
       );
     }
   }
-  // // En API Gateway - CORREGIR ESTA RUTA
-  // @Get('jefe/ejecutivas/disponibles')
-  // async getJefeEjecutivasDisponibles(@Req() req: Request) {
-  //   try {
-  //     const headers = this.getHeadersWithAuth(req);
-  //     const response = await firstValueFrom(
-  //       this.httpService.get('http://localhost:3002/ejecutivas/disponibles/todas', { headers }) // ✅ Ruta corregida
-  //     );
-  //     return response.data;
-  //   } catch (error) {
-  //     throw new HttpException(
-  //       error.response?.data?.message || 'Error al obtener ejecutivas disponibles',
-  //       error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR
-  //     );
-  //   }
-  // }
-  // En API Gateway - VERIFICAR ENDPOINT
+
   @Get('jefe/ejecutivas/disponibles')
   async getJefeEjecutivasDisponibles(@Req() req: Request) {
     try {
@@ -590,21 +606,112 @@ export class ApiGatewayController {
     }
   }
 
-  @Delete('jefe/clientes/:id')
-  async deleteJefeCliente(@Param('id') id: string, @Req() req: Request) {
+  // @Delete('jefe/clientes/:id')
+  // async deleteJefeCliente(@Param('id') id: string, @Req() req: Request) {
+  //   try {
+  //     const headers = this.getHeadersWithAuth(req);
+  //     const response = await firstValueFrom(
+  //       this.httpService.delete(`http://localhost:3003/clientes/${id}`, { headers })
+  //     );
+  //     return response.data;
+  //   } catch (error) {
+  //     throw new HttpException(
+  //       error.response?.data?.message || 'Error al eliminar cliente',
+  //       error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR
+  //     );
+  //   }
+  // }
+
+  //   // En tu API Gateway Controller
+  // @Delete('jefe/clientes/:id')
+  // async deleteJefeCliente(@Param('id') id: string, @Req() req: Request) {
+  //   try {
+  //     console.log(`🗑️ [ApiGateway] DELETE /jefe/clientes/${id}`);
+
+  //     const headers = this.getHeadersWithAuth(req);
+  //     const response = await firstValueFrom(
+  //       this.httpService.delete(`http://localhost:3003/clientes/${id}`, { headers })
+  //     );
+
+  //     console.log(`✅ [ApiGateway] Cliente ${id} desactivado exitosamente`);
+  //     return response.data;
+
+  //   } catch (error) {
+  //     console.error(`❌ [ApiGateway] Error al desactivar cliente ${id}:`, error);
+
+  //     if (error.response) {
+  //       console.error('📋 Response error data:', error.response.data);
+  //       console.error('📋 Response error status:', error.response.status);
+  //     }
+
+  //     throw new HttpException(
+  //       error.response?.data?.message || 'Error al desactivar cliente',
+  //       error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR
+  //     );
+  //   }
+  // }
+
+  // En tu API Gateway Controller - agrega este método
+
+  /**
+   * ✅ ACTIVAR CLIENTE - Endpoint PATCH
+   */
+  @Patch('jefe/clientes/:id/activate')
+  async activateJefeCliente(@Param('id') id: string, @Req() req: Request) {
     try {
+      console.log(`🔄 [ApiGateway] Activando cliente ID: ${id}`);
+
       const headers = this.getHeadersWithAuth(req);
       const response = await firstValueFrom(
-        this.httpService.delete(`http://localhost:3003/clientes/${id}`, { headers })
+        this.httpService.patch(
+          `http://localhost:3002/clientes/${id}/activate`,
+          {}, // body vacío
+          { headers }
+        )
       );
+
+      console.log(`✅ [ApiGateway] Cliente ${id} activado exitosamente`);
       return response.data;
+
     } catch (error) {
+      console.error(`❌ [ApiGateway] Error al activar cliente ${id}:`, error);
       throw new HttpException(
-        error.response?.data?.message || 'Error al eliminar cliente',
+        error.response?.data?.message || 'Error al activar cliente',
         error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR
       );
     }
   }
+
+  /**
+   * ✅ DESACTIVAR CLIENTE - Endpoint PATCH
+   */
+  @Patch('jefe/clientes/:id/deactivate')
+  async deactivateJefeCliente(@Param('id') id: string, @Req() req: Request) {
+    try {
+      console.log(`🗑️ [ApiGateway] Desactivando cliente ID: ${id}`);
+
+      const headers = this.getHeadersWithAuth(req);
+      const response = await firstValueFrom(
+        this.httpService.patch(
+          `http://localhost:3002/clientes/${id}/deactivate`,
+          {}, // body vacío
+          { headers }
+        )
+      );
+
+      console.log(`✅ [ApiGateway] Cliente ${id} desactivado exitosamente`);
+      return response.data;
+
+    } catch (error) {
+      console.error(`❌ [ApiGateway] Error al desactivar cliente ${id}:`, error);
+      throw new HttpException(
+        error.response?.data?.message || 'Error al desactivar cliente',
+        error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
+
+
 
   @Get('jefe/trazabilidad')
   async getJefeTrazabilidad(
@@ -1714,123 +1821,123 @@ export class ApiGatewayController {
     }
   }
 
-// EMPRESAS - EQUIPO DE EJECUTIVAS
-// EMPRESAS - EQUIPO DE EJECUTIVAS
+  // EMPRESAS - EQUIPO DE EJECUTIVAS
+  // EMPRESAS - EQUIPO DE EJECUTIVAS
 
-@Get('empresa/ejecutivas')
-async getEmpresaEjecutivas(@Query('empresaId') empresaId: string, @Req() req) {
-  try {
-    console.log('👥 [API Gateway] === EMPRESA EJECUTIVAS ===');
-    console.log('👥 [API Gateway] Query empresaId:', empresaId);
+  @Get('empresa/ejecutivas')
+  async getEmpresaEjecutivas(@Query('empresaId') empresaId: string, @Req() req) {
+    try {
+      console.log('👥 [API Gateway] === EMPRESA EJECUTIVAS ===');
+      console.log('👥 [API Gateway] Query empresaId:', empresaId);
 
-    const headers = this.getHeadersWithAuth(req);
+      const headers = this.getHeadersWithAuth(req);
 
-    const response = await firstValueFrom(
-      this.httpService.get(`http://localhost:3002/empresa/ejecutivas?empresaId=${empresaId}`, { headers })
-    );
+      const response = await firstValueFrom(
+        this.httpService.get(`http://localhost:3002/empresa/ejecutivas?empresaId=${empresaId}`, { headers })
+      );
 
-    console.log('✅ [API Gateway] Ejecutivas de empresa obtenidas exitosamente');
-    return response.data;
-  } catch (error) {
-    console.error('❌ [API Gateway] Error en empresa/ejecutivas:', error.response?.data);
-    throw new HttpException(
-      error.response?.data?.message || 'Error al obtener ejecutivas',
-      error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR
-    );
+      console.log('✅ [API Gateway] Ejecutivas de empresa obtenidas exitosamente');
+      return response.data;
+    } catch (error) {
+      console.error('❌ [API Gateway] Error en empresa/ejecutivas:', error.response?.data);
+      throw new HttpException(
+        error.response?.data?.message || 'Error al obtener ejecutivas',
+        error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
   }
-}
 
-@Get('empresa/equipo/stats')
-async getEmpresaEquipoStats(@Query('empresaId') empresaId: string, @Req() req) {
-  try {
-    console.log('📊 [API Gateway] === EMPRESA EQUIPO STATS ===');
-    console.log('📊 [API Gateway] Query empresaId:', empresaId);
+  @Get('empresa/equipo/stats')
+  async getEmpresaEquipoStats(@Query('empresaId') empresaId: string, @Req() req) {
+    try {
+      console.log('📊 [API Gateway] === EMPRESA EQUIPO STATS ===');
+      console.log('📊 [API Gateway] Query empresaId:', empresaId);
 
-    const headers = this.getHeadersWithAuth(req);
+      const headers = this.getHeadersWithAuth(req);
 
-    const response = await firstValueFrom(
-      this.httpService.get(`http://localhost:3002/empresa/equipo/stats?empresaId=${empresaId}`, { headers })
-    );
+      const response = await firstValueFrom(
+        this.httpService.get(`http://localhost:3002/empresa/equipo/stats?empresaId=${empresaId}`, { headers })
+      );
 
-    console.log('✅ [API Gateway] Stats de equipo obtenidas exitosamente');
-    return response.data;
-  } catch (error) {
-    console.error('❌ [API Gateway] Error en empresa/equipo/stats:', error.response?.data);
-    throw new HttpException(
-      error.response?.data?.message || 'Error al obtener estadísticas del equipo',
-      error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR
-    );
+      console.log('✅ [API Gateway] Stats de equipo obtenidas exitosamente');
+      return response.data;
+    } catch (error) {
+      console.error('❌ [API Gateway] Error en empresa/equipo/stats:', error.response?.data);
+      throw new HttpException(
+        error.response?.data?.message || 'Error al obtener estadísticas del equipo',
+        error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
   }
-}
 
-@Get('empresa/ejecutiva/:id/embudo')
-async getEjecutivaEmbudo(@Param('id') ejecutivaId: string, @Query('empresaId') empresaId: string, @Req() req) {
-  try {
-    console.log('🎯 [API Gateway] === EJECUTIVA EMBUDO ===');
-    console.log('🎯 [API Gateway] Ejecutiva ID:', ejecutivaId, 'Empresa ID:', empresaId);
+  @Get('empresa/ejecutiva/:id/embudo')
+  async getEjecutivaEmbudo(@Param('id') ejecutivaId: string, @Query('empresaId') empresaId: string, @Req() req) {
+    try {
+      console.log('🎯 [API Gateway] === EJECUTIVA EMBUDO ===');
+      console.log('🎯 [API Gateway] Ejecutiva ID:', ejecutivaId, 'Empresa ID:', empresaId);
 
-    const headers = this.getHeadersWithAuth(req);
+      const headers = this.getHeadersWithAuth(req);
 
-    const response = await firstValueFrom(
-      this.httpService.get(`http://localhost:3002/empresa/ejecutiva/${ejecutivaId}/embudo?empresaId=${empresaId}`, { headers })
-    );
+      const response = await firstValueFrom(
+        this.httpService.get(`http://localhost:3002/empresa/ejecutiva/${ejecutivaId}/embudo?empresaId=${empresaId}`, { headers })
+      );
 
-    console.log('✅ [API Gateway] Embudo de ejecutiva obtenido exitosamente');
-    return response.data;
-  } catch (error) {
-    console.error('❌ [API Gateway] Error en empresa/ejecutiva/:id/embudo:', error.response?.data);
-    throw new HttpException(
-      error.response?.data?.message || 'Error al obtener embudo de ejecutiva',
-      error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR
-    );
+      console.log('✅ [API Gateway] Embudo de ejecutiva obtenido exitosamente');
+      return response.data;
+    } catch (error) {
+      console.error('❌ [API Gateway] Error en empresa/ejecutiva/:id/embudo:', error.response?.data);
+      throw new HttpException(
+        error.response?.data?.message || 'Error al obtener embudo de ejecutiva',
+        error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
   }
-}
 
-@Get('empresa/ejecutiva/:id/estadisticas')
-async getEjecutivaEstadisticas(@Param('id') ejecutivaId: string, @Query('empresaId') empresaId: string, @Req() req) {
-  try {
-    console.log('📈 [API Gateway] === EJECUTIVA ESTADÍSTICAS ===');
-    console.log('📈 [API Gateway] Ejecutiva ID:', ejecutivaId, 'Empresa ID:', empresaId);
+  @Get('empresa/ejecutiva/:id/estadisticas')
+  async getEjecutivaEstadisticas(@Param('id') ejecutivaId: string, @Query('empresaId') empresaId: string, @Req() req) {
+    try {
+      console.log('📈 [API Gateway] === EJECUTIVA ESTADÍSTICAS ===');
+      console.log('📈 [API Gateway] Ejecutiva ID:', ejecutivaId, 'Empresa ID:', empresaId);
 
-    const headers = this.getHeadersWithAuth(req);
+      const headers = this.getHeadersWithAuth(req);
 
-    const response = await firstValueFrom(
-      this.httpService.get(`http://localhost:3002/empresa/ejecutiva/${ejecutivaId}/estadisticas?empresaId=${empresaId}`, { headers })
-    );
+      const response = await firstValueFrom(
+        this.httpService.get(`http://localhost:3002/empresa/ejecutiva/${ejecutivaId}/estadisticas?empresaId=${empresaId}`, { headers })
+      );
 
-    console.log('✅ [API Gateway] Estadísticas de ejecutiva obtenidas exitosamente');
-    return response.data;
-  } catch (error) {
-    console.error('❌ [API Gateway] Error en empresa/ejecutiva/:id/estadisticas:', error.response?.data);
-    throw new HttpException(
-      error.response?.data?.message || 'Error al obtener estadísticas de ejecutiva',
-      error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR
-    );
+      console.log('✅ [API Gateway] Estadísticas de ejecutiva obtenidas exitosamente');
+      return response.data;
+    } catch (error) {
+      console.error('❌ [API Gateway] Error en empresa/ejecutiva/:id/estadisticas:', error.response?.data);
+      throw new HttpException(
+        error.response?.data?.message || 'Error al obtener estadísticas de ejecutiva',
+        error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
   }
-}
 
-@Get('empresa/ejecutiva/:id/clientes')
-async getEmpresaEjecutivaClientes(@Param('id') ejecutivaId: string, @Query('empresaId') empresaId: string, @Req() req) {
-  try {
-    console.log('👥 [API Gateway] === EJECUTIVA CLIENTES ===');
-    console.log('👥 [API Gateway] Ejecutiva ID:', ejecutivaId, 'Empresa ID:', empresaId);
+  @Get('empresa/ejecutiva/:id/clientes')
+  async getEmpresaEjecutivaClientes(@Param('id') ejecutivaId: string, @Query('empresaId') empresaId: string, @Req() req) {
+    try {
+      console.log('👥 [API Gateway] === EJECUTIVA CLIENTES ===');
+      console.log('👥 [API Gateway] Ejecutiva ID:', ejecutivaId, 'Empresa ID:', empresaId);
 
-    const headers = this.getHeadersWithAuth(req);
+      const headers = this.getHeadersWithAuth(req);
 
-    const response = await firstValueFrom(
-      this.httpService.get(`http://localhost:3002/empresa/ejecutiva/${ejecutivaId}/clientes?empresaId=${empresaId}`, { headers })
-    );
+      const response = await firstValueFrom(
+        this.httpService.get(`http://localhost:3002/empresa/ejecutiva/${ejecutivaId}/clientes?empresaId=${empresaId}`, { headers })
+      );
 
-    console.log('✅ [API Gateway] Clientes de ejecutiva obtenidos exitosamente');
-    return response.data;
-  } catch (error) {
-    console.error('❌ [API Gateway] Error en empresa/ejecutiva/:id/clientes:', error.response?.data);
-    throw new HttpException(
-      error.response?.data?.message || 'Error al obtener clientes de ejecutiva',
-      error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR
-    );
+      console.log('✅ [API Gateway] Clientes de ejecutiva obtenidos exitosamente');
+      return response.data;
+    } catch (error) {
+      console.error('❌ [API Gateway] Error en empresa/ejecutiva/:id/clientes:', error.response?.data);
+      throw new HttpException(
+        error.response?.data?.message || 'Error al obtener clientes de ejecutiva',
+        error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
   }
-}
 
 
   // 👩‍💼 =====================================================

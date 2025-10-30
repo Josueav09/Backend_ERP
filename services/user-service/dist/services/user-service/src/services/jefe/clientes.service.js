@@ -88,37 +88,6 @@ let ClientesService = class ClientesService {
             throw new common_1.HttpException('Error al obtener el cliente', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
-    async activate(id) {
-        try {
-            console.log(`🔄 [ClientesService] Activando cliente ID: ${id}`);
-            const cliente = await this.clienteRepository.findOne({
-                where: { id_cliente_final: id }
-            });
-            if (!cliente) {
-                throw new common_1.NotFoundException(`Cliente con ID ${id} no encontrado`);
-            }
-            await this.clienteRepository.update(id, {
-                estado: 'Activo',
-                fecha_actualizacion: new Date()
-            });
-            console.log(`✅ [ClientesService] Cliente activado: ${cliente.razon_social}`);
-            return {
-                message: 'Cliente activado exitosamente',
-                cliente: {
-                    id_cliente_final: id,
-                    razon_social: cliente.razon_social,
-                    estado: 'Activo'
-                }
-            };
-        }
-        catch (error) {
-            if (error instanceof common_1.NotFoundException) {
-                throw error;
-            }
-            console.error('❌ [ClientesService] Error al activar cliente:', error);
-            throw new common_1.HttpException('Error al activar el cliente', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
     async create(data) {
         try {
             console.log('➕ [ClientesService] Creando nuevo cliente:', data.razon_social);
@@ -196,27 +165,13 @@ let ClientesService = class ClientesService {
             console.log(`📝 [ClientesService] Actualizando cliente ID: ${id}`);
             const cliente = await this.clienteRepository.findOne({
                 where: { id_cliente_final: id },
-                relations: ['ejecutiva']
+                relations: ['ejecutiva', 'empresa_proveedora']
             });
             if (!cliente) {
                 throw new common_1.NotFoundException(`Cliente con ID ${id} no encontrado`);
             }
-            if (data.id_ejecutiva && data.id_ejecutiva !== cliente.ejecutiva?.id_ejecutiva) {
-                const ejecutiva = await this.ejecutivaRepository.findOne({
-                    where: { id_ejecutiva: data.id_ejecutiva }
-                });
-                if (!ejecutiva) {
-                    throw new common_1.HttpException('La ejecutiva seleccionada no existe', common_1.HttpStatus.BAD_REQUEST);
-                }
-                cliente.ejecutiva = ejecutiva;
-            }
-            if (data.ruc && data.ruc !== cliente.ruc) {
-                const existeRuc = await this.clienteRepository.findOne({
-                    where: { ruc: data.ruc }
-                });
-                if (existeRuc && existeRuc.id_cliente_final !== id) {
-                    throw new common_1.HttpException('Ya existe un cliente con ese RUC', common_1.HttpStatus.CONFLICT);
-                }
+            if (data.estado && !['Activo', 'Inactivo'].includes(data.estado)) {
+                throw new common_1.HttpException('Estado inválido. Use: Activo o Inactivo', common_1.HttpStatus.BAD_REQUEST);
             }
             if (data.ruc !== undefined)
                 cliente.ruc = data.ruc;
@@ -261,7 +216,8 @@ let ClientesService = class ClientesService {
             return {
                 ...clienteActualizado,
                 ejecutiva_nombre: clienteActualizado.ejecutiva?.nombre_completo,
-                estado: 'Activo'
+                empresa_nombre: clienteActualizado.empresa_proveedora?.razon_social,
+                estado: clienteActualizado.estado
             };
         }
         catch (error) {
@@ -272,14 +228,52 @@ let ClientesService = class ClientesService {
             throw new common_1.HttpException('Error al actualizar el cliente', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
-    async remove(id) {
+    async activate(id) {
         try {
-            console.log(`🗑️ [ClientesService] Desactivando cliente ID: ${id}`);
+            console.log(`🔄 [ClientesService] Activando cliente ID: ${id}`);
             const cliente = await this.clienteRepository.findOne({
                 where: { id_cliente_final: id }
             });
             if (!cliente) {
                 throw new common_1.NotFoundException(`Cliente con ID ${id} no encontrado`);
+            }
+            if (cliente.estado === 'Activo') {
+                throw new common_1.HttpException('El cliente ya se encuentra activo', common_1.HttpStatus.BAD_REQUEST);
+            }
+            await this.clienteRepository.update(id, {
+                estado: 'Activo',
+                fecha_actualizacion: new Date()
+            });
+            console.log(`✅ [ClientesService] Cliente activado: ${cliente.razon_social}`);
+            return {
+                success: true,
+                message: 'Cliente activado exitosamente',
+                cliente: {
+                    id_cliente_final: id,
+                    razon_social: cliente.razon_social,
+                    estado: 'Activo'
+                }
+            };
+        }
+        catch (error) {
+            console.error('❌ [ClientesService] Error al activar cliente:', error);
+            if (error instanceof common_1.NotFoundException || error instanceof common_1.HttpException) {
+                throw error;
+            }
+            throw new common_1.HttpException('Error al activar el cliente', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+    async deactivate(id) {
+        try {
+            console.log(`🔄 [ClientesService] Desactivando cliente ID: ${id}`);
+            const cliente = await this.clienteRepository.findOne({
+                where: { id_cliente_final: id }
+            });
+            if (!cliente) {
+                throw new common_1.NotFoundException(`Cliente con ID ${id} no encontrado`);
+            }
+            if (cliente.estado === 'Inactivo') {
+                throw new common_1.HttpException('El cliente ya se encuentra inactivo', common_1.HttpStatus.BAD_REQUEST);
             }
             await this.clienteRepository.update(id, {
                 estado: 'Inactivo',
@@ -287,6 +281,7 @@ let ClientesService = class ClientesService {
             });
             console.log(`✅ [ClientesService] Cliente desactivado: ${cliente.razon_social}`);
             return {
+                success: true,
                 message: 'Cliente desactivado exitosamente',
                 cliente: {
                     id_cliente_final: id,
@@ -296,7 +291,7 @@ let ClientesService = class ClientesService {
             };
         }
         catch (error) {
-            if (error instanceof common_1.NotFoundException) {
+            if (error instanceof common_1.NotFoundException || error instanceof common_1.HttpException) {
                 throw error;
             }
             console.error('❌ [ClientesService] Error al desactivar cliente:', error);

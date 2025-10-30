@@ -51,6 +51,30 @@ let AuthController = class AuthController {
             throw new common_1.HttpException(error.message || 'Error al verificar código', common_1.HttpStatus.BAD_REQUEST);
         }
     }
+    async logout(authHeader, req) {
+        try {
+            let token = '';
+            if (authHeader && authHeader.startsWith('Bearer ')) {
+                token = authHeader.substring(7);
+            }
+            else {
+                const bodyToken = req.body?.token;
+                if (bodyToken) {
+                    token = bodyToken;
+                }
+            }
+            console.log(`🔐 Procesando logout para token: ${token ? 'presente' : 'no presente'}`);
+            const result = await this.authService.logout(token);
+            return result;
+        }
+        catch (error) {
+            console.error('❌ Error en controlador de logout:', error);
+            return {
+                success: true,
+                message: 'Sesión cerrada'
+            };
+        }
+    }
 };
 exports.AuthController = AuthController;
 __decorate([
@@ -77,6 +101,15 @@ __decorate([
     __metadata("design:paramtypes", [verify_email_dto_1.VerifyEmailDto]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "verifyEmail", null);
+__decorate([
+    (0, common_1.Post)('logout'),
+    (0, common_1.HttpCode)(common_1.HttpStatus.OK),
+    __param(0, (0, common_1.Headers)('authorization')),
+    __param(1, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Request]),
+    __metadata("design:returntype", Promise)
+], AuthController.prototype, "logout", null);
 exports.AuthController = AuthController = __decorate([
     (0, common_1.Controller)('auth'),
     __metadata("design:paramtypes", [auth_service_1.AuthService])

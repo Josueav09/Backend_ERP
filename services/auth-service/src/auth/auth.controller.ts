@@ -42,14 +42,14 @@
 // }
 
 // backend/services/auth-service/src/auth/auth.controller.ts
-import { Controller, Post, Body, Ip, HttpCode, HttpStatus, Get, HttpException } from '@nestjs/common';
+import { Controller, Post, Body, Ip, HttpCode, HttpStatus, Get, HttpException, Headers, Req } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(private readonly authService: AuthService) { }
 
   @Get('captcha')
   @HttpCode(HttpStatus.OK)
@@ -96,4 +96,43 @@ export class AuthController {
       );
     }
   }
+
+  @Post('logout')
+  @HttpCode(HttpStatus.OK)
+  async logout(
+    @Headers('authorization') authHeader: string,
+    @Req() req: Request
+  ) {
+    try {
+      // 1️⃣ Extraer token del header Authorization
+      let token = '';
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        token = authHeader.substring(7);
+      } else {
+        // También intentar obtener del body como fallback
+        const bodyToken = (req.body as any)?.token;
+        if (bodyToken) {
+          token = bodyToken;
+        }
+      }
+
+      console.log(`🔐 Procesando logout para token: ${token ? 'presente' : 'no presente'}`);
+
+      // 2️⃣ Ejecutar logout
+      const result = await this.authService.logout(token);
+
+      return result;
+
+    } catch (error) {
+      console.error('❌ Error en controlador de logout:', error);
+
+      // ✅ Incluso si hay error, retornar éxito para limpieza del frontend
+      return {
+        success: true,
+        message: 'Sesión cerrada'
+      };
+    }
+  }
+
+
 }

@@ -7,6 +7,7 @@ export declare class ApiGatewayController {
     getCaptcha(req: Request): Promise<any>;
     login(body: any, req: Request): Promise<any>;
     verifyEmail(body: any, req: Request): Promise<any>;
+    logout(body: any, req: Request, headers: any): Promise<any>;
     getJefePerfil(req: Request): Promise<any>;
     updateJefePerfil(body: any, req: Request): Promise<any>;
     updateJefePassword(body: any, req: Request): Promise<any>;
@@ -33,7 +34,8 @@ export declare class ApiGatewayController {
     getJefeCliente(id: string, req: Request): Promise<any>;
     createJefeCliente(body: any, req: Request): Promise<any>;
     updateJefeCliente(id: string, body: any, req: Request): Promise<any>;
-    deleteJefeCliente(id: string, req: Request): Promise<any>;
+    activateJefeCliente(id: string, req: Request): Promise<any>;
+    deactivateJefeCliente(id: string, req: Request): Promise<any>;
     getJefeTrazabilidad(empresaId?: string, ejecutivaId?: string, clienteId?: string, fechaInicio?: string, fechaFin?: string, tipoContacto?: string, etapaOportunidad?: string, etapa?: string, req?: Request): Promise<any>;
     getJefeTrazabilidadDashboard(req: Request): Promise<any>;
     getJefeEstadisticasEtapas(empresaId?: string, fechaInicio?: string, fechaFin?: string, req?: Request): Promise<any>;

@@ -71,14 +71,6 @@ export declare class ClientesService {
         fecha_creacion: Date;
         fecha_actualizacion: Date;
     }>;
-    activate(id: number): Promise<{
-        message: string;
-        cliente: {
-            id_cliente_final: number;
-            razon_social: string;
-            estado: string;
-        };
-    }>;
     create(data: any): Promise<{
         ejecutiva_nombre: string;
         empresa_nombre: string;
@@ -113,6 +105,7 @@ export declare class ClientesService {
     }>;
     update(id: number, data: any): Promise<{
         ejecutiva_nombre: string;
+        empresa_nombre: string;
         estado: string;
         id_cliente_final: number;
         ruc: string;
@@ -141,7 +134,17 @@ export declare class ClientesService {
         fecha_creacion: Date;
         fecha_actualizacion: Date;
     }>;
-    remove(id: number): Promise<{
+    activate(id: number): Promise<{
+        success: boolean;
+        message: string;
+        cliente: {
+            id_cliente_final: number;
+            razon_social: string;
+            estado: string;
+        };
+    }>;
+    deactivate(id: number): Promise<{
+        success: boolean;
         message: string;
         cliente: {
             id_cliente_final: number;

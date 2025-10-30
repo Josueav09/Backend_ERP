@@ -40,9 +40,37 @@ export declare class ClientesController {
         total_actividades: number;
         personas_contacto: import("shared/entities/PersonaContacto.entity").PersonaContacto[];
     }>;
-    createCliente(body: any): Promise<import("shared/entities/ClienteFinal.entity").ClienteFinal>;
-    updateCliente(id: string, body: any): Promise<import("shared/entities/ClienteFinal.entity").ClienteFinal>;
-    deleteCliente(id: string): Promise<{
-        message: string;
+    createCliente(body: any): Promise<{
+        ejecutiva_nombre: string;
+        empresa_nombre: string;
+        total_actividades: number;
+        estado: string;
+        id_cliente_final: number;
+        ruc: string;
+        razon_social: string;
+        pagina_web: string;
+        correo: string;
+        telefono: string;
+        pais: string;
+        departamento: string;
+        provincia: string;
+        direccion: string;
+        linkedin: string;
+        grupo_economico: string;
+        rubro: string;
+        sub_rubro: string;
+        tamanio_empresa: string;
+        facturacion_anual: number;
+        cantidad_empleados: number;
+        logo: string;
+        id_empresa_prov: number;
+        empresa_proveedora: import("shared/entities/EmpresaProveedora.entity").EmpresaProveedora;
+        id_ejecutiva: number;
+        ejecutiva: import("shared/entities/Ejecutiva.entity").Ejecutiva;
+        personas_contacto: import("shared/entities/PersonaContacto.entity").PersonaContacto[];
+        trazabilidades: import("shared/entities/Trazabilidad.entity").Trazabilidad[];
+        fecha_creacion: Date;
+        fecha_actualizacion: Date;
     }>;
+    updateCliente(id: string, body: any): Promise<import("shared/entities/ClienteFinal.entity").ClienteFinal>;
 }

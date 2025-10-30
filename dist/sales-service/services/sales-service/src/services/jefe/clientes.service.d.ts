@@ -49,9 +49,37 @@ export declare class ClientesService {
         total_actividades: number;
         personas_contacto: PersonaContacto[];
     }>;
-    createCliente(data: any): Promise<ClienteFinal>;
-    updateCliente(id: number, data: any): Promise<ClienteFinal>;
-    deleteCliente(id: number): Promise<{
-        message: string;
+    create(data: any): Promise<{
+        ejecutiva_nombre: string;
+        empresa_nombre: string;
+        total_actividades: number;
+        estado: string;
+        id_cliente_final: number;
+        ruc: string;
+        razon_social: string;
+        pagina_web: string;
+        correo: string;
+        telefono: string;
+        pais: string;
+        departamento: string;
+        provincia: string;
+        direccion: string;
+        linkedin: string;
+        grupo_economico: string;
+        rubro: string;
+        sub_rubro: string;
+        tamanio_empresa: string;
+        facturacion_anual: number;
+        cantidad_empleados: number;
+        logo: string;
+        id_empresa_prov: number;
+        empresa_proveedora: EmpresaProveedora;
+        id_ejecutiva: number;
+        ejecutiva: Ejecutiva;
+        personas_contacto: PersonaContacto[];
+        trazabilidades: Trazabilidad[];
+        fecha_creacion: Date;
+        fecha_actualizacion: Date;
     }>;
+    updateCliente(id: number, data: any): Promise<ClienteFinal>;
 }

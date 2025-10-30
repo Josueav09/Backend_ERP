@@ -12,19 +12,19 @@ export class ClientesService {
   constructor(
     @InjectRepository(ClienteFinal)
     private clienteRepository: Repository<ClienteFinal>,
-    
+
     @InjectRepository(Ejecutiva)
     private ejecutivaRepository: Repository<Ejecutiva>,
-    
+
     @InjectRepository(EmpresaProveedora)
     private empresaRepository: Repository<EmpresaProveedora>,
-    
+
     @InjectRepository(PersonaContacto)
     private contactoRepository: Repository<PersonaContacto>,
-    
+
     @InjectRepository(Trazabilidad)
     private trazabilidadRepository: Repository<Trazabilidad>,
-  ) {}
+  ) { }
 
   async getClientes() {
     const clientes = await this.clienteRepository.find({
@@ -61,8 +61,8 @@ export class ClientesService {
     const cliente = await this.clienteRepository.findOne({
       where: { id_cliente_final: id },
       relations: [
-        'ejecutiva', 
-        'ejecutiva.empresa_proveedora', 
+        'ejecutiva',
+        'ejecutiva.empresa_proveedora',
         'personas_contacto',
         'trazabilidades',
         'trazabilidades.persona_contacto',
@@ -90,70 +90,178 @@ export class ClientesService {
     };
   }
 
-  async createCliente(data: any) {
-    const { 
-      ruc, 
-      razon_social, 
-      correo, 
-      telefono, 
-      direccion, 
-      id_ejecutiva,
-      persona_contacto 
-    } = data;
+  // async createCliente(data: any) {
+  //   const { 
+  //     ruc, 
+  //     razon_social, 
+  //     correo, 
+  //     telefono, 
+  //     direccion, 
+  //     id_ejecutiva,
+  //     persona_contacto 
+  //   } = data;
 
-    // Verificar RUC único
-    if (ruc) {
-      const existingCliente = await this.clienteRepository.findOne({
-        where: { ruc }
-      });
+  //   // Verificar RUC único
+  //   if (ruc) {
+  //     const existingCliente = await this.clienteRepository.findOne({
+  //       where: { ruc }
+  //     });
 
-      if (existingCliente) {
-        throw new HttpException('Ya existe un cliente con este RUC', HttpStatus.BAD_REQUEST);
+  //     if (existingCliente) {
+  //       throw new HttpException('Ya existe un cliente con este RUC', HttpStatus.BAD_REQUEST);
+  //     }
+  //   }
+
+  //   // Verificar ejecutiva existe
+  //   let ejecutiva = null;
+  //   if (id_ejecutiva) {
+  //     ejecutiva = await this.ejecutivaRepository.findOne({
+  //       where: { id_ejecutiva: id_ejecutiva }
+  //     });
+
+  //     if (!ejecutiva) {
+  //       throw new HttpException('Ejecutiva no encontrada', HttpStatus.BAD_REQUEST);
+  //     }
+  //   }
+
+  //   const nuevoCliente = this.clienteRepository.create({
+  //     ruc: ruc || null,
+  //     razon_social,
+  //     correo: correo || null,
+  //     telefono: telefono || null,
+  //     direccion: direccion || null,
+  //     ejecutiva: ejecutiva,
+  //     pais: 'Perú' // Por defecto
+  //   });
+
+  //   const clienteGuardado = await this.clienteRepository.save(nuevoCliente);
+
+  //   // Crear persona de contacto si se proporciona
+  //   if (persona_contacto && persona_contacto.nombre_completo) {
+  //     const nuevoContacto = this.contactoRepository.create({
+  //       nombre_completo: persona_contacto.nombre_completo,
+  //       cargo: persona_contacto.cargo || null,
+  //       correo: persona_contacto.correo || null,
+  //       telefono: persona_contacto.telefono || null,
+  //       cliente_final: clienteGuardado
+  //     });
+
+  //     await this.contactoRepository.save(nuevoContacto);
+  //   }
+
+  //   return await this.clienteRepository.findOne({
+  //     where: { id_cliente_final: clienteGuardado.id_cliente_final },
+  //     relations: ['ejecutiva', 'personas_contacto']
+  //   });
+  // }
+
+  // En tu ClientesService - método create CORREGIDO
+  async create(data: any) {
+    try {
+      console.log('➕ [ClientesService] Creando nuevo cliente:', data.razon_social);
+
+      // Validaciones básicas
+      if (!data.razon_social) {
+        throw new HttpException('La razón social es obligatoria', HttpStatus.BAD_REQUEST);
       }
-    }
 
-    // Verificar ejecutiva existe
-    let ejecutiva = null;
-    if (id_ejecutiva) {
-      ejecutiva = await this.ejecutivaRepository.findOne({
-        where: { id_ejecutiva: id_ejecutiva }
+      if (!data.id_ejecutiva) {
+        throw new HttpException('Debe asignar una ejecutiva', HttpStatus.BAD_REQUEST);
+      }
+
+      if (!data.id_empresa_prov) {
+        throw new HttpException('Debe asignar una empresa proveedora', HttpStatus.BAD_REQUEST);
+      }
+
+      // ✅ VERIFICAR QUE LA EJECUTIVA PERTENECE A LA EMPRESA
+      const ejecutiva = await this.ejecutivaRepository.findOne({
+        where: {
+          id_ejecutiva: data.id_ejecutiva,
+          empresa_proveedora: { id_empresa_prov: data.id_empresa_prov } // ✅ VERIFICAR RELACIÓN
+        },
+        relations: ['empresa_proveedora']
       });
 
       if (!ejecutiva) {
-        throw new HttpException('Ejecutiva no encontrada', HttpStatus.BAD_REQUEST);
+        throw new HttpException(
+          'La ejecutiva seleccionada no pertenece a la empresa proveedora especificada',
+          HttpStatus.BAD_REQUEST
+        );
       }
-    }
 
-    const nuevoCliente = this.clienteRepository.create({
-      ruc: ruc || null,
-      razon_social,
-      correo: correo || null,
-      telefono: telefono || null,
-      direccion: direccion || null,
-      ejecutiva: ejecutiva,
-      pais: 'Perú' // Por defecto
-    });
-
-    const clienteGuardado = await this.clienteRepository.save(nuevoCliente);
-
-    // Crear persona de contacto si se proporciona
-    if (persona_contacto && persona_contacto.nombre_completo) {
-      const nuevoContacto = this.contactoRepository.create({
-        nombre_completo: persona_contacto.nombre_completo,
-        cargo: persona_contacto.cargo || null,
-        correo: persona_contacto.correo || null,
-        telefono: persona_contacto.telefono || null,
-        cliente_final: clienteGuardado
+      // ✅ VERIFICAR QUE LA EMPRESA EXISTE
+      const empresa = await this.empresaRepository.findOne({
+        where: { id_empresa_prov: data.id_empresa_prov }
       });
 
-      await this.contactoRepository.save(nuevoContacto);
-    }
+      if (!empresa) {
+        throw new HttpException('La empresa proveedora seleccionada no existe', HttpStatus.BAD_REQUEST);
+      }
 
-    return await this.clienteRepository.findOne({
-      where: { id_cliente_final: clienteGuardado.id_cliente_final },
-      relations: ['ejecutiva', 'personas_contacto']
-    });
+      // Verificar RUC duplicado
+      if (data.ruc) {
+        const existeRuc = await this.clienteRepository.findOne({
+          where: {
+            ruc: data.ruc,
+            empresa_proveedora: { id_empresa_prov: data.id_empresa_prov }
+          }
+        });
+
+        if (existeRuc) {
+          throw new HttpException('Ya existe un cliente con ese RUC en esta empresa', HttpStatus.CONFLICT);
+        }
+      }
+
+      // ✅ CREAR CLIENTE CON LA EMPRESA CORRECTA
+      const nuevoCliente = this.clienteRepository.create({
+        ruc: data.ruc || null,
+        razon_social: data.razon_social,
+        pagina_web: data.pagina_web || null,
+        correo: data.correo || null,
+        telefono: data.telefono || null,
+        pais: data.pais || 'Perú',
+        departamento: data.departamento || null,
+        provincia: data.provincia || null,
+        direccion: data.direccion || null,
+        linkedin: data.linkedin || null,
+        grupo_economico: data.grupo_economico || null,
+        rubro: data.rubro || null,
+        sub_rubro: data.sub_rubro || null,
+        tamanio_empresa: data.tamanio_empresa || null,
+        facturacion_anual: data.facturacion_anual || null,
+        cantidad_empleados: data.cantidad_empleados || null,
+        logo: data.logo || null,
+        ejecutiva: ejecutiva,
+        empresa_proveedora: empresa, // ✅ ASIGNAR EMPRESA DIRECTAMENTE
+        estado: 'Activo'
+      });
+
+      const clienteGuardado = await this.clienteRepository.save(nuevoCliente);
+
+      console.log(`✅ [ClientesService] Cliente creado con ID: ${clienteGuardado.id_cliente_final}`);
+
+      return {
+        ...clienteGuardado,
+        ejecutiva_nombre: ejecutiva.nombre_completo,
+        empresa_nombre: empresa.razon_social,
+        total_actividades: 0,
+        estado: 'Activo'
+      };
+
+    } catch (error) {
+      console.error('❌ [ClientesService] Error al crear cliente:', error);
+
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
+      throw new HttpException(
+        error.message || 'Error al crear el cliente',
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
   }
+
 
   async updateCliente(id: number, data: any) {
     const cliente = await this.clienteRepository.findOne({
@@ -196,26 +304,11 @@ export class ClientesService {
     if (data.direccion !== undefined) cliente.direccion = data.direccion;
     if (data.rubro !== undefined) cliente.rubro = data.rubro;
     if (data.sub_rubro !== undefined) cliente.sub_rubro = data.sub_rubro;
-    
+
     cliente.fecha_actualizacion = new Date();
 
     return await this.clienteRepository.save(cliente);
   }
 
-  async deleteCliente(id: number) {
-    const cliente = await this.clienteRepository.findOne({
-      where: { id_cliente_final: id }
-    });
 
-    if (!cliente) {
-      throw new HttpException('Cliente no encontrado', HttpStatus.NOT_FOUND);
-    }
-
-    // En lugar de eliminar, podríamos marcarlo como inactivo
-    // Pero en nuestro esquema actual no tenemos campo estado para cliente_final
-    // Por ahora simplemente eliminamos
-    await this.clienteRepository.remove(cliente);
-
-    return { message: 'Cliente eliminado correctamente' };
-  }
 }

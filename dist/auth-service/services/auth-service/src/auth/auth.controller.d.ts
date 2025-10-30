@@ -26,4 +26,8 @@ export declare class AuthController {
         userType: string;
         accessToken: string;
     }>;
+    logout(authHeader: string, req: Request): Promise<{
+        success: boolean;
+        message: string;
+    }>;
 }
