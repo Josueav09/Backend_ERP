@@ -19,6 +19,13 @@ import { PersonaContacto } from 'shared/entities/PersonaContacto.entity';
 import { Trazabilidad } from 'shared/entities/Trazabilidad.entity';
 import { AuditoriaCambios } from 'shared/entities/AuditoriaCambios.entity';
 
+// AGREGAR ESTO AL INICIO del archivo donde configuras TypeORM
+console.log('=== TYPEORM CONFIG DEBUG ===');
+console.log('DB_USER:', process.env.DB_USER);
+console.log('DB_HOST:', process.env.DB_HOST);
+console.log('DB_DATABASE:', process.env.DB_NAME);
+console.log('Using user:', process.env.DB_USER);
+console.log('=============================');
 @Module({
   imports: [
     // ✅ REGISTRAR TODAS LAS ENTIDADES QUE SE USAN

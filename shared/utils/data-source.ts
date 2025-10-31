@@ -6,13 +6,13 @@ config();
 
 const AppDataSource = new DataSource({
   type: 'postgres',
-  host: 'localhost',
-  port: 5432,
-  username: 'postgres',
-  password: 'josue12345',
-  database: 'growviabd',
+  host: process.env.DB_HOST || 'growviabd.postgres.database.azure.com',
+  port: parseInt(process.env.DB_PORT || '5432'),
+  username: process.env.DB_USER || 'admingrowvia',
+  password: process.env.DB_PASSWORD || 'Gr0wv1aX25BdM7',
+  database: process.env.DB_NAME || 'postgres',
   
-  // Usando __dirname con path.join (forma correcta)
+  // Rutas corregidas
   entities: [
     path.join(__dirname, '../**/*.entity{.ts,.js}'),
     path.join(__dirname, '../../services/**/*.entity{.ts,.js}')
@@ -23,6 +23,7 @@ const AppDataSource = new DataSource({
   synchronize: false,
   logging: true,
   migrationsTableName: 'migrations',
+  ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false
 });
 
 export default AppDataSource;

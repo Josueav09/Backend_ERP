@@ -19,32 +19,37 @@ import { AuditoriaCambios } from '../../../shared/entities/AuditoriaCambios.enti
 import { AuthModule } from './auth/auth.module';
 import { EmailModule } from './email/email.module';
 
-const envPath = path.join(process.cwd(), 'services/auth-service/.env');
+// AGREGAR ESTO AL INICIO del archivo donde configuras TypeORM
+console.log('=== TYPEORM CONFIG DEBUG ===');
+console.log('DB_USER:', process.env.DB_USER);
+console.log('DB_HOST:', process.env.DB_HOST);
+console.log('DB_DATABASE:', process.env.DB_NAME);
+console.log('Using user:', process.env.DB_USER);
+console.log('=============================');
 
-@Module({ 
+@Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: envPath,
     }),
 
-    // 🗄️ PostgreSQL CON ENTIDADES COMPARTIDAS
+    // 🗄 PostgreSQL CON ENTIDADES COMPARTIDAS - CONFIGURACIÓN CORREGIDA
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => {
-        return {
-          type: 'postgres',
+        const dbConfig = {
+          type: 'postgres' as const,
+          // ✅ NOMBRES CORREGIDOS - usar los mismos que en docker-compose.yml
           host: configService.get('DB_HOST'),
-          port: configService.get('DB_PORT'),
-          username: configService.get('DB_USERNAME'),
-          password: configService.get('DB_PASSWORD'),
-          database: configService.get('DB_DATABASE'),
-          
-                    synchronize: false, // ✅ Mantener en false, usar migraciones
+          port: parseInt(configService.get('DB_PORT') || '5432'),
+          username: configService.get('DB_USER'),        // ✅ CORREGIDO: 'DB_USER'
+          password: configService.get('DB_PASSWORD'),    // ✅ CORREGIDO: 'DB_PASSWORD'
+          database: configService.get('DB_NAME'),        // ✅ CORREGIDO: 'DB_NAME'
 
+          synchronize: false,
 
-          // ✅ ENTIDADES ACTUALIZADAS - incluir todas las entidades
+          // ✅ ENTIDADES ACTUALIZADAS
           entities: [
             Jefe,
             EmpresaProveedora,
@@ -54,17 +59,29 @@ const envPath = path.join(process.cwd(), 'services/auth-service/.env');
             Trazabilidad,
             AuditoriaCambios
           ],
-          
+
           logging: configService.get('NODE_ENV') === 'development',
-          
-          // ✅ Opcional: Configuración extra para producción
+
+          // ✅ SSL PARA AZURE
+          ssl: configService.get('DB_SSL') === 'true' ? { rejectUnauthorized: false } : false,
+
+          // ✅ Configuración extra
           extra: {
-            max: 20, // máximo de conexiones en pool
+            max: 20,
             connectionTimeoutMillis: 10000,
           }
         };
+
+        console.log('=== FINAL TYPEORM CONFIG ===');
+        console.log('TypeORM username:', dbConfig.username);
+        console.log('TypeORM host:', dbConfig.host);
+        console.log('TypeORM database:', dbConfig.database);
+        console.log('=============================');
+
+        return dbConfig;
       },
     }),
+
 
     // 🔐 JWT Global
     JwtModule.registerAsync({
@@ -76,7 +93,7 @@ const envPath = path.join(process.cwd(), 'services/auth-service/.env');
       }),
     }),
 
-    // 🛡️ Passport
+    // 🛡 Passport
     PassportModule.register({ defaultStrategy: 'jwt' }),
 
     // 📦 Módulos
@@ -84,4 +101,4 @@ const envPath = path.join(process.cwd(), 'services/auth-service/.env');
     EmailModule,
   ],
 })
-export class AppModule {}
+export class AppModule { }
