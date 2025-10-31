@@ -44,9 +44,6 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
    * 🔐 Validar JWT y retornar usuario
    */
   async validate(payload: JwtPayload) {
-    console.log('🔐 JWR.STRATEGY.TS Payload recibido:', payload); // ← ¿Incluye userType?
-    console.log('🔐 Buscando userType:', payload.userType);
-    console.log('🔐 Sub (ID):', payload.sub);
     const { sub, email, rol, userType } = payload;
 
     let user: any = null;

@@ -4,6 +4,7 @@ export declare class ApiGatewayController {
     private readonly httpService;
     constructor(httpService: HttpService);
     private getHeadersWithAuth;
+    private getServiceBaseUrl;
     getCaptcha(req: Request): Promise<any>;
     login(body: any, req: Request): Promise<any>;
     verifyEmail(body: any, req: Request): Promise<any>;

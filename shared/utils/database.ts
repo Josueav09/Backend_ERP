@@ -7,7 +7,7 @@ export const pool = new Pool({
   password: process.env.DB_PASSWORD || 'josue12345',
   port: parseInt(process.env.DB_PORT || '5432'),
 });
-//infogrowvia2
+
 export const sql = {
   query: (text: string, params?: any[]) => pool.query(text, params),
 };

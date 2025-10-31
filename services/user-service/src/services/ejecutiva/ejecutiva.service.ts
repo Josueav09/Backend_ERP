@@ -85,7 +85,6 @@ export class EjecutivaService {
         empresaAsignada: ejecutiva.empresa_proveedora ? true : false
       };
     } catch (error) {
-      console.error('Error en getStats:', error);
       throw new HttpException('Error al obtener estadísticas', HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
@@ -114,7 +113,6 @@ export class EjecutivaService {
         total_clientes: totalClientes
       }];
     } catch (error) {
-      console.error('Error en getEmpresas:', error);
       throw new HttpException('Error al obtener empresas', HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
@@ -184,14 +182,11 @@ export class EjecutivaService {
       id_ejecutiva_registro: id
     });
 
-    console.log('📝 Creando empresa en BD:', nuevaEmpresa); // ✅ DEBUG
 
     try {
       const empresaGuardada = await this.empresaRepository.save(nuevaEmpresa);
-      console.log('✅ Empresa guardada en BD:', empresaGuardada); // ✅ DEBUG
       return empresaGuardada;
     } catch (error) {
-      console.error('❌ Error al guardar empresa:', error);
       throw new HttpException('Error al guardar empresa en la base de datos', HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
@@ -238,7 +233,6 @@ export class EjecutivaService {
 
       return empresasConInfo;
     } catch (error) {
-      console.error('Error en getEmpresasRegistradas:', error);
       throw new HttpException('Error al obtener empresas registradas', HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
@@ -288,7 +282,6 @@ export class EjecutivaService {
 
       return clientesConStats;
     } catch (error) {
-      console.error('Error en getClientes:', error);
       throw new HttpException('Error al obtener clientes', HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
@@ -369,11 +362,9 @@ export class EjecutivaService {
         empresa_proveedora: ejecutiva.empresa_proveedora
       });
 
-      console.log('📝 Creando cliente en BD:', nuevoCliente); // ✅ DEBUG
 
       return await this.clienteRepository.save(nuevoCliente);
     } catch (error) {
-      console.error('Error en createCliente:', error);
       if (error instanceof HttpException) throw error;
       throw new HttpException('Error al crear cliente', HttpStatus.INTERNAL_SERVER_ERROR);
     }
@@ -417,11 +408,9 @@ export class EjecutivaService {
         cliente_final: cliente
       });
 
-      console.log('📝 Creando contacto en BD:', nuevoContacto); // ✅ DEBUG
 
       return await this.contactoRepository.save(nuevoContacto);
     } catch (error) {
-      console.error('Error en createPersonaContacto:', error);
       if (error instanceof HttpException) throw error;
       throw new HttpException('Error al crear contacto', HttpStatus.INTERNAL_SERVER_ERROR);
     }
@@ -450,7 +439,6 @@ export class EjecutivaService {
         order: { nombre_completo: 'ASC' }
       });
     } catch (error) {
-      console.error('Error en getContactosCliente:', error);
       if (error instanceof HttpException) throw error;
       throw new HttpException('Error al obtener contactos', HttpStatus.INTERNAL_SERVER_ERROR);
     }
@@ -497,7 +485,6 @@ export class EjecutivaService {
         }
       };
     } catch (error) {
-      console.error('Error en getPipeline:', error);
       throw new HttpException('Error al obtener pipeline', HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
@@ -535,7 +522,6 @@ export class EjecutivaService {
           : null
       }));
     } catch (error) {
-      console.error('Error en getActividadesRecientes:', error);
       throw new HttpException('Error al obtener actividades', HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
@@ -578,7 +564,6 @@ export class EjecutivaService {
         inicio_semana: inicioSemana
       };
     } catch (error) {
-      console.error('Error en getKPIsSemanales:', error);
       throw new HttpException('Error al obtener KPIs semanales', HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
@@ -646,7 +631,6 @@ export class EjecutivaService {
       };
 
     } catch (error) {
-      console.error('Error en bulkCreateClientes:', error);
       if (error instanceof HttpException) throw error;
       throw new HttpException('Error al procesar archivo de clientes', HttpStatus.INTERNAL_SERVER_ERROR);
     }
@@ -681,12 +665,10 @@ private async parseCSVFile(file: any): Promise<any[]> {
               results.push(cleanData);
             }
           } catch (rowError) {
-            console.warn('Error procesando fila CSV:', rowError);
             // Continuar con las siguientes filas
           }
         })
         .on('end', () => {
-          console.log(`✅ CSV parseado: ${results.length} registros válidos`);
           resolve(results);
         })
         .on('error', (error: any) => {

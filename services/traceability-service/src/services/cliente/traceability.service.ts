@@ -36,7 +36,6 @@ export class ClienteTrazabilidadService {
 
       return trazabilidadResult.rows;
     } catch (error) {
-      console.error('[v0] Error fetching trazabilidad:', error);
       throw new HttpException('Error al obtener trazabilidad', HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }

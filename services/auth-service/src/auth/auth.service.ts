@@ -44,121 +44,7 @@ export class AuthService {
     private emailService: EmailService,
 
   ) {
-    // En tu auth.service.ts - agregar esto en el constructor
-    console.log('🔍 DATABASE CONNECTION DEBUG:');
-    console.log('DB_HOST:', process.env.DB_HOST);
-    console.log('DB_DATABASE:', process.env.DB_DATABASE);
-    console.log('DB_USER:', process.env.DB_USERNAME);
   }
-
-  /**
-   * 🔐 LOGIN: Buscar usuario en JEFE, EMPRESA_PROVEEDORA o EJECUTIVA
-   */
-  // async login(loginDto: LoginDto, clientIp: string) {
-  //   const { email, password, captchaToken, captchaResponse } = loginDto;
-
-  //   // 1️⃣ Validar captcha
-  //   if (!captchaToken || !captchaResponse) {
-  //     throw new BadRequestException('Por favor complete el captcha');
-  //   }
-  //   this.validateCaptcha(captchaToken, captchaResponse);
-
-  //   // 2️⃣ Verificar intentos fallidos
-  //   this.checkBlockedAttempts(email, clientIp);
-
-  //   // 3️⃣ 🔍 BUSCAR USUARIO EN LAS TABLAS CORRECTAS
-  //   let user: any = null;
-  //   let userType = '';
-
-  //   // Buscar en JEFE
-  //   user = await this.jefeRepository.findOne({ where: { correo: email } });
-  //   if (user) {
-  //     userType = 'jefe';
-  //     // ✅ ACTUALIZAR: Usar el rol real de la base de datos
-  //     user.rol = user.rol || 'jefe'; // Si no tiene rol, default 'jefe'
-  //     console.log('🔐 Login - Rol del usuario en BD:', user.rol); // Debug
-
-  //   } else {
-  //     // Buscar en EMPRESA_PROVEEDORA
-  //     user = await this.empresaRepository.findOne({
-  //       where: {
-  //         correo: email,
-  //         estado: 'Activo'
-  //       }
-  //     });
-  //     if (user) {
-  //       userType = 'empresa';
-  //       user.rol = 'empresa';
-  //     } else {
-  //       // Buscar en EJECUTIVA
-  //       user = await this.ejecutivaRepository.findOne({
-  //         where: {
-  //           correo: email,
-  //           estado_ejecutiva: 'Activo'
-  //         }
-  //       });
-  //       if (user) {
-  //         userType = 'ejecutiva';
-  //         user.rol = 'ejecutiva';
-  //       }
-  //     }
-  //   }
-
-  //   if (!user) {
-  //     this.recordFailedAttempt(email, clientIp);
-  //     throw new UnauthorizedException('Usuario no encontrado o inactivo');
-  //   }
-
-  //   // 4️⃣ 🔐 VERIFICAR CONTRASEÑA
-  //   const validPassword = await bcrypt.compare(password, user.contraseña);
-  //   // Agrega esto temporalmente en tu auth.service.ts para debug
-  //   console.log('🔐 Password debug:');
-  //   console.log('Input password:', password);
-  //   console.log('Stored hash:', user.contraseña);
-  //   console.log('Comparison result:', validPassword);
-  //   if (!validPassword) {
-  //     this.recordFailedAttempt(email, clientIp);
-  //     const remaining = this.getRemainingAttempts(email, clientIp);
-  //     throw new UnauthorizedException(
-  //       `Contraseña incorrecta. ${remaining.user} intentos restantes para el usuario. ${remaining.ip} intentos restantes para esta IP.`,
-  //     );
-  //   }
-
-  //   // 5️⃣ ✅ Limpiar intentos fallidos
-  //   this.clearFailedAttempts(email, clientIp);
-
-  //   // 6️⃣ 📧 Generar y enviar código 2FA
-  //   const code = Math.floor(100000 + Math.random() * 900000).toString();
-  //   this.tempEmailCodes.set(email, code);
-
-  //   setTimeout(() => {
-  //     this.tempEmailCodes.delete(email);
-  //   }, this.CAPTCHA_EXPIRY);
-
-  //   try {
-  //     await this.emailService.sendVerificationCode(email, code);
-  //     console.log(`✅ Código enviado a ${email}: ${code}`);
-  //   } catch (error) {
-  //     console.error('❌ Error enviando email:', error);
-  //     throw new HttpException(
-  //       'No se pudo enviar el código de verificación',
-  //       HttpStatus.INTERNAL_SERVER_ERROR,
-  //     );
-  //   }
-
-  //   // 7️⃣ 📝 Retornar respuesta
-  //   return {
-  //     success: true,
-  //     requiresEmailVerification: true,
-  //     email: email,
-  //     userId: this.getUserId(user, userType),
-  //     rol: user.rol,
-  //     name: user.nombre_completo,
-  //     userType: userType,
-  //   };
-  // }
-
-  // backend/services/auth-service/src/auth/auth.service.ts
 
   async login(loginDto: LoginDto, clientIp: string) {
     const { email, password, captchaToken, captchaResponse } = loginDto;
@@ -241,9 +127,7 @@ export class AuthService {
       // 7️⃣ Enviar código por email
       try {
         await this.emailService.sendVerificationCode(email, code);
-        console.log(`✅ Código enviado a ${email}: ${code}`);
       } catch (error) {
-        console.error('❌ Error enviando email:', error);
         throw new HttpException(
           'No se pudo enviar el código de verificación. Intente nuevamente',
           HttpStatus.INTERNAL_SERVER_ERROR,
@@ -270,7 +154,6 @@ export class AuthService {
       }
 
       // Error desconocido
-      console.error('❌ Error en login:', error);
       throw new HttpException(
         'Error al procesar la solicitud. Intente nuevamente',
         HttpStatus.INTERNAL_SERVER_ERROR
@@ -348,8 +231,6 @@ export class AuthService {
       userType: userType,
     };
 
-    console.log('🔐 JWT Payload generado:', payload); // Debug
-
     const accessToken = this.jwtService.sign(payload);
 
     // 6️⃣ 📤 Retornar respuesta CORREGIDA
@@ -363,8 +244,6 @@ export class AuthService {
       accessToken,
     };
 
-    console.log('📤 Respuesta verifyEmail:', response); // Debug
-
     return response;
   }
 
@@ -377,7 +256,6 @@ export class AuthService {
       if (token) {
         try {
           const decoded = this.jwtService.verify(token);
-          console.log(`🔐 Logout para usuario: ${decoded.email} (${decoded.rol})`);
 
           // 2️⃣ Agregar token a la blacklist
           this.tokenBlacklist.add(token);
@@ -388,7 +266,11 @@ export class AuthService {
           }, this.TOKEN_BLACKLIST_EXPIRY);
 
         } catch (error) {
-          console.log('⚠️ Token inválido o expirado durante logout:', error.message);
+          throw new HttpException(
+            'Token inválido o expirado',
+            HttpStatus.UNAUTHORIZED
+          );
+          
         }
       }
 
@@ -398,7 +280,6 @@ export class AuthService {
       };
 
     } catch (error) {
-      console.error('❌ Error en logout:', error);
       throw new HttpException(
         'Error al cerrar sesión',
         HttpStatus.INTERNAL_SERVER_ERROR
@@ -451,7 +332,6 @@ export class AuthService {
 
     // ✅ Eliminar captcha después de uso exitoso (solo se puede usar una vez)
     this.captchaMap.delete(token);
-    console.log(`✅ Captcha validado correctamente`);
   }
 
   private checkBlockedAttempts(email: string, ip: string) {
@@ -535,7 +415,6 @@ export class AuthService {
       this.captchaMap.delete(token);
     }, this.CAPTCHA_EXPIRY);
 
-    console.log(`🔐 Captcha generado: ${result} (token: ${token})`);
     return { captchaText: result, captchaToken: token };
   }
 

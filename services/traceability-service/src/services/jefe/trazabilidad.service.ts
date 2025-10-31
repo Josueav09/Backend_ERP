@@ -22,7 +22,6 @@ export class TrazabilidadService {
     @InjectRepository(ClienteFinal)
     private clienteRepository: Repository<ClienteFinal>,
   ) {
-    console.log('🔧 TrazabilidadService inicializado');
   }
 
   // ============================================
@@ -31,9 +30,6 @@ export class TrazabilidadService {
 
   async getTrazabilidad(filters?: any) {
     try {
-      console.log('🔍 [TrazabilidadService] getTrazabilidad ejecutándose');
-      console.log('🔍 Filters recibidos:', filters);
-
       const {
         empresaId,
         ejecutivaId,
@@ -95,12 +91,8 @@ export class TrazabilidadService {
       }
 
       const trazabilidades = await query.getMany();
-      console.log('✅ [TrazabilidadService] Query ejecutado exitosamente');
-      console.log('✅ Registros encontrados:', trazabilidades.length);
-
       return trazabilidades;
     } catch (error) {
-      console.error('❌ [TrazabilidadService] ERROR en getTrazabilidad:', error);
       throw error;
     }
   }
@@ -308,7 +300,6 @@ export class TrazabilidadService {
     fechaDesde?: string;
     fechaHasta?: string;
   }) {
-    console.log('🔍 [TrazabilidadService.getKPIs] Filtros recibidos:', filters);
 
     const query = this.trazabilidadRepository.createQueryBuilder('t')
       .leftJoin('t.ejecutiva', 'ej')
@@ -332,7 +323,6 @@ export class TrazabilidadService {
     }
 
     const data = await query.getMany();
-    console.log('📊 [TrazabilidadService] Datos encontrados:', data.length, 'registros');
 
     const totalOportunidades = data.length;
     const enProceso = data.filter(t =>
@@ -346,15 +336,6 @@ export class TrazabilidadService {
     const tasaConversion = oportunidadesEmbudo.length > 0 ?
       (ventasGanadas / oportunidadesEmbudo.length) * 100 : 0;
 
-    console.log('📈 [TrazabilidadService] KPIs calculados:', {
-      totalOportunidades,
-      enProceso,
-      ventasGanadas,
-      ventasPerdidas,
-      montoTotal,
-      tasaConversion: Math.round(tasaConversion * 100) / 100
-    });
-
     return {
       totalOportunidades,
       enProceso,
@@ -366,16 +347,9 @@ export class TrazabilidadService {
   }
 
   async getNuevosClientes(meses: number = 6, ejecutivaId?: number) {
-    console.log('🔄 [getNuevosClientes] === INICIANDO ===');
-
     const fechaActual = new Date();
     const fechaInicio = new Date();
     fechaInicio.setMonth(fechaActual.getMonth() - meses);
-
-    console.log('📅 [getNuevosClientes] FECHAS CALCULADAS:');
-    console.log('   - Fecha actual:', fechaActual.toISOString());
-    console.log('   - Fecha inicio (hace', meses, 'meses):', fechaInicio.toISOString());
-
     const query = this.trazabilidadRepository.createQueryBuilder('t')
       .select('EXTRACT(MONTH FROM t.fecha_contacto)', 'mes_numero')
       .addSelect('EXTRACT(YEAR FROM t.fecha_contacto)', 'anio')
@@ -403,14 +377,11 @@ export class TrazabilidadService {
     }
 
     const data = await query.getRawMany();
-    console.log('📊 [getNuevosClientes] RESULTADO:', data);
-
     if (data.length > 0) {
       const resultado = data.map(item => ({
         mes: `${item.mes_nombre} ${item.anio}`.trim(),
         contactos: parseInt(item.contactos) || 0
       }));
-      console.log('✅ [getNuevosClientes] DATOS FINALES:', resultado);
       return resultado;
     }
 
@@ -493,7 +464,6 @@ export class TrazabilidadService {
     fechaDesde?: string;
     fechaHasta?: string;
   }) {
-    console.log('🔄 [getTasaConversion] Obteniendo ventas cerradas por ejecutiva...');
 
     const query = this.trazabilidadRepository.createQueryBuilder('t')
       .leftJoin('t.ejecutiva', 'ej')
@@ -516,8 +486,6 @@ export class TrazabilidadService {
     }
 
     const data = await query.getRawMany();
-    console.log('📊 [getTasaConversion] Datos crudos:', data);
-
     const resultado = data.map(item => ({
       id_ejecutiva: item.id_ejecutiva,
       ejecutiva: item.ejecutiva?.split(' ')[0] || item.ejecutiva || 'N/A',
@@ -529,7 +497,6 @@ export class TrazabilidadService {
         Math.round((item.ventas_ganadas / item.total_oportunidades) * 100 * 10) / 10 : 0
     }));
 
-    console.log('✅ [getTasaConversion] Resultado final:', resultado);
     return resultado;
   }
 
@@ -624,11 +591,6 @@ export class TrazabilidadService {
       observaciones: t.observaciones || ''
     }));
 
-    console.log('📊 [getEtapa1] Total registros encontrados:', total);
-    console.log('📊 [getEtapa1] Tipos de contacto únicos:', 
-      [...new Set(data.map(item => item.tipo_contacto))]
-    );
-
     return {
       data: etapa1Data,
       pagination: {
@@ -720,8 +682,6 @@ export class TrazabilidadService {
     }));
 
 
-    console.log('✅ [getEtapa2] Datos mapeados exitosamente:', etapa2Data.length, 'registros');
-
     return {
       data: etapa2Data,
       pagination: {
@@ -734,8 +694,6 @@ export class TrazabilidadService {
   }
 
   async getFilterOptions() {
-    console.log('🔄 [TrazabilidadService] Obteniendo opciones de filtro desde BD...');
-
     try {
       const [ejecutivas, empresas, clientes] = await Promise.all([
         this.ejecutivaRepository.find({
@@ -754,7 +712,6 @@ export class TrazabilidadService {
         })
       ]);
 
-      console.log(`📊 [TrazabilidadService] Datos obtenidos - Ejecutivas: ${ejecutivas.length}, Empresas: ${empresas.length}, Clientes: ${clientes.length}`);
 
       return {
         ejecutivas: ejecutivas.map(e => ({
@@ -772,7 +729,6 @@ export class TrazabilidadService {
       };
 
     } catch (error) {
-      console.error('❌ [TrazabilidadService] Error obteniendo opciones de filtro:', error);
       return {
         ejecutivas: [],
         empresas: [],
@@ -809,7 +765,6 @@ export class TrazabilidadService {
         return String(dateValue).split('T')[0];
       }
     } catch (error) {
-      console.warn('⚠️ Error formateando fecha:', dateValue, error);
       return '';
     }
   }
@@ -817,7 +772,6 @@ export class TrazabilidadService {
   // NUEVOS MÉTODOS PARA LOS GRÁFICOS CORREGIDOS
 
   async getNuevasReunionesAgendadas(meses: number = 6, ejecutivaId?: number) {
-    console.log('🔄 [getNuevasReunionesAgendadas] === INICIANDO ===');
 
     // QUITAR FILTRO DE FECHA TEMPORAL para mostrar todos los datos
     const query = this.trazabilidadRepository.createQueryBuilder('t')
@@ -848,7 +802,6 @@ export class TrazabilidadService {
     }
 
     const data = await query.getRawMany();
-    console.log('📊 [getNuevasReunionesAgendadas] RESULTADO:', data);
 
     if (data.length > 0) {
       return data.map(item => ({
@@ -862,7 +815,6 @@ export class TrazabilidadService {
   }
 
     async getNuevasVentas(meses: number = 6, ejecutivaId?: number) {
-    console.log('🔄 [getNuevasVentas] === INICIANDO ===');
 
     const query = this.trazabilidadRepository.createQueryBuilder('t')
       .select('EXTRACT(MONTH FROM t.fecha_contacto)', 'mes_numero')
@@ -891,7 +843,6 @@ export class TrazabilidadService {
     }
 
     const data = await query.getRawMany();
-    console.log('📊 [getNuevasVentas] RESULTADO:', data);
 
     if (data.length > 0) {
       return data.map(item => ({
@@ -929,7 +880,6 @@ export class TrazabilidadService {
   }
 
   const data = await query.getRawMany();
-  console.log('📊 [getEfectividadCanalesContacto] Datos:', data);
 
   return data.map(item => ({
     canal: this.mapTipoContacto(item.canal),
@@ -960,7 +910,6 @@ export class TrazabilidadService {
       .addOrderBy('reuniones_agendadas', 'DESC');
 
     const data = await query.getRawMany();
-    console.log('📊 [getResumenSemanalEjecutivas] Datos reales:', data);
 
     return data.map(item => ({
       id_ejecutiva: item.id_ejecutiva,
@@ -992,7 +941,6 @@ export class TrazabilidadService {
     }
 
     const data = await query.getRawMany();
-    console.log('📊 [getEmbudoVentas] Datos crudos ordenados:', data);
 
     // Obtener la cantidad máxima (primera etapa)
     const maxCantidad = data.length > 0 ? Math.max(...data.map(d => parseInt(d.cantidad))) : 0;
@@ -1011,7 +959,6 @@ export class TrazabilidadService {
       };
     });
 
-    console.log('📊 [getEmbudoVentas] Embudo final con % correctos:', embudo);
     return embudo;
   }
     // MÉTODO AUXILIAR PARA ACORTAR NOMBRES DE ETAPAS
@@ -1077,7 +1024,6 @@ export class TrazabilidadService {
 // ============================================
 
   async getEtapa1ForReport(filters: any): Promise<any[]> {
-    console.log('📊 [getEtapa1ForReport] Generando reporte Etapa 1 con filtros:', filters);
     
     const query = this.trazabilidadRepository.createQueryBuilder('t')
       .leftJoinAndSelect('t.ejecutiva', 'ej')
@@ -1131,8 +1077,6 @@ export class TrazabilidadService {
     query.orderBy('t.fecha_contacto', 'DESC');
 
     const data = await query.getMany();
-    console.log('📊 [getEtapa1ForReport] Datos encontrados:', data.length);
-
     // Transformar datos para el reporte CSV
     return data.map(item => ({
       'ID': item.id_trazabilidad,
@@ -1157,8 +1101,6 @@ export class TrazabilidadService {
   }
 
   async getEtapa2ForReport(filters: any): Promise<any[]> {
-    console.log('📊 [getEtapa2ForReport] Generando reporte Etapa 2 con filtros:', filters);
-    
     const query = this.trazabilidadRepository.createQueryBuilder('t')
       .leftJoinAndSelect('t.ejecutiva', 'ej')
       .leftJoinAndSelect('t.empresa_proveedora', 'ep')
@@ -1206,7 +1148,6 @@ export class TrazabilidadService {
     query.orderBy('t.fecha_cierre_esperado', 'ASC');
 
     const data = await query.getMany();
-    console.log('📊 [getEtapa2ForReport] Datos encontrados:', data.length);
 
     // Calcular probabilidad automáticamente según etapa
     const calcularProbabilidad = (etapa: string) => {
@@ -1259,24 +1200,17 @@ export class TrazabilidadService {
   // En TrazabilidadService
   async generateReportCSV(filters: any, reportType: 'etapa1' | 'etapa2'): Promise<string> {
     try {
-      console.log('🔄 [generateReportCSV] Iniciando con:', { filters, reportType });
       
       let data: any[];
       
       if (reportType === 'etapa1') {
-        console.log('📋 Obteniendo datos para etapa1...');
         data = await this.getEtapa1ForReport(filters);
       } else if (reportType === 'etapa2') {
-        console.log('📋 Obteniendo datos para etapa2...');
         data = await this.getEtapa2ForReport(filters);
       } else {
         throw new Error(`Tipo de reporte no válido: ${reportType}`);
       }
-      
-      console.log('📊 Datos obtenidos:', data.length, 'registros');
-      
       if (data.length === 0) {
-        console.log('⚠️ No hay datos para generar el reporte');
         return 'No hay datos para generar el reporte';
       }
 
@@ -1303,12 +1237,10 @@ export class TrazabilidadService {
       }
       
       const csvContent = csvRows.join('\n');
-      console.log('✅ CSV generado exitosamente');
       
       return csvContent;
       
     } catch (error) {
-      console.error('❌ [generateReportCSV] Error:', error);
       throw new Error(`Error al generar reporte CSV: ${error.message}`);
     }
   }
@@ -1343,7 +1275,6 @@ export class TrazabilidadService {
       return `${year}-${month}-${day}`;
       
     } catch (error) {
-      console.warn('⚠️ Error formateando fecha para CSV:', dateValue, error);
       return String(dateValue);
     }
   }

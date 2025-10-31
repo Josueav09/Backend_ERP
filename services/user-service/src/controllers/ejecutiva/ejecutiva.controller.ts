@@ -63,8 +63,7 @@ export class EjecutivaController {
       cantidad_empleados
     } = body;
 
-    console.log('📨 Datos recibidos en backend:', body); // ✅ DEBUG
-
+    
     if (!ejecutivaId) {
       throw new HttpException('ID de ejecutiva requerido', HttpStatus.BAD_REQUEST);
     }
@@ -96,7 +95,6 @@ export class EjecutivaController {
         cantidad_empleados
       });
     } catch (error) {
-      console.error('❌ Error en controller:', error);
       if (error instanceof HttpException) throw error;
       throw new HttpException('Error al registrar empresa', HttpStatus.INTERNAL_SERVER_ERROR);
     }
@@ -157,8 +155,7 @@ export class EjecutivaController {
       cantidad_empleados
     } = body;
 
-    console.log('📨 Datos recibidos para crear cliente:', body); // ✅ DEBUG
-
+    
     if (!ejecutivaId) {
       throw new HttpException('ID de ejecutiva requerido', HttpStatus.BAD_REQUEST);
     }
@@ -189,7 +186,6 @@ export class EjecutivaController {
         cantidad_empleados
       });
     } catch (error) {
-      console.error('❌ Error en controller crear cliente:', error);
       if (error instanceof HttpException) throw error;
       throw new HttpException('Error al crear cliente', HttpStatus.INTERNAL_SERVER_ERROR);
     }
@@ -212,8 +208,7 @@ export class EjecutivaController {
       linkedin
     } = body;
 
-    console.log('📨 Datos recibidos para crear contacto:', body); // ✅ DEBUG
-
+    
     if (!ejecutivaId || !id_cliente_final) {
       throw new HttpException('Ejecutiva y cliente son requeridos', HttpStatus.BAD_REQUEST);
     }
@@ -235,7 +230,6 @@ export class EjecutivaController {
         linkedin
       });
     } catch (error) {
-      console.error('❌ Error en controller crear contacto:', error);
       if (error instanceof HttpException) throw error;
       throw new HttpException('Error al crear contacto', HttpStatus.INTERNAL_SERVER_ERROR);
     }

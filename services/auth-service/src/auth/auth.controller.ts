@@ -1,48 +1,5 @@
-
-
-// // backend/services/auth-service/src/auth/auth.controller.ts
-// import { Controller, Post, Body, Ip, HttpCode, HttpStatus, Get } from '@nestjs/common';
-// import { AuthService } from './auth.service';
-// import { LoginDto } from './dto/login.dto';
-// import { VerifyEmailDto } from './dto/verify-email.dto';
-
-// @Controller('auth')
-// export class AuthController {
-//   constructor(private readonly authService: AuthService) {}
-
-//   /**
-//    * 🎲 GET /auth/captcha
-//    * Genera un nuevo captcha
-//    */
-//   @Get('captcha')
-//   @HttpCode(HttpStatus.OK)
-//   async getCaptcha() {
-//     return this.authService.generateCaptcha();
-//   }
-
-//   /**
-//    * 🔐 POST /auth/login
-//    * Valida credenciales y envía código 2FA
-//    */
-//   @Post('login')
-//   @HttpCode(HttpStatus.OK)
-//   async login(@Body() loginDto: LoginDto, @Ip() clientIp: string) {
-//     return this.authService.login(loginDto, clientIp);
-//   }
-
-//   /**
-//    * ✉️ POST /auth/verify-email
-//    * Valida código 2FA y retorna JWT
-//    */
-//   @Post('verify-email')
-//   @HttpCode(HttpStatus.OK)
-//   async verifyEmail(@Body() verifyDto: VerifyEmailDto) {
-//     return this.authService.verifyEmailCode(verifyDto);
-//   }
-// }
-
 // backend/services/auth-service/src/auth/auth.controller.ts
-import { Controller, Post, Body, Ip, HttpCode, HttpStatus, Get, HttpException, Headers, Req } from '@nestjs/common';
+import { Controller, Post, Body, Ip, HttpCode, HttpStatus, Get, HttpException, Headers, Req, Redirect } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
@@ -50,6 +7,23 @@ import { VerifyEmailDto } from './dto/verify-email.dto';
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) { }
+
+
+  @Get()
+  @Redirect('/auth/health', 302)
+  redirectToHealth() {
+    return;
+  }
+
+  @Get('health')
+  getHealth() {
+    return {
+      status: 'OK',
+      service: 'auth-service',
+      timestamp: new Date().toISOString()
+    };
+  }
+
 
   @Get('captcha')
   @HttpCode(HttpStatus.OK)
@@ -116,16 +90,12 @@ export class AuthController {
         }
       }
 
-      console.log(`🔐 Procesando logout para token: ${token ? 'presente' : 'no presente'}`);
-
       // 2️⃣ Ejecutar logout
       const result = await this.authService.logout(token);
 
       return result;
 
     } catch (error) {
-      console.error('❌ Error en controlador de logout:', error);
-
       // ✅ Incluso si hay error, retornar éxito para limpieza del frontend
       return {
         success: true,

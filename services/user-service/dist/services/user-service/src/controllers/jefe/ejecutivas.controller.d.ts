@@ -69,7 +69,11 @@ export declare class EjecutivasController {
         }[];
     }>;
     createEjecutiva(body: any): Promise<import("shared/entities/Ejecutiva.entity").Ejecutiva>;
-    updateEjecutiva(id: string, body: any): Promise<import("shared/entities/Ejecutiva.entity").Ejecutiva>;
+    updateEjecutiva(id: string, data: any): Promise<{
+        success: boolean;
+        message: string;
+        data: import("shared/entities/Ejecutiva.entity").Ejecutiva;
+    }>;
     deleteEjecutiva(id: string): Promise<{
         message: string;
     }>;

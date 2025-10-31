@@ -20,8 +20,6 @@ import { AuthModule } from './auth/auth.module';
 import { EmailModule } from './email/email.module';
 
 const envPath = path.join(process.cwd(), 'services/auth-service/.env');
-console.log('🔧 Loading env from:', envPath);
-console.log('🔧 Env file exists:', fs.existsSync(envPath));
 
 @Module({ 
   imports: [
@@ -35,12 +33,6 @@ console.log('🔧 Env file exists:', fs.existsSync(envPath));
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => {
-        console.log('=== DATABASE CONFIG DEBUG ===');
-        console.log('DB_HOST:', configService.get('DB_HOST'));
-        console.log('DB_PASSWORD:', configService.get('DB_PASSWORD') ? '***' : 'undefined');
-        console.log('DB_DATABASE:', configService.get('DB_DATABASE'));
-        console.log('=============================');
-
         return {
           type: 'postgres',
           host: configService.get('DB_HOST'),

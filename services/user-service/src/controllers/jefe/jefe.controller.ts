@@ -25,26 +25,17 @@ export class JefeController {
   @Get('perfil')
   @UseGuards(JwtAuthGuard)
   async getPerfil(@Request() req) {
-    console.log('🔐 [JefeController] === OBTENER PERFIL ===');
-    console.log('🔐 [JefeController] Headers:', req.headers);
-    console.log('🔐 [JefeController] Authorization:', req.headers.authorization);
-    console.log('🔐 [JefeController] User completo:', req.user);
-
     try {
       if (!req.user || !req.user.id_jefe) {
-        console.error('❌ [JefeController] Usuario no autenticado o sin id_jefe');
         throw new HttpException('Usuario no autenticado', HttpStatus.UNAUTHORIZED);
       }
 
       const userId = req.user.id_jefe;
-      console.log('🔐 [JefeController] User ID extraído:', userId);
 
       const perfil = await this.jefeService.getPerfil(userId);
-      console.log('✅ [JefeController] Perfil obtenido exitosamente');
 
       return perfil;
     } catch (error) {
-      console.error('❌ [JefeController] Error en getPerfil:', error);
       if (error instanceof HttpException) throw error;
       throw new HttpException(
         'Error al obtener perfil',
@@ -56,10 +47,6 @@ export class JefeController {
   @Put('perfil')
   @UseGuards(JwtAuthGuard)
   async updatePerfil(@Request() req, @Body() body: any) {
-    console.log('📝 [JefeController] === ACTUALIZAR PERFIL ===');
-    console.log('📝 [JefeController] User:', req.user);
-    console.log('📝 [JefeController] Body recibido:', body);
-
     try {
       if (!req.user || !req.user.id_jefe) {
         throw new HttpException('Usuario no autenticado', HttpStatus.UNAUTHORIZED);
@@ -68,10 +55,8 @@ export class JefeController {
       const userId = req.user.id_jefe;
       const resultado = await this.jefeService.updatePerfil(userId, body);
 
-      console.log('✅ [JefeController] Perfil actualizado exitosamente');
       return resultado;
     } catch (error) {
-      console.error('❌ [JefeController] Error en updatePerfil:', error);
       if (error instanceof HttpException) throw error;
       throw new HttpException(
         'Error al actualizar perfil',
@@ -83,9 +68,6 @@ export class JefeController {
   @Put('password')
   @UseGuards(JwtAuthGuard)
   async updatePassword(@Request() req, @Body() body: any) {
-    console.log('🔒 [JefeController] === ACTUALIZAR CONTRASEÑA ===');
-    console.log('🔒 [JefeController] User:', req.user);
-
     try {
       if (!req.user || !req.user.id_jefe) {
         throw new HttpException('Usuario no autenticado', HttpStatus.UNAUTHORIZED);
@@ -107,10 +89,8 @@ export class JefeController {
         password_nueva
       );
 
-      console.log('✅ [JefeController] Contraseña actualizada exitosamente');
       return resultado;
     } catch (error) {
-      console.error('❌ [JefeController] Error en updatePassword:', error);
       if (error instanceof HttpException) throw error;
       throw new HttpException(
         'Error al actualizar contraseña',
@@ -127,15 +107,10 @@ export class JefeController {
   @Get('stats')
   @UseGuards(JwtAuthGuard)
   async getStats(@Request() req) {
-    console.log('📊 [JefeController] === OBTENER ESTADÍSTICAS ===');
-    console.log('👤 Usuario:', req.user?.id_jefe);
-
     try {
       const stats = await this.jefeService.getStats();
-      console.log('✅ [JefeController] Estadísticas obtenidas exitosamente');
       return stats;
     } catch (error) {
-      console.error('❌ [JefeController] Error en getStats:', error.message);
       throw new HttpException(
         `Error al obtener estadísticas: ${error.message}`,
         HttpStatus.INTERNAL_SERVER_ERROR,
@@ -153,17 +128,10 @@ export class JefeController {
   @Get('cliente')
   @UseGuards(JwtAuthGuard)
   async getClientes(@Request() req) {
-    console.log('📋 [JefeController] === OBTENER CLIENTES - INICIANDO ===');
-    console.log('👤 Usuario autenticado:', req.user);
-
     try {
-      console.log('🔄 Llamando a jefeService.getClientes()...');
       const clientes = await this.jefeService.getClientes();
-      console.log(`✅ [JefeController] ${clientes.length} clientes obtenidos`);
       return clientes;
     } catch (error) {
-      console.error('❌ [JefeController] Error en getClientes:', error);
-      console.error('🔍 Stack trace:', error.stack);
       throw new HttpException(
         'Error al obtener clientes',
         HttpStatus.INTERNAL_SERVER_ERROR
@@ -173,11 +141,9 @@ export class JefeController {
   @Get('cliente/:id')
   @UseGuards(JwtAuthGuard)
   async getClienteById(@Param('id') id: string) {
-    console.log(`🔍 [JefeController] === OBTENER CLIENTE ${id} ===`);
     try {
       return await this.jefeService.getClienteById(parseInt(id));
     } catch (error) {
-      console.error('❌ [JefeController] Error en getClienteById:', error);
       if (error instanceof HttpException) throw error;
       throw new HttpException(
         'Error al obtener cliente',
@@ -189,12 +155,9 @@ export class JefeController {
   @Post('cliente')
   @UseGuards(JwtAuthGuard)
   async createCliente(@Body() body: any) {
-    console.log('➕ [JefeController] === CREAR CLIENTE ===');
-    console.log('📝 [JefeController] Body:', body);
     try {
       return await this.jefeService.createCliente(body);
     } catch (error) {
-      console.error('❌ [JefeController] Error en createCliente:', error);
       if (error instanceof HttpException) throw error;
       throw new HttpException(
         error.message || 'Error al crear cliente',
@@ -206,12 +169,9 @@ export class JefeController {
   @Put('cliente/:id')
   @UseGuards(JwtAuthGuard)
   async updateCliente(@Param('id') id: string, @Body() body: any) {
-    console.log(`📝 [JefeController] === ACTUALIZAR CLIENTE ${id} ===`);
-    console.log('📝 [JefeController] Body:', body);
     try {
       return await this.jefeService.updateCliente(parseInt(id), body);
     } catch (error) {
-      console.error('❌ [JefeController] Error en updateCliente:', error);
       if (error instanceof HttpException) throw error;
       throw new HttpException(
         error.message || 'Error al actualizar cliente',
@@ -223,11 +183,9 @@ export class JefeController {
   @Delete('cliente/:id')
   @UseGuards(JwtAuthGuard)
   async deleteCliente(@Param('id') id: string) {
-    console.log(`🗑️ [JefeController] === ELIMINAR CLIENTE ${id} ===`);
     try {
       return await this.jefeService.deleteCliente(parseInt(id));
     } catch (error) {
-      console.error('❌ [JefeController] Error en deleteCliente:', error);
       if (error instanceof HttpException) throw error;
       throw new HttpException(
         'Error al eliminar cliente',

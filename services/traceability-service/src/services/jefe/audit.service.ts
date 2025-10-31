@@ -132,7 +132,6 @@ export class AuditService {
         }
       };
     } catch (error) {
-      console.error('Error en getEstadisticasAuditoria:', error);
       throw error;
     }
   }

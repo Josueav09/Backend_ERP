@@ -4,6 +4,12 @@ import { VerifyEmailDto } from './dto/verify-email.dto';
 export declare class AuthController {
     private readonly authService;
     constructor(authService: AuthService);
+    redirectToHealth(): void;
+    getHealth(): {
+        status: string;
+        service: string;
+        timestamp: string;
+    };
     getCaptcha(): Promise<{
         captchaText: string;
         captchaToken: string;

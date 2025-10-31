@@ -15,7 +15,6 @@ export class EjecutivaTraceabilityController {
     try {
       return await this.ejecutivaTraceabilityService.getTrazabilidad(ejecutivaId);
     } catch (error) {
-      console.error('❌ Error en getTrazabilidad controller:', error);
       if (error instanceof HttpException) throw error;
       throw new HttpException('Error al obtener trazabilidad', HttpStatus.INTERNAL_SERVER_ERROR);
     }
@@ -23,8 +22,6 @@ export class EjecutivaTraceabilityController {
 
   @Post()
   async createTrazabilidad(@Body() body: any) {
-    console.log('📝 POST /ejecutiva/trazabilidad - Body recibido:', body);
-
     const { 
       id_ejecutiva, 
       id_empresa_prov,
@@ -92,10 +89,8 @@ export class EjecutivaTraceabilityController {
         observaciones: body.observaciones
       });
 
-      console.log('✅ Trazabilidad creada exitosamente:', result);
       return result;
     } catch (error) {
-      console.error('❌ Error en createTrazabilidad controller:', error);
       if (error instanceof HttpException) throw error;
       throw new HttpException(
         error.message || 'Error al crear trazabilidad', 
@@ -113,7 +108,6 @@ export class EjecutivaTraceabilityController {
     try {
       return await this.ejecutivaTraceabilityService.getPipeline(ejecutivaId);
     } catch (error) {
-      console.error('❌ Error en getPipeline controller:', error);
       if (error instanceof HttpException) throw error;
       throw new HttpException('Error al obtener pipeline', HttpStatus.INTERNAL_SERVER_ERROR);
     }
@@ -134,7 +128,6 @@ export class EjecutivaTraceabilityController {
         parseInt(limit)
       );
     } catch (error) {
-      console.error('❌ Error en getActividadesRecientes controller:', error);
       if (error instanceof HttpException) throw error;
       throw new HttpException('Error al obtener actividades', HttpStatus.INTERNAL_SERVER_ERROR);
     }
@@ -164,7 +157,6 @@ export class EjecutivaTraceabilityController {
         ejecutivaId
       );
     } catch (error) {
-      console.error('❌ Error en updateEtapaOportunidad controller:', error);
       if (error instanceof HttpException) throw error;
       throw new HttpException('Error al actualizar etapa', HttpStatus.INTERNAL_SERVER_ERROR);
     }
@@ -180,7 +172,6 @@ export class EjecutivaTraceabilityController {
     try {
       return await this.ejecutivaTraceabilityService.getStats(ejecutivaId);
     } catch (error) {
-      console.error('❌ Error en getStats controller:', error);
       if (error instanceof HttpException) throw error;
       throw new HttpException('Error al obtener estadísticas', HttpStatus.INTERNAL_SERVER_ERROR);
     }

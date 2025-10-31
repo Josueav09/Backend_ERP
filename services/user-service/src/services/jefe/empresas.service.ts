@@ -51,8 +51,6 @@ export class EmpresasService {
   }
 
   async createEmpresa(data: any) {
-    console.log('📥 Datos recibidos para crear empresa:', data); // ← DEBUG
-
     const { ruc, razon_social, correo, contraseña, telefono, pagina_web, rubro } = data;
 
     // Verificar RUC único
@@ -91,7 +89,6 @@ export class EmpresasService {
   }
 
 async updateEmpresaEstado(empresaId: number, activo: boolean) {
-  console.log('🔄 [EmpresasService] Cambiando estado de empresa:', { empresaId, activo });
 
   // ✅ USAR TRANSACCIÓN para atomicidad
   const queryRunner = this.empresaRepository.manager.connection.createQueryRunner();
@@ -110,21 +107,16 @@ async updateEmpresaEstado(empresaId: number, activo: boolean) {
 
     const estadoAnterior = empresa.estado;
     const nuevoEstado = activo ? 'Activo' : 'Inactivo';
-    
-    console.log(`🔄 [EmpresasService] Cambiando estado de "${empresa.razon_social}": ${estadoAnterior} -> ${nuevoEstado}`);
 
     // ✅ 2. OBTENER EJECUTIVAS DE ESTA EMPRESA (forma más simple)
     const ejecutivasEmpresa = await queryRunner.manager.find(Ejecutiva, {
       where: { id_empresa_prov: empresaId }
     });
 
-    console.log(`🔍 [EmpresasService] Ejecutivas encontradas: ${ejecutivasEmpresa.length}`);
-
     const idsEjecutivas = ejecutivasEmpresa.map(ej => ej.id_ejecutiva);
 
     // ✅ 3. ACTUALIZAR CLIENTES (si hay ejecutivas)
     if (idsEjecutivas.length > 0) {
-      console.log(`🔍 [EmpresasService] Actualizando clientes...`);
       
       const nuevoEstadoCliente = activo ? 'Activo' : 'Inactivo';
       
@@ -138,7 +130,6 @@ async updateEmpresaEstado(empresaId: number, activo: boolean) {
             fecha_actualizacion: new Date()
           }
         );
-        console.log(`✅ Ejecutiva ${idEjecutiva}: ${result.affected} clientes actualizados`);
       }
     }
 
@@ -154,7 +145,6 @@ async updateEmpresaEstado(empresaId: number, activo: boolean) {
 
     // ✅ 5. CONFIRMAR TRANSACCIÓN
     await queryRunner.commitTransaction();
-    console.log('✅ [EmpresasService] Transacción completada exitosamente');
 
     return {
       empresa: { ...empresa, estado: nuevoEstado },
@@ -165,7 +155,6 @@ async updateEmpresaEstado(empresaId: number, activo: boolean) {
   } catch (error) {
     // ✅ 6. REVERTIR EN CASO DE ERROR
     await queryRunner.rollbackTransaction();
-    console.error('❌ [EmpresasService] Error en transacción - REVERTIDO:', error);
 
     throw new HttpException(
       'Error al cambiar estado. Los cambios han sido revertidos.',
@@ -179,7 +168,6 @@ async updateEmpresaEstado(empresaId: number, activo: boolean) {
 
   // En EmpresasService.ts - agregar este método
   async updateEmpresa(empresaId: number, data: any) {
-    console.log('📝 Actualizando empresa ID:', empresaId, 'con datos:', data);
 
     const empresa = await this.empresaRepository.findOne({
       where: { id_empresa_prov: empresaId }
@@ -225,10 +213,8 @@ async updateEmpresaEstado(empresaId: number, activo: boolean) {
 
     try {
       const empresaActualizada = await this.empresaRepository.save(empresa);
-      console.log('✅ Empresa actualizada exitosamente:', empresaActualizada.id_empresa_prov);
       return empresaActualizada;
     } catch (error) {
-      console.error('❌ Error al actualizar empresa:', error);
       throw new HttpException(
         'Error interno del servidor al actualizar empresa',
         HttpStatus.INTERNAL_SERVER_ERROR
@@ -237,7 +223,6 @@ async updateEmpresaEstado(empresaId: number, activo: boolean) {
   }
 
   async getEmpresaEjecutivas(empresaId: number) {
-    console.log('🏢 [EmpresasService] Obteniendo ejecutivas de empresa:', empresaId);
 
     const empresa = await this.empresaRepository.findOne({
       where: { id_empresa_prov: empresaId }
@@ -256,7 +241,6 @@ async updateEmpresaEstado(empresaId: number, activo: boolean) {
       order: { nombre_completo: 'ASC' }
     });
 
-    console.log('✅ [EmpresasService] Ejecutivas asignadas:', ejecutivasAsignadas.length);
 
     // ✅ Formatear para el frontend
     const ejecutivasFormateadas = await Promise.all(
@@ -288,7 +272,6 @@ async updateEmpresaEstado(empresaId: number, activo: boolean) {
   // En empresas.service.ts (puerto 3002)
   async asignarEjecutivaAEmpresa(idEmpresa: number, idEjecutiva: number) {
     try {
-      console.log(`🔗 [EmpresasService] Asignando ejecutiva ${idEjecutiva} a empresa ${idEmpresa}`);
 
       // Verificar que la empresa existe
       const empresa = await this.empresaRepository.findOne({
@@ -315,8 +298,6 @@ async updateEmpresaEstado(empresaId: number, activo: boolean) {
       ejecutiva.id_empresa_prov = idEmpresa;
       await this.ejecutivaRepository.save(ejecutiva);
 
-      console.log(`✅ [EmpresasService] Ejecutiva ${idEjecutiva} asignada a empresa ${idEmpresa}`);
-
       return {
         success: true,
         message: 'Ejecutiva asignada correctamente',
@@ -325,13 +306,11 @@ async updateEmpresaEstado(empresaId: number, activo: boolean) {
       };
 
     } catch (error) {
-      console.error('❌ [EmpresasService] Error asignando ejecutiva:', error);
       throw new Error(error.message || 'Error al asignar ejecutiva');
     }
   }
   // En EmpresasService.ts - AGREGAR ESTE MÉTODO NUEVO
     async getEjecutivasDisponibles() {
-      console.log('🔄 [EmpresasService] Buscando ejecutivas disponibles...');
 
       // ✅ CONSULTA CORREGIDA - Usar QueryBuilder con LEFT JOIN
       const ejecutivasDisponibles = await this.ejecutivaRepository
@@ -342,7 +321,6 @@ async updateEmpresaEstado(empresaId: number, activo: boolean) {
         .orderBy('ejecutiva.nombre_completo', 'ASC')
         .getMany();
 
-      console.log(`✅ [EmpresasService] Ejecutivas disponibles encontradas: ${ejecutivasDisponibles.length}`);
 
       // ✅ Formatear para el frontend
       const ejecutivasFormateadas = ejecutivasDisponibles.map(ejecutiva => ({
@@ -365,7 +343,6 @@ async updateEmpresaEstado(empresaId: number, activo: boolean) {
 
   // En EmpresasService.ts - REVISAR Y CORREGIR
 async addEjecutivaToEmpresa(empresaId: number, ejecutivaId: number) {
-  console.log('➕ [EmpresasService] Asignando ejecutiva:', { empresaId, ejecutivaId });
 
   try {
     // ✅ Verificar que la empresa existe
@@ -410,8 +387,6 @@ async addEjecutivaToEmpresa(empresaId: number, ejecutivaId: number) {
     // ✅ Guardar usando save (para que funcione el trigger de auditoría)
     await this.ejecutivaRepository.save(ejecutiva);
 
-    console.log('✅ [EmpresasService] Ejecutiva asignada exitosamente');
-
     return {
       success: true,
       message: 'Ejecutiva asignada correctamente a la empresa',
@@ -423,7 +398,6 @@ async addEjecutivaToEmpresa(empresaId: number, ejecutivaId: number) {
     };
 
   } catch (error) {
-    console.error('❌ [EmpresasService] Error asignando ejecutiva:', error);
     
     if (error instanceof HttpException) {
       throw error;

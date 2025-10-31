@@ -24,7 +24,6 @@ export class EmpresasController {
     try {
       return await this.empresasService.getEmpresas();
     } catch (error) {
-      console.error('❌ Error en getEmpresas:', error);
       throw new HttpException(
         'Error al obtener empresas',
         HttpStatus.INTERNAL_SERVER_ERROR
@@ -38,7 +37,6 @@ export class EmpresasController {
       return await this.empresasService.getEmpresaEjecutivas(parseInt(id));
     } catch (error) {
       if (error instanceof HttpException) throw error;
-      console.error('❌ Error en getEmpresaEjecutivas:', error);
       throw new HttpException(
         'Error al obtener ejecutivas de la empresa',
         HttpStatus.INTERNAL_SERVER_ERROR
@@ -52,7 +50,6 @@ export class EmpresasController {
       return await this.empresasService.createEmpresa(body);
     } catch (error) {
       if (error instanceof HttpException) throw error;
-      console.error('❌ Error en createEmpresa:', error);
       throw new HttpException(
         error.message || 'Error al crear empresa',
         HttpStatus.INTERNAL_SERVER_ERROR
@@ -66,7 +63,6 @@ export class EmpresasController {
       return await this.empresasService.updateEmpresa(parseInt(id), data);
     } catch (error) {
       if (error instanceof HttpException) throw error;
-      console.error('❌ Error en updateEmpresa:', error);
       throw new HttpException(
         error.message || 'Error al actualizar empresa',
         HttpStatus.INTERNAL_SERVER_ERROR
@@ -87,7 +83,6 @@ export class EmpresasController {
       return await this.empresasService.updateEmpresaEstado(parseInt(id), activo);
     } catch (error) {
       if (error instanceof HttpException) throw error;
-      console.error('❌ Error en updateEmpresaEstado:', error);
       throw new HttpException(
         'Error al actualizar estado de empresa',
         HttpStatus.INTERNAL_SERVER_ERROR
@@ -123,7 +118,6 @@ export class EmpresasController {
       );
     } catch (error) {
       if (error instanceof HttpException) throw error;
-      console.error('❌ Error en removeEjecutivaFromEmpresa:', error);
       throw new HttpException(
         'Error al remover ejecutiva',
         HttpStatus.INTERNAL_SERVER_ERROR
@@ -138,10 +132,8 @@ export class EmpresasController {
     @Body() body: { id_ejecutiva: number }
   ) {
     try {
-      console.log(`🔗 [EmpresasController] Asignando ejecutiva ${body.id_ejecutiva} a empresa ${id}`);
       return await this.empresasService.asignarEjecutivaAEmpresa(parseInt(id), body.id_ejecutiva);
     } catch (error) {
-      console.error('❌ [EmpresasController] Error asignando ejecutiva:', error);
       throw new HttpException(
         error.message || 'Error al asignar ejecutiva',
         HttpStatus.BAD_REQUEST
@@ -154,7 +146,6 @@ export class EmpresasController {
     try {
       return await this.empresasService.getEjecutivasDisponibles();
     } catch (error) {
-      console.error('❌ Error en getEjecutivasDisponibles:', error);
       throw new HttpException(
         'Error al obtener ejecutivas disponibles',
         HttpStatus.INTERNAL_SERVER_ERROR

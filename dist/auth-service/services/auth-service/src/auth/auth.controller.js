@@ -21,6 +21,16 @@ let AuthController = class AuthController {
     constructor(authService) {
         this.authService = authService;
     }
+    redirectToHealth() {
+        return;
+    }
+    getHealth() {
+        return {
+            status: 'OK',
+            service: 'auth-service',
+            timestamp: new Date().toISOString()
+        };
+    }
     async getCaptcha() {
         try {
             return this.authService.generateCaptcha();
@@ -77,6 +87,19 @@ let AuthController = class AuthController {
     }
 };
 exports.AuthController = AuthController;
+__decorate([
+    (0, common_1.Get)(),
+    (0, common_1.Redirect)('/auth/health', 302),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", void 0)
+], AuthController.prototype, "redirectToHealth", null);
+__decorate([
+    (0, common_1.Get)('health'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", void 0)
+], AuthController.prototype, "getHealth", null);
 __decorate([
     (0, common_1.Get)('captcha'),
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),

@@ -10,15 +10,6 @@ import { AppModule } from './app.module';
 import * as path from 'path';
 import * as fs from 'fs';
 
-// DEBUG: Agregar antes de bootstrap
-console.log('=== ENV DEBUG MAIN.TS ===');
-console.log('Current working directory:', process.cwd());
-console.log('__dirname:', __dirname);
-console.log('Env file exists in services/auth-service/.env:', fs.existsSync(path.join(process.cwd(), 'services/auth-service/.env')));
-console.log('Env file exists in .env:', fs.existsSync(path.join(process.cwd(), '.env')));
-console.log('DB_PASSWORD from process.env:', process.env.DB_PASSWORD);
-console.log('=========================');
-
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const configService = app.get(ConfigService);
@@ -63,7 +54,6 @@ async function bootstrap() {
   const port = configService.get('PORT') || 3001;
   await app.listen(port);
   
-  console.log(`🚀 Auth Service running on port ${port}`);
 }
 
 bootstrap();

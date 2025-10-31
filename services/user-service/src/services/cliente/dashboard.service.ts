@@ -26,7 +26,6 @@ export class EmpresaDashboardService {
 
   async getStats(empresaId: number) {
     try {
-      console.log('📊 [EmpresaDashboardService] Obteniendo stats REALES para empresa:', empresaId);
 
       // 1. Obtener información básica de la empresa
       const empresa = await this.empresaRepository.findOne({
@@ -34,7 +33,6 @@ export class EmpresaDashboardService {
       });
 
       if (!empresa) {
-        console.log('❌ Empresa no encontrada:', empresaId);
         return this.getEmptyStats();
       }
 
@@ -101,11 +99,9 @@ export class EmpresaDashboardService {
         ventasGanadas
       };
 
-      console.log('✅ [EmpresaDashboardService] Stats REALES obtenidas:', stats);
       return stats;
 
     } catch (error) {
-      console.error('❌ [EmpresaDashboardService] Error en getStats:', error);
       return this.getEmptyStats();
     }
   }
@@ -121,7 +117,6 @@ export class EmpresaDashboardService {
 
       return result;
     } catch (error) {
-      console.error('❌ Error en getActividadesCompletadas:', error);
       return 0;
     }
   }
@@ -139,14 +134,12 @@ export class EmpresaDashboardService {
 
       return result;
     } catch (error) {
-      console.error('❌ Error en getActividadesEnProceso:', error);
       return 0;
     }
   }
 
   async getTrazabilidad(empresaId: number) {
     try {
-      console.log('📋 [EmpresaDashboardService] Obteniendo trazabilidad para empresa:', empresaId);
 
       const trazabilidad = await this.trazabilidadRepository
         .createQueryBuilder('t')
@@ -159,10 +152,8 @@ export class EmpresaDashboardService {
         .limit(50)
         .getMany(); // ✅ USAR getMany() en lugar de getRawMany()
 
-      console.log('🔍 [Debug] Primer registro de trazabilidad:', trazabilidad[0]);
 
       const trazabilidadFormateada = trazabilidad.map(item => {
-        console.log("🔍 ESTADO desde entity:", item.etapa_oportunidad);
 
         return {
           id_trazabilidad: item.id_trazabilidad,
@@ -180,11 +171,9 @@ export class EmpresaDashboardService {
         };
       });
 
-      console.log(`✅ [EmpresaDashboardService] ${trazabilidadFormateada.length} actividades obtenidas`);
       return trazabilidadFormateada;
 
     } catch (error) {
-      console.error('❌ [EmpresaDashboardService] Error en getTrazabilidad:', error);
       return [];
     }
   }
@@ -193,7 +182,6 @@ export class EmpresaDashboardService {
 
   async getEjecutivaInfo(empresaId: number) {
     try {
-      console.log('👩‍💼 [EmpresaDashboardService] Obteniendo información de ejecutiva para empresa:', empresaId);
 
       const ejecutivas = await this.ejecutivaRepository
         .createQueryBuilder('e')
@@ -226,7 +214,6 @@ export class EmpresaDashboardService {
       };
 
     } catch (error) {
-      console.error('❌ [EmpresaDashboardService] Error en getEjecutivaInfo:', error);
       return {
         ejecutiva_nombre: 'Error al cargar información',
         ejecutiva_email: 'contacto@growvia.com',
@@ -249,7 +236,6 @@ export class EmpresaDashboardService {
 
       return result;
     } catch (error) {
-      console.error('❌ [EmpresaDashboardService] Error en getTotalClientes:', error);
       return 0;
     }
   }
@@ -264,7 +250,6 @@ export class EmpresaDashboardService {
 
       return result;
     } catch (error) {
-      console.error('❌ [EmpresaDashboardService] Error en getTotalEjecutivas:', error);
       return 0;
     }
   }
@@ -278,7 +263,6 @@ export class EmpresaDashboardService {
 
       return result;
     } catch (error) {
-      console.error('❌ [EmpresaDashboardService] Error en getTotalActividades:', error);
       return 0;
     }
   }
@@ -297,7 +281,6 @@ export class EmpresaDashboardService {
 
       return result;
     } catch (error) {
-      console.error('❌ [EmpresaDashboardService] Error en getActividadesEsteMes:', error);
       return 0;
     }
   }
@@ -316,7 +299,6 @@ export class EmpresaDashboardService {
 
       return result;
     } catch (error) {
-      console.error('❌ [EmpresaDashboardService] Error en getClientesEsteMes:', error);
       return 0;
     }
   }
@@ -332,7 +314,6 @@ export class EmpresaDashboardService {
 
       return parseFloat(result.revenue) || 0;
     } catch (error) {
-      console.error('❌ [EmpresaDashboardService] Error en getRevenueTotal:', error);
       return 0;
     }
   }
@@ -350,7 +331,6 @@ export class EmpresaDashboardService {
 
       return result;
     } catch (error) {
-      console.error('❌ [EmpresaDashboardService] Error en getPipelineOportunidades:', error);
       return 0;
     }
   }
@@ -365,7 +345,6 @@ export class EmpresaDashboardService {
 
       return result;
     } catch (error) {
-      console.error('❌ [EmpresaDashboardService] Error en getVentasGanadas:', error);
       return 0;
     }
   }
@@ -396,7 +375,6 @@ export class EmpresaDashboardService {
 
   async getClientesRecientes(empresaId: number) {
     try {
-      console.log('👥 [EmpresaDashboardService] Obteniendo clientes recientes CON ESTADÍSTICAS para empresa:', empresaId);
 
       const clientes = await this.clienteRepository
         .createQueryBuilder('cf')
@@ -442,17 +420,14 @@ export class EmpresaDashboardService {
         })
       );
 
-      console.log(`✅ [EmpresaDashboardService] ${clientesConEstadisticas.length} clientes con estadísticas obtenidos`);
 
       // 🔍 Debug: mostrar estadísticas del primer cliente
       if (clientesConEstadisticas.length > 0) {
-        console.log('🔍 [Debug] Primer cliente con estadísticas:', clientesConEstadisticas[0]);
       }
 
       return clientesConEstadisticas;
 
     } catch (error) {
-      console.error('❌ [EmpresaDashboardService] Error en getClientesRecientes:', error);
       return [];
     }
   }
@@ -490,7 +465,6 @@ export class EmpresaDashboardService {
         total
       };
     } catch (error) {
-      console.error('❌ Error obteniendo estadísticas del cliente:', error);
       return {
         completadas: 0,
         en_proceso: 0,
@@ -500,10 +474,8 @@ export class EmpresaDashboardService {
   }
 
   private mapEstadoTrazabilidad(estado: string): string {
-    console.log("🔍 ESTADO recibido en mapEstadoTrazabilidad:", estado);
 
     if (!estado) {
-      console.log("⚠️ Estado vacío, usando 'pendiente'");
       return 'pendiente';
     }
 
@@ -522,7 +494,6 @@ export class EmpresaDashboardService {
     };
 
     const resultado = estadoMap[estado] || 'en_proceso';
-    console.log(`🔍 Estado mapeado: ${estado} -> ${resultado}`);
 
     return resultado;
   }
@@ -531,7 +502,6 @@ export class EmpresaDashboardService {
   // En el mismo servicio - agregar este método
   async getEjecutivaInfoCompleta(empresaId: number) {
     try {
-      console.log('👩‍💼 [EmpresaDashboardService] Obteniendo información COMPLETA de ejecutiva para empresa:', empresaId);
 
       const ejecutiva = await this.ejecutivaRepository
         .createQueryBuilder('e')
@@ -568,7 +538,6 @@ export class EmpresaDashboardService {
       };
 
     } catch (error) {
-      console.error('❌ [EmpresaDashboardService] Error en getEjecutivaInfoCompleta:', error);
       return {
         ejecutiva_nombre: 'Error al cargar información',
         ejecutiva_email: 'contacto@growvia.com',
@@ -624,7 +593,6 @@ export class EmpresaDashboardService {
         tiempo_respuesta: '< 24 horas' // Esto podría calcularse con las fechas de respuesta
       };
     } catch (error) {
-      console.error('❌ Error obteniendo estadísticas ejecutiva:', error);
       return {
         clientes_activos: 0,
         tasa_conversion: '0%',
@@ -637,7 +605,6 @@ export class EmpresaDashboardService {
 
   async getEjecutivasByEmpresa(empresaId: number): Promise<any[]> {
     try {
-      console.log('👥 [EmpresaDashboardService] Obteniendo ejecutivas para empresa:', empresaId);
 
       const ejecutivas = await this.ejecutivaRepository
         .createQueryBuilder('e')
@@ -653,10 +620,8 @@ export class EmpresaDashboardService {
         .andWhere('e.estado_ejecutiva = :estado', { estado: 'Activo' })
         .getMany();
 
-      console.log(`✅ [EmpresaDashboardService] ${ejecutivas.length} ejecutivas encontradas`);
       return ejecutivas;
     } catch (error) {
-      console.error('❌ [EmpresaDashboardService] Error en getEjecutivasByEmpresa:', error);
       return [];
     }
   }
@@ -664,7 +629,6 @@ export class EmpresaDashboardService {
 
   async getEquipoStats(empresaId: number): Promise<any> {
     try {
-      console.log('📊 [EmpresaDashboardService] Obteniendo stats de equipo para empresa:', empresaId);
 
       const [
         totalEjecutivas,
@@ -691,7 +655,6 @@ export class EmpresaDashboardService {
         conversionPromedio: `${conversionPromedio}%`
       };
     } catch (error) {
-      console.error('❌ [EmpresaDashboardService] Error en getEquipoStats:', error);
       return {
         totalEjecutivas: 0,
         totalClientes: 0,
@@ -705,7 +668,6 @@ export class EmpresaDashboardService {
 
   async getEmbudoVentasEjecutiva(ejecutivaId: number, empresaId: number): Promise<any[]> {
     try {
-      console.log('🎯 [EmpresaDashboardService] Obteniendo embudo REAL para ejecutiva:', ejecutivaId);
 
       // ✅ USAR LAS ETAPAS EXACTAS DE LA BASE DE DATOS
       const etapasBD = [
@@ -742,7 +704,6 @@ export class EmpresaDashboardService {
             .filter(e => e.etapaFrontend === etapaFrontend)
             .map(e => e.etapaBD);
 
-          console.log(`🔍 [Embudo] ${etapaFrontend} -> BD:`, etapasCorrespondientes);
 
           if (etapasCorrespondientes.length === 0) {
             return {
@@ -772,7 +733,6 @@ export class EmpresaDashboardService {
             .andWhere('t.nombre_oportunidad IS NOT NULL')
             .getRawOne();
 
-          console.log(`📊 [Embudo] ${etapaFrontend}: ${cantidad} oportunidades, $${montoResult.monto}`);
 
           return {
             etapa: etapaFrontend,
@@ -783,11 +743,9 @@ export class EmpresaDashboardService {
         })
       );
 
-      console.log('✅ [Embudo] Resultado final:', embudoAgrupado);
       return embudoAgrupado;
 
     } catch (error) {
-      console.error('❌ [EmpresaDashboardService] Error en getEmbudoVentasEjecutiva:', error);
       // Retornar embudo vacío en caso de error
       return [
         { etapa: "Prospección", cantidad: 0, tasa_conversion: "0%", monto_potencial: 0 },
@@ -816,7 +774,6 @@ export class EmpresaDashboardService {
 
   async getEstadisticasEjecutivaCompleta(ejecutivaId: number, empresaId: number): Promise<any> {
     try {
-      console.log('📈 [EmpresaDashboardService] Obteniendo estadísticas COMPLETAS para ejecutiva:', ejecutivaId);
 
       const [
         clientesActivos,
@@ -850,7 +807,6 @@ export class EmpresaDashboardService {
         total_oportunidades: totalOportunidades
       };
     } catch (error) {
-      console.error('❌ [EmpresaDashboardService] Error en getEstadisticasEjecutivaCompleta:', error);
       return {
         clientes_activos: 0,
         ventas_ganadas: 0,
@@ -879,7 +835,6 @@ export class EmpresaDashboardService {
 
   async getClientesPorEjecutiva(ejecutivaId: number, empresaId: number): Promise<any[]> {
     try {
-      console.log('👥 [EmpresaDashboardService] Obteniendo clientes para ejecutiva:', ejecutivaId);
 
       const clientes = await this.clienteRepository
         .createQueryBuilder('cf')
@@ -901,7 +856,6 @@ export class EmpresaDashboardService {
 
       return clientes;
     } catch (error) {
-      console.error('❌ [EmpresaDashboardService] Error en getClientesPorEjecutiva:', error);
       return [];
     }
   }

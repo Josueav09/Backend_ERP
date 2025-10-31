@@ -38,18 +38,6 @@ export class TrazabilidadController {
     @Query('etapa') etapa?: string
   ) {
     try {
-      console.log('🔍 [TrazabilidadController] getTrazabilidad llamado');
-      console.log('🔍 Parámetros recibidos:', {
-        empresaId,
-        ejecutivaId,
-        clienteId,
-        fechaInicio,
-        fechaFin,
-        tipoContacto,
-        etapaOportunidad,
-        etapa
-      });
-
       // Validar permisos según tipo de usuario
       if (req.user.userType === 'ejecutiva') {
         if (ejecutivaId && parseInt(ejecutivaId) !== req.user.id_ejecutiva) {
@@ -72,10 +60,8 @@ export class TrazabilidadController {
       };
 
       const result = await this.trazabilidadService.getTrazabilidad(filters);
-      console.log('✅ [TrazabilidadController] Resultado exitoso, registros:', result.length);
       return result;
     } catch (error) {
-      console.error('❌ [TrazabilidadController] ERROR:', error);
       if (error instanceof HttpException) throw error;
       throw new HttpException('Error al obtener trazabilidad', HttpStatus.INTERNAL_SERVER_ERROR);
     }
@@ -84,7 +70,6 @@ export class TrazabilidadController {
   @Get('dashboard')
   async getDashboardTrazabilidad(@Request() req) {
     try {
-      console.log('👤 Usuario autenticado:', req.user);
 
       if (req.user.userType !== 'jefe') {
         throw new HttpException('No autorizado para esta operación', HttpStatus.FORBIDDEN);
@@ -120,7 +105,6 @@ export class TrazabilidadController {
   @Post()
   async createTrazabilidad(@Request() req, @Body() body: any) {
     try {
-      console.log('👤 Usuario autenticado:', req.user);
 
       if (req.user.userType !== 'ejecutiva') {
         throw new HttpException('Solo las ejecutivas pueden crear trazabilidad', HttpStatus.FORBIDDEN);
@@ -146,7 +130,6 @@ export class TrazabilidadController {
 
       return await this.trazabilidadService.createTrazabilidad(body);
     } catch (error) {
-      console.error('❌ Error al crear trazabilidad:', error);
       if (error instanceof HttpException) throw error;
       throw new HttpException('Error al crear trazabilidad', HttpStatus.INTERNAL_SERVER_ERROR);
     }
@@ -159,7 +142,6 @@ export class TrazabilidadController {
     @Body() body: any
   ) {
     try {
-      console.log('👤 Usuario autenticado:', req.user);
 
       if (req.user.userType !== 'ejecutiva') {
         throw new HttpException('Solo las ejecutivas pueden actualizar trazabilidad', HttpStatus.FORBIDDEN);
@@ -180,7 +162,6 @@ export class TrazabilidadController {
 
       return await this.trazabilidadService.updateTrazabilidad(parseInt(id), body);
     } catch (error) {
-      console.error('❌ Error al actualizar trazabilidad:', error);
       if (error instanceof HttpException) throw error;
       throw new HttpException('Error al actualizar trazabilidad', HttpStatus.INTERNAL_SERVER_ERROR);
     }
@@ -200,7 +181,6 @@ export class TrazabilidadController {
     @Query('fechaHasta') fechaHasta?: string
   ) {
     try {
-      console.log('📈 [TrazabilidadController] getKPIs llamado');
       
       // Validar permisos
       if (req.user.userType === 'ejecutiva') {
@@ -219,7 +199,6 @@ export class TrazabilidadController {
 
       return await this.trazabilidadService.getKPIs(filters);
     } catch (error) {
-      console.error('❌ Error en getKPIs:', error);
       // Datos de fallback
       return {
         totalOportunidades: 0,
@@ -239,7 +218,6 @@ export class TrazabilidadController {
     @Query('ejecutivaId') ejecutivaId?: string
   ) {
     try {
-      console.log('👥 [TrazabilidadController] getNuevosClientes llamado');
       
       if (req.user.userType === 'ejecutiva') {
         ejecutivaId = req.user.id_ejecutiva.toString();
@@ -252,7 +230,6 @@ export class TrazabilidadController {
 
       return await this.trazabilidadService.getNuevosClientes(mesesNum, idEjecutiva);
     } catch (error) {
-      console.error('❌ Error en getNuevosClientes:', error);
       return [
         { mes: 'Oct 2025', contactos: 1 },
         { mes: 'Sep 2025', contactos: 0 },
@@ -269,7 +246,6 @@ export class TrazabilidadController {
     @Query('fechaHasta') fechaHasta?: string
   ) {
     try {
-      console.log('📞 [TrazabilidadController] getContactosPorTipo llamado');
       
       if (req.user.userType === 'ejecutiva') {
         ejecutivaId = req.user.id_ejecutiva.toString();
@@ -285,7 +261,6 @@ export class TrazabilidadController {
 
       return await this.trazabilidadService.getContactosPorTipo(filters);
     } catch (error) {
-      console.error('❌ Error en getContactosPorTipo:', error);
       return [
         { name: 'Llamada', value: 5, color: '#3B82F6' },
         { name: 'Email', value: 3, color: '#A855F7' },
@@ -302,7 +277,6 @@ export class TrazabilidadController {
     @Query('fechaHasta') fechaHasta?: string
   ) {
     try {
-      console.log('💰 [TrazabilidadController] getMontosPorEtapa llamado');
       
       if (req.user.userType === 'ejecutiva') {
         ejecutivaId = req.user.id_ejecutiva.toString();
@@ -318,7 +292,6 @@ export class TrazabilidadController {
 
       return await this.trazabilidadService.getMontosPorEtapa(filters);
     } catch (error) {
-      console.error('❌ Error en getMontosPorEtapa:', error);
       return [
         { etapa: 'Prospección', monto: 50000 },
         { etapa: 'Negociación', monto: 150000 },
@@ -334,7 +307,6 @@ export class TrazabilidadController {
     @Query('fechaHasta') fechaHasta?: string
   ) {
     try {
-      console.log('📊 [TrazabilidadController] getTasaConversion llamado');
       
       if (req.user.userType !== 'jefe') {
         throw new HttpException('Solo el jefe puede ver tasas de conversión', HttpStatus.FORBIDDEN);
@@ -343,7 +315,6 @@ export class TrazabilidadController {
       const filters = { fechaDesde, fechaHasta };
       return await this.trazabilidadService.getTasaConversion(filters);
     } catch (error) {
-      console.error('❌ Error en getTasaConversion:', error);
       return [
         { 
           id_ejecutiva: 1, 
@@ -372,7 +343,6 @@ export class TrazabilidadController {
     @Query('limit') limit?: string
   ) {
     try {
-      console.log('📋 [TrazabilidadController] getEtapa1 llamado');
       
       if (req.user.userType === 'ejecutiva') {
         ejecutivaId = req.user.id_ejecutiva.toString();
@@ -394,7 +364,6 @@ export class TrazabilidadController {
 
       return await this.trazabilidadService.getEtapa1(filters);
     } catch (error) {
-      console.error('❌ Error en getEtapa1:', error);
       return {
         data: [],
         pagination: {
@@ -420,7 +389,6 @@ export class TrazabilidadController {
     @Query('limit') limit?: string
   ) {
     try {
-      console.log('🎯 [TrazabilidadController] getEtapa2 llamado');
       
       if (req.user.userType === 'ejecutiva') {
         ejecutivaId = req.user.id_ejecutiva.toString();
@@ -441,7 +409,6 @@ export class TrazabilidadController {
 
       return await this.trazabilidadService.getEtapa2(filters);
     } catch (error) {
-      console.error('❌ Error en getEtapa2:', error);
       return {
         data: [],
         pagination: {
@@ -457,7 +424,6 @@ export class TrazabilidadController {
   @Get('filter-options')
   async getFilterOptions(@Request() req) {
     try {
-      console.log('⚙️ [TrazabilidadController] getFilterOptions llamado');
       
       // Ambos jefe y ejecutivas pueden ver opciones de filtro
       if (req.user.userType !== 'jefe' && req.user.userType !== 'ejecutiva') {
@@ -466,7 +432,6 @@ export class TrazabilidadController {
 
       return await this.trazabilidadService.getFilterOptions();
     } catch (error) {
-      console.error('❌ Error en getFilterOptions:', error);
       return {
         ejecutivas: [],
         empresas: [],
@@ -483,7 +448,6 @@ export class TrazabilidadController {
     @Query('ejecutivaId') ejecutivaId?: string
   ) {
     try {
-      console.log('📅 [TrazabilidadController] getNuevasReuniones llamado');
       
       if (req.user.userType === 'ejecutiva') {
         ejecutivaId = req.user.id_ejecutiva.toString();
@@ -496,7 +460,6 @@ export class TrazabilidadController {
 
       return await this.trazabilidadService.getNuevasReunionesAgendadas(mesesNum, idEjecutiva);
     } catch (error) {
-      console.error('❌ Error en getNuevasReuniones:', error);
       return [
         { mes: 'Oct 2025', reuniones: 3 },
         { mes: 'Sep 2025', reuniones: 2 },
@@ -512,7 +475,6 @@ export class TrazabilidadController {
     @Query('ejecutivaId') ejecutivaId?: string
   ) {
     try {
-      console.log('💰 [TrazabilidadController] getNuevasVentas llamado');
       
       if (req.user.userType === 'ejecutiva') {
         ejecutivaId = req.user.id_ejecutiva.toString();
@@ -525,7 +487,6 @@ export class TrazabilidadController {
 
       return await this.trazabilidadService.getNuevasVentas(mesesNum, idEjecutiva);
     } catch (error) {
-      console.error('❌ Error en getNuevasVentas:', error);
       return [
         { mes: 'Oct 2025', ventas: 2 },
         { mes: 'Sep 2025', ventas: 3 },
@@ -542,7 +503,6 @@ export class TrazabilidadController {
     @Query('fechaHasta') fechaHasta?: string
   ) {
     try {
-      console.log('📞 [TrazabilidadController] getEfectividadCanales llamado');
       
       if (req.user.userType === 'ejecutiva') {
         ejecutivaId = req.user.id_ejecutiva.toString();
@@ -558,7 +518,6 @@ export class TrazabilidadController {
 
       return await this.trazabilidadService.getEfectividadCanalesContacto(filters);
     } catch (error) {
-      console.error('❌ Error en getEfectividadCanales:', error);
       return [];
     }
   }
@@ -566,7 +525,6 @@ export class TrazabilidadController {
   @Get('kpis/resumen-semanal')
   async getResumenSemanal(@Request() req) {
     try {
-      console.log('📊 [TrazabilidadController] getResumenSemanal llamado');
       
       if (req.user.userType !== 'jefe') {
         throw new HttpException('Solo el jefe puede ver el resumen semanal', HttpStatus.FORBIDDEN);
@@ -574,7 +532,6 @@ export class TrazabilidadController {
 
       return await this.trazabilidadService.getResumenSemanalEjecutivas();
     } catch (error) {
-      console.error('❌ Error en getResumenSemanal:', error);
       return [];
     }
   }
@@ -587,7 +544,6 @@ export class TrazabilidadController {
     @Query('fechaHasta') fechaHasta?: string
   ) {
     try {
-      console.log('🔄 [TrazabilidadController] getEmbudoVentas llamado');
       
       if (req.user.userType === 'ejecutiva') {
         ejecutivaId = req.user.id_ejecutiva.toString();
@@ -603,7 +559,6 @@ export class TrazabilidadController {
 
       return await this.trazabilidadService.getEmbudoVentas(filters);
     } catch (error) {
-      console.error('❌ Error en getEmbudoVentas:', error);
       return [];
     }
   }
@@ -615,7 +570,6 @@ export class TrazabilidadController {
     @Query('fechaHasta') fechaHasta?: string
   ) {
     try {
-      console.log('🏆 [TrazabilidadController] getRankingEjecutivas llamado');
       
       if (req.user.userType !== 'jefe') {
         throw new HttpException('Solo el jefe puede ver el ranking', HttpStatus.FORBIDDEN);
@@ -624,7 +578,6 @@ export class TrazabilidadController {
       const filters = { fechaDesde, fechaHasta };
       return await this.trazabilidadService.getRankingEjecutivas(filters);
     } catch (error) {
-      console.error('❌ Error en getRankingEjecutivas:', error);
       return [];
     }
   }
@@ -640,7 +593,6 @@ async generateReport(
   @Res() res: Response // ← Usar el decorador @Res() para la respuesta
 ) {
   try {
-    console.log('📊 [TrazabilidadController] Iniciando generación de reporte...');
     
     const { filters, reportType, format = 'csv' } = reportDto;
     
@@ -660,7 +612,6 @@ async generateReport(
     return res.send(csvContent);
     
   } catch (error) {
-    console.error('❌ [TrazabilidadController] ERROR:', error);
     return res.status(500).json({ 
       error: 'Error interno del servidor al generar reporte',
       details: error.message

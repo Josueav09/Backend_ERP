@@ -57,18 +57,22 @@ let EjecutivasController = class EjecutivasController {
             throw new common_1.HttpException('Error al crear ejecutiva', error);
         }
     }
-    async updateEjecutiva(id, body) {
+    async updateEjecutiva(id, data) {
+        console.log('📥 Datos recibidos para actualizar ejecutiva:', data);
         try {
-            const result = await this.ejecutivasService.updateEjecutiva(parseInt(id), body);
+            const result = await this.ejecutivasService.updateEjecutiva(Number(id), data);
             if (!result) {
                 throw new common_1.HttpException('Ejecutiva no encontrada', common_1.HttpStatus.NOT_FOUND);
             }
-            return result;
+            return {
+                success: true,
+                message: 'Ejecutiva actualizada correctamente',
+                data: result
+            };
         }
         catch (error) {
-            if (error instanceof common_1.HttpException)
-                throw error;
-            throw new common_1.HttpException('Error al actualizar ejecutiva', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
+            console.error('❌ Error actualizando ejecutiva:', error);
+            throw new common_1.HttpException(error.message || 'Error al actualizar ejecutiva', common_1.HttpStatus.BAD_REQUEST);
         }
     }
     async deleteEjecutiva(id) {

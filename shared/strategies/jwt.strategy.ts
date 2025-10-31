@@ -15,11 +15,6 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(private configService: ConfigService) {
     const jwtSecret = configService.get('JWT_SECRET');
     
-    // ✅ DEBUG CRÍTICO
-    console.log('🔐 [Shared JwtStrategy] JWT_SECRET configurado:', jwtSecret ? 'SÍ' : 'NO');
-    console.log('🔐 [Shared JwtStrategy] JWT_SECRET length:', jwtSecret?.length);
-    console.log('🔐 [Shared JwtStrategy] JWT_SECRET primeros 10 chars:', jwtSecret?.substring(0, 10) + '...');
-    
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
@@ -28,14 +23,8 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: JwtPayload) {
-    console.log('🔐 [Shared JwtStrategy] Validando payload:', payload);
     
     if (!payload.sub || !payload.email || !payload.userType) {
-      console.log('❌ [Shared JwtStrategy] Payload incompleto:', {
-        sub: payload.sub,
-        email: payload.email,
-        userType: payload.userType
-      });
       throw new UnauthorizedException('Token inválido: estructura incorrecta');
     }
 
@@ -49,7 +38,6 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       id_ejecutiva: payload.userType === 'ejecutiva' ? payload.sub : null,
     };
 
-    console.log('✅ [Shared JwtStrategy] User validado exitosamente:', user);
     return user;
   }
 }

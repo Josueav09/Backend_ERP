@@ -90,75 +90,9 @@ export class ClientesService {
     };
   }
 
-  // async createCliente(data: any) {
-  //   const { 
-  //     ruc, 
-  //     razon_social, 
-  //     correo, 
-  //     telefono, 
-  //     direccion, 
-  //     id_ejecutiva,
-  //     persona_contacto 
-  //   } = data;
-
-  //   // Verificar RUC único
-  //   if (ruc) {
-  //     const existingCliente = await this.clienteRepository.findOne({
-  //       where: { ruc }
-  //     });
-
-  //     if (existingCliente) {
-  //       throw new HttpException('Ya existe un cliente con este RUC', HttpStatus.BAD_REQUEST);
-  //     }
-  //   }
-
-  //   // Verificar ejecutiva existe
-  //   let ejecutiva = null;
-  //   if (id_ejecutiva) {
-  //     ejecutiva = await this.ejecutivaRepository.findOne({
-  //       where: { id_ejecutiva: id_ejecutiva }
-  //     });
-
-  //     if (!ejecutiva) {
-  //       throw new HttpException('Ejecutiva no encontrada', HttpStatus.BAD_REQUEST);
-  //     }
-  //   }
-
-  //   const nuevoCliente = this.clienteRepository.create({
-  //     ruc: ruc || null,
-  //     razon_social,
-  //     correo: correo || null,
-  //     telefono: telefono || null,
-  //     direccion: direccion || null,
-  //     ejecutiva: ejecutiva,
-  //     pais: 'Perú' // Por defecto
-  //   });
-
-  //   const clienteGuardado = await this.clienteRepository.save(nuevoCliente);
-
-  //   // Crear persona de contacto si se proporciona
-  //   if (persona_contacto && persona_contacto.nombre_completo) {
-  //     const nuevoContacto = this.contactoRepository.create({
-  //       nombre_completo: persona_contacto.nombre_completo,
-  //       cargo: persona_contacto.cargo || null,
-  //       correo: persona_contacto.correo || null,
-  //       telefono: persona_contacto.telefono || null,
-  //       cliente_final: clienteGuardado
-  //     });
-
-  //     await this.contactoRepository.save(nuevoContacto);
-  //   }
-
-  //   return await this.clienteRepository.findOne({
-  //     where: { id_cliente_final: clienteGuardado.id_cliente_final },
-  //     relations: ['ejecutiva', 'personas_contacto']
-  //   });
-  // }
-
   // En tu ClientesService - método create CORREGIDO
   async create(data: any) {
     try {
-      console.log('➕ [ClientesService] Creando nuevo cliente:', data.razon_social);
 
       // Validaciones básicas
       if (!data.razon_social) {
@@ -238,8 +172,6 @@ export class ClientesService {
 
       const clienteGuardado = await this.clienteRepository.save(nuevoCliente);
 
-      console.log(`✅ [ClientesService] Cliente creado con ID: ${clienteGuardado.id_cliente_final}`);
-
       return {
         ...clienteGuardado,
         ejecutiva_nombre: ejecutiva.nombre_completo,
@@ -249,8 +181,6 @@ export class ClientesService {
       };
 
     } catch (error) {
-      console.error('❌ [ClientesService] Error al crear cliente:', error);
-
       if (error instanceof HttpException) {
         throw error;
       }

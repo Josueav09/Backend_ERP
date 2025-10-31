@@ -166,6 +166,11 @@ let EjecutivasService = class EjecutivasService {
             ejecutiva.linkedin = data.linkedin;
         if (data.estado_ejecutiva)
             ejecutiva.estado_ejecutiva = data.estado_ejecutiva;
+        if (data.contraseña && data.contraseña.trim() !== '') {
+            console.log('🔐 Actualizando contraseña para ejecutiva ID:', id);
+            const bcrypt = require('bcryptjs');
+            ejecutiva.contraseña = await bcrypt.hash(data.contraseña.trim(), 10);
+        }
         ejecutiva.fecha_actualizacion = new Date();
         return await this.ejecutivaRepository.save(ejecutiva);
     }

@@ -17,8 +17,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
       ? exception.getResponse() 
       : 'Internal server error';
 
-    console.error('❌ Exception:', exception);
-
+    
     response.status(status).json({
       success: false,
       statusCode: status,

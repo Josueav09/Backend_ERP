@@ -28,46 +28,25 @@ export class JefeService {
 
 
   async getPerfil(userId: number) {
-    console.log('🔐 [JefeService] === INICIANDO getPerfil ===');
-    console.log('🔐 [JefeService] userId recibido:', userId);
-    console.log('🔐 [JefeService] Tipo de userId:', typeof userId);
 
     try {
-      // ✅ VERIFICAR SI EL REPOSITORIO ESTÁ CONECTADO
-      console.log('🔐 [JefeService] jefeRepository:', this.jefeRepository ? 'DEFINIDO' : 'NO DEFINIDO');
-
       // ✅ VERIFICAR TODOS LOS JEFES EN LA BD
       const todosJefes = await this.jefeRepository.find();
-      console.log('🔐 [JefeService] Todos los jefes en BD:', todosJefes);
-      console.log('🔐 [JefeService] Cantidad de jefes:', todosJefes.length);
-
       // ✅ BUSCAR JEFE ESPECÍFICO
-      console.log('🔐 [JefeService] Buscando jefe con id_jefe:', userId);
       const jefe = await this.jefeRepository.findOne({
         where: { id_jefe: userId }
       });
 
-      console.log('🔐 [JefeService] Resultado de findOne:', jefe);
 
       if (!jefe) {
-        console.log('❌ [JefeService] Jefe NO encontrado para id:', userId);
 
         // Verificar si hay algún problema con el tipo de dato
         const jefeComoString = await this.jefeRepository.findOne({
           where: { id_jefe: userId.toString() as any }
         });
-        console.log('🔐 [JefeService] Búsqueda con string:', jefeComoString);
 
         return null;
       }
-
-      console.log('✅ [JefeService] Jefe ENCONTRADO:', {
-        id_jefe: jefe.id_jefe,
-        nombre_completo: jefe.nombre_completo,
-        email: jefe.correo,
-        telefono: jefe.telefono,
-        fecha_creacion: jefe.fecha_creacion
-      });
 
       // ✅ FORMATEAR DATOS PARA EL FRONTEND
       const nombreParts = jefe.nombre_completo.split(' ');
@@ -83,12 +62,9 @@ export class JefeService {
         fecha_actualizacion: jefe.fecha_actualizacion
       };
 
-      console.log('✅ [JefeService] Perfil formateado:', perfilData);
       return perfilData;
 
     } catch (error) {
-      console.error('❌ [JefeService] ERROR en getPerfil:', error);
-      console.error('❌ [JefeService] Stack trace:', error.stack);
       throw new HttpException(
         'Error al obtener perfil del jefe',
         HttpStatus.INTERNAL_SERVER_ERROR
@@ -152,8 +128,6 @@ export class JefeService {
 
   async getStats() {
     try {
-      console.log('📊 [JefeService] === INICIANDO getStats CON VISTAS ===');
-
       // ✅ Obtener datos de TODAS las vistas en paralelo
       const [statsData, dashboardData, pipelineData, topEjecutivas, topEmpresas, topClientes] = await Promise.all([
         // Vistas principales
@@ -166,15 +140,6 @@ export class JefeService {
         this.trazabilidadRepository.query('SELECT * FROM vista_top_empresas'),
         this.trazabilidadRepository.query('SELECT * FROM vista_top_clientes')
       ]);
-
-      console.log('✅ [JefeService] Vistas cargadas:', {
-        stats: statsData.length,
-        dashboard: dashboardData.length,
-        pipeline: pipelineData.length,
-        topEjecutivas: topEjecutivas.length,
-        topEmpresas: topEmpresas.length,
-        topClientes: topClientes.length
-      });
 
       const vistaStats = statsData[0];
 
@@ -201,17 +166,14 @@ export class JefeService {
         pipeline: pipelineData
       };
 
-      console.log('✅ [JefeService] Estadísticas completas cargadas');
       return stats;
 
     } catch (error) {
-      console.error('❌ [JefeService] ERROR en getStats:', error);
       return await this.getStatsFallback();
     }
   }
 
   private async getStatsFallback() {
-    console.log('🔄 [JefeService] Usando método de respaldo...');
 
     const startOfMonth = new Date();
     startOfMonth.setDate(1);
@@ -267,7 +229,6 @@ export class JefeService {
 
       return tasa.toFixed(1) + '%';
     } catch (error) {
-      console.warn('⚠️ Error calculando tasa de conversión:', error);
       return '0%';
     }
   }
@@ -299,17 +260,11 @@ export class JefeService {
       }
     });
   }
-
-  // ========================================
-  // MÉTODOS PARA GESTIÓN DE CLIENTES FINALES
-  // ========================================
-
   /**
    * Obtener todos los clientes finales con información completa
    */
   async getClientes() {
     try {
-      console.log('📋 [ClientesService] Obteniendo todos los clientes finales...');
 
       const clientes = await this.clienteRepository
         .createQueryBuilder('cf')
@@ -379,12 +334,9 @@ export class JefeService {
         estado: cliente.cf_estado || 'Activo'
       }));
 
-      console.log(`✅ [ClientesService] ${clientesFormateados.length} clientes encontrados`);
-      console.log('📊 Ejemplo de cliente:', clientesFormateados[0]); // Para debug
       return clientesFormateados;
 
     } catch (error) {
-      console.error('❌ [ClientesService] Error al obtener clientes:', error);
       throw new HttpException(
         'Error al obtener clientes finales',
         HttpStatus.INTERNAL_SERVER_ERROR
@@ -394,7 +346,6 @@ export class JefeService {
 
   async getClienteById(id: number) {
     try {
-      console.log(`🔍 [JefeService] Buscando cliente con ID: ${id}`);
 
       const cliente = await this.clienteRepository.findOne({
         where: { id_cliente_final: id },
@@ -405,11 +356,9 @@ export class JefeService {
         throw new HttpException(`Cliente con ID ${id} no encontrado`, HttpStatus.NOT_FOUND);
       }
 
-      console.log(`✅ [JefeService] Cliente encontrado: ${cliente.razon_social}`);
       return cliente;
 
     } catch (error) {
-      console.error('❌ [JefeService] Error al obtener cliente:', error);
       if (error instanceof HttpException) throw error;
       throw new HttpException('Error al obtener el cliente', HttpStatus.INTERNAL_SERVER_ERROR);
     }
@@ -417,7 +366,6 @@ export class JefeService {
 
   async createCliente(data: any) {
     try {
-      console.log('➕ [JefeService] Creando nuevo cliente:', data.razon_social);
 
       if (!data.razon_social) {
         throw new HttpException('La razón social es obligatoria', HttpStatus.BAD_REQUEST);
@@ -472,12 +420,10 @@ export class JefeService {
 
       const clienteGuardado = await this.clienteRepository.save(nuevoCliente);
 
-      console.log(`✅ [JefeService] Cliente creado con ID: ${clienteGuardado.id_cliente_final}`);
       return await this.getClienteById(clienteGuardado.id_cliente_final);
 
     } catch (error) {
       if (error instanceof HttpException) throw error;
-      console.error('❌ [JefeService] Error al crear cliente:', error);
       throw new HttpException(
         error.message || 'Error al crear el cliente',
         HttpStatus.INTERNAL_SERVER_ERROR
@@ -487,7 +433,6 @@ export class JefeService {
 
   async updateCliente(id: number, data: any) {
     try {
-      console.log(`📝 [JefeService] Actualizando cliente ID: ${id}`);
 
       const cliente = await this.getClienteById(id);
 
@@ -539,12 +484,10 @@ export class JefeService {
 
       const clienteActualizado = await this.getClienteById(id);
 
-      console.log(`✅ [JefeService] Cliente actualizado: ${clienteActualizado.razon_social}`);
       return clienteActualizado;
 
     } catch (error) {
       if (error instanceof HttpException) throw error;
-      console.error('❌ [JefeService] Error al actualizar cliente:', error);
       throw new HttpException(
         'Error al actualizar el cliente',
         HttpStatus.INTERNAL_SERVER_ERROR
@@ -554,18 +497,15 @@ export class JefeService {
 
   async deleteCliente(id: number) {
     try {
-      console.log(`🗑️ [JefeService] Eliminando cliente ID: ${id}`);
 
       const cliente = await this.getClienteById(id);
 
       await this.clienteRepository.delete(id);
 
-      console.log(`✅ [JefeService] Cliente eliminado: ${cliente.razon_social}`);
       return { message: 'Cliente eliminado exitosamente' };
 
     } catch (error) {
       if (error instanceof HttpException) throw error;
-      console.error('❌ [JefeService] Error al eliminar cliente:', error);
       throw new HttpException(
         'Error al eliminar el cliente',
         HttpStatus.INTERNAL_SERVER_ERROR

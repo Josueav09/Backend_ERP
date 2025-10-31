@@ -118,10 +118,7 @@ export class EjecutivasService {
   }
 
   async createEjecutiva(data: any) {
-    console.log('📥 Datos recibidos en backend:', data);
     const { dni, nombre_completo, correo, contraseña, telefono, id_jefe } = data;
-
-    console.log('🔍 Buscando jefe con ID:', id_jefe);
 
     let jefeAsignar;
 
@@ -130,18 +127,14 @@ export class EjecutivasService {
       jefeAsignar = await this.jefeRepository.findOne({
         where: { id_jefe: id_jefe }
       });
-      console.log('✅ Jefe encontrado:', jefeAsignar);
     }
     if (!jefeAsignar) {
-      console.log('⚠️  No se encontró jefe específico, buscando primero disponible...');
       jefeAsignar = await this.jefeRepository.findOne({
         order: { id_jefe: 'ASC' }
       });
-      console.log('✅ Primer jefe disponible:', jefeAsignar);
     }
 
     if (!jefeAsignar) {
-      console.error('❌ No hay jefes en el sistema');
       throw new HttpException('No hay jefes disponibles en el sistema', HttpStatus.BAD_REQUEST);
     }
 
@@ -178,10 +171,8 @@ export class EjecutivasService {
       jefe: jefeAsignar,
 
     });
-    console.log('Nueva Ejecutiva:', nuevaEjecutiva, 'Jefe asignado:', jefeAsignar);
     return await this.ejecutivaRepository.save(nuevaEjecutiva);
   }
-
   async updateEjecutiva(id: number, data: any) {
     const ejecutiva = await this.ejecutivaRepository.findOne({
       where: { id_ejecutiva: id }
@@ -191,16 +182,24 @@ export class EjecutivasService {
       return null;
     }
 
-    // Actualizar campos
+    // Actualizar campos básicos
     if (data.nombre_completo) ejecutiva.nombre_completo = data.nombre_completo;
     if (data.telefono !== undefined) ejecutiva.telefono = data.telefono;
     if (data.linkedin !== undefined) ejecutiva.linkedin = data.linkedin;
     if (data.estado_ejecutiva) ejecutiva.estado_ejecutiva = data.estado_ejecutiva;
 
+    // ✅ NUEVO: Manejar cambio de contraseña
+    if (data.contraseña && data.contraseña.trim() !== '') {
+      const bcrypt = require('bcryptjs');
+      ejecutiva.contraseña = await bcrypt.hash(data.contraseña.trim(), 10);
+    }
+
     ejecutiva.fecha_actualizacion = new Date();
 
     return await this.ejecutivaRepository.save(ejecutiva);
   }
+
+
 
   async deleteEjecutiva(id: number) {
     const ejecutiva = await this.ejecutivaRepository.findOne({
@@ -219,8 +218,6 @@ export class EjecutivasService {
 
   async getEjecutivasDisponibles() {
     try {
-      console.log('🔍 [EjecutivasService] Buscando ejecutivas disponibles...');
-
       // ✅ SOLUCIÓN: Usar consulta más simple y segura
       const query = `
       SELECT 
@@ -248,8 +245,6 @@ export class EjecutivasService {
 
       const ejecutivasDisponibles = await this.ejecutivaRepository.query(query);
 
-      console.log('✅ [EjecutivasService] Ejecutivas disponibles encontradas:', ejecutivasDisponibles.length);
-
       // ✅ MAPEO SEGURO
       return ejecutivasDisponibles.map(ej => {
         const nombreParts = ej.nombre_completo?.split(' ') || ['Ejecutiva', ''];
@@ -276,7 +271,6 @@ export class EjecutivasService {
       });
 
     } catch (error) {
-      console.error('❌ [EjecutivasService] Error crítico:', error);
 
       // ✅ EN CASO DE ERROR, RETORNAR ARRAY VACÍO
       return [];

@@ -40,7 +40,6 @@ export class EmailService {
    * 📧 Enviar código de verificación por email
    */
   async sendVerificationCode(email: string, code: string): Promise<void> {
-    console.log(`📧 Enviando código ${code} a ${email}`);
 
     try {
       const info = await this.transporter.sendMail({
@@ -50,12 +49,8 @@ export class EmailService {
         text: getVerificationCodeEmailText(code),
         html: getVerificationCodeEmailHTML(code),
       });
-
-      console.log(`✅ Email enviado exitosamente a ${email}`);
-      console.log(`📬 Message ID: ${info.messageId}`);
       
     } catch (error) {
-      console.error(`❌ Error enviando email a ${email}:`, error);
       throw error;
     }
   }

@@ -34,8 +34,6 @@ import { PassportModule } from '@nestjs/passport';
 
 
 const envPath = path.join(process.cwd(), 'services/user-service/.env');
-console.log('🔧 Loading env from:', envPath);
-console.log('🔧 Env file exists:', fs.existsSync(envPath));
 
 @Module({
   imports: [
@@ -58,11 +56,6 @@ console.log('🔧 Env file exists:', fs.existsSync(envPath));
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => {
-        console.log('🔧 User Service DB Config:');
-        console.log('DB_HOST:', configService.get('DB_HOST'));
-        console.log('DB_DATABASE:', configService.get('DB_DATABASE'));
-        console.log('DB_PASSWORD:', configService.get('DB_PASSWORD') ? '***' : 'undefined');
-
         return {
           type: 'postgres',
           host: configService.get('DB_HOST'),

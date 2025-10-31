@@ -24,8 +24,6 @@ export class AuditController {
     @Query('usuario') usuario?: string
   ) {
     try {
-      console.log('👤 Usuario autenticado:', req.user);
-      
       // Solo jefe puede ver auditoría
       if (req.user.userType !== 'jefe') {
         throw new HttpException('No autorizado para ver auditoría', HttpStatus.FORBIDDEN);
@@ -42,7 +40,6 @@ export class AuditController {
   @Get('estadisticas')
   async getEstadisticasAuditoria(@Request() req) {
     try {
-      console.log('👤 Usuario autenticado:', req.user);
       
       // Solo jefe puede ver estadísticas de auditoría
       if (req.user.userType !== 'jefe') {
@@ -59,7 +56,6 @@ export class AuditController {
   @Get('resumen-mensual')
   async getAuditoriaResumenMensual(@Request() req) {
     try {
-      console.log('👤 Usuario autenticado:', req.user);
       
       // Solo jefe puede ver resumen mensual
       if (req.user.userType !== 'jefe') {

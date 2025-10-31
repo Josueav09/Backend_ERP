@@ -1,10 +1,43 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
     if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
@@ -17,6 +50,7 @@ const common_1 = require("@nestjs/common");
 const axios_1 = require("@nestjs/axios");
 const rxjs_1 = require("rxjs");
 const platform_express_1 = require("@nestjs/platform-express");
+const fs = __importStar(require("fs"));
 let ApiGatewayController = class ApiGatewayController {
     constructor(httpService) {
         this.httpService = httpService;
@@ -39,10 +73,23 @@ let ApiGatewayController = class ApiGatewayController {
         console.log('🔐 [API Gateway] Headers a enviar:', Object.keys(headers));
         return headers;
     }
+    getServiceBaseUrl(service) {
+        const isDocker = process.env.NODE_ENV === 'production' ||
+            fs.existsSync('/.dockerenv') ||
+            process.env.COMPOSE_PROJECT_NAME !== undefined;
+        const services = {
+            auth: isDocker ? 'http://auth-service:3001' : 'http://localhost:3001',
+            user: isDocker ? 'http://user-service:3002' : 'http://localhost:3002',
+            sales: isDocker ? 'http://sales-service:3003' : 'http://localhost:3003',
+            traceability: isDocker ? 'http://traceability-service:3007' : 'http://localhost:3007'
+        };
+        return services[service];
+    }
     async getCaptcha(req) {
         try {
             const headers = this.getHeadersWithAuth(req);
-            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get('http://localhost:3001/auth/captcha', { headers }));
+            const authUrl = this.getServiceBaseUrl('auth');
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get(`${authUrl}/auth/captcha`, { headers }));
             return response.data;
         }
         catch (error) {
@@ -52,7 +99,8 @@ let ApiGatewayController = class ApiGatewayController {
     async login(body, req) {
         try {
             const headers = this.getHeadersWithAuth(req);
-            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.post('http://localhost:3001/auth/login', body, { headers }));
+            const authUrl = this.getServiceBaseUrl('auth');
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.post(`${authUrl}/auth/login`, body, { headers }));
             return response.data;
         }
         catch (error) {
@@ -62,7 +110,8 @@ let ApiGatewayController = class ApiGatewayController {
     async verifyEmail(body, req) {
         try {
             const headers = this.getHeadersWithAuth(req);
-            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.post('http://localhost:3001/auth/verify-email', body, { headers }));
+            const authUrl = this.getServiceBaseUrl('auth');
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.post(`${authUrl}/auth/verify-email`, body, { headers }));
             return response.data;
         }
         catch (error) {
@@ -76,7 +125,8 @@ let ApiGatewayController = class ApiGatewayController {
                 ...this.getHeadersWithAuth(req),
                 'Content-Type': 'application/json'
             };
-            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.post('http://localhost:3001/auth/logout', body, {
+            const authUrl = this.getServiceBaseUrl('auth');
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.post(`${authUrl}/auth/logout`, body, {
                 headers: authHeaders
             }));
             return response.data;
@@ -93,7 +143,8 @@ let ApiGatewayController = class ApiGatewayController {
         try {
             const headers = this.getHeadersWithAuth(req);
             console.log('🔐 [API Gateway /jefe/perfil] Headers:', headers);
-            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get('http://localhost:3002/jefe/perfil', { headers }));
+            const userUrl = this.getServiceBaseUrl('user');
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get(`${userUrl}/jefe/perfil`, { headers }));
             return response.data;
         }
         catch (error) {
@@ -104,7 +155,8 @@ let ApiGatewayController = class ApiGatewayController {
     async updateJefePerfil(body, req) {
         try {
             const headers = this.getHeadersWithAuth(req);
-            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.put('http://localhost:3002/jefe/perfil', body, { headers }));
+            const userUrl = this.getServiceBaseUrl('user');
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.put(`${userUrl}/jefe/perfil`, body, { headers }));
             return response.data;
         }
         catch (error) {
@@ -114,7 +166,8 @@ let ApiGatewayController = class ApiGatewayController {
     async updateJefePassword(body, req) {
         try {
             const headers = this.getHeadersWithAuth(req);
-            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.put('http://localhost:3002/jefe/password', body, { headers }));
+            const userUrl = this.getServiceBaseUrl('user');
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.put(`${userUrl}/jefe/password`, body, { headers }));
             return response.data;
         }
         catch (error) {
@@ -124,7 +177,8 @@ let ApiGatewayController = class ApiGatewayController {
     async getJefeStats(req) {
         try {
             const headers = this.getHeadersWithAuth(req);
-            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get('http://localhost:3002/jefe/stats', { headers }));
+            const userUrl = this.getServiceBaseUrl('user');
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get(`${userUrl}/jefe/stats`, { headers }));
             return response.data;
         }
         catch (error) {
@@ -134,7 +188,8 @@ let ApiGatewayController = class ApiGatewayController {
     async getJefeEjecutivas(req) {
         try {
             const headers = this.getHeadersWithAuth(req);
-            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get('http://localhost:3002/ejecutivas', { headers }));
+            const userUrl = this.getServiceBaseUrl('user');
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get(`${userUrl}/ejecutivas`, { headers }));
             return response.data;
         }
         catch (error) {
@@ -144,7 +199,8 @@ let ApiGatewayController = class ApiGatewayController {
     async getJefeEjecutiva(id, req) {
         try {
             const headers = this.getHeadersWithAuth(req);
-            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get(`http://localhost:3002/ejecutivas/${id}`, { headers }));
+            const userUrl = this.getServiceBaseUrl('user');
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get(`${userUrl}/ejecutivas/${id}`, { headers }));
             return response.data;
         }
         catch (error) {
@@ -154,7 +210,8 @@ let ApiGatewayController = class ApiGatewayController {
     async createJefeEjecutiva(body, req) {
         try {
             const headers = this.getHeadersWithAuth(req);
-            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.post('http://localhost:3002/ejecutivas', body, { headers }));
+            const userUrl = this.getServiceBaseUrl('user');
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.post(`${userUrl}/ejecutivas`, body, { headers }));
             return response.data;
         }
         catch (error) {
@@ -164,7 +221,8 @@ let ApiGatewayController = class ApiGatewayController {
     async updateJefeEjecutiva(id, body, req) {
         try {
             const headers = this.getHeadersWithAuth(req);
-            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.put(`http://localhost:3002/ejecutivas/${id}`, body, { headers }));
+            const userUrl = this.getServiceBaseUrl('user');
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.put(`${userUrl}/ejecutivas/${id}`, body, { headers }));
             return response.data;
         }
         catch (error) {
@@ -174,7 +232,8 @@ let ApiGatewayController = class ApiGatewayController {
     async deleteJefeEjecutiva(id, req) {
         try {
             const headers = this.getHeadersWithAuth(req);
-            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.delete(`http://localhost:3002/ejecutivas/${id}`, { headers }));
+            const userUrl = this.getServiceBaseUrl('user');
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.delete(`${userUrl}/ejecutivas/${id}`, { headers }));
             return response.data;
         }
         catch (error) {
@@ -185,7 +244,8 @@ let ApiGatewayController = class ApiGatewayController {
         try {
             console.log('🔍 [API Gateway] Solicitando ejecutivas disponibles...');
             const headers = this.getHeadersWithAuth(req);
-            const url = 'http://localhost:3002/ejecutivas/disponibles';
+            const userUrl = this.getServiceBaseUrl('user');
+            const url = `${userUrl}/ejecutivas/disponibles`;
             console.log('🔍 [API Gateway] URL destino:', url);
             const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get(url, {
                 headers,
@@ -213,7 +273,8 @@ let ApiGatewayController = class ApiGatewayController {
     async getJefeEmpresas(req) {
         try {
             const headers = this.getHeadersWithAuth(req);
-            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get('http://localhost:3002/empresas', { headers }));
+            const userUrl = this.getServiceBaseUrl('user');
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get(`${userUrl}/empresas`, { headers }));
             return response.data;
         }
         catch (error) {
@@ -223,7 +284,8 @@ let ApiGatewayController = class ApiGatewayController {
     async getJefeEmpresa(id, req) {
         try {
             const headers = this.getHeadersWithAuth(req);
-            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get(`http://localhost:3002/empresas/${id}`, { headers }));
+            const userUrl = this.getServiceBaseUrl('user');
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get(`${userUrl}/empresas/${id}`, { headers }));
             return response.data;
         }
         catch (error) {
@@ -233,7 +295,8 @@ let ApiGatewayController = class ApiGatewayController {
     async createJefeEmpresa(body, req) {
         try {
             const headers = this.getHeadersWithAuth(req);
-            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.post('http://localhost:3002/empresas', body, { headers }));
+            const userUrl = this.getServiceBaseUrl('user');
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.post(`${userUrl}/empresas`, body, { headers }));
             return response.data;
         }
         catch (error) {
@@ -243,7 +306,8 @@ let ApiGatewayController = class ApiGatewayController {
     async updateJefeEmpresa(id, body, req) {
         try {
             const headers = this.getHeadersWithAuth(req);
-            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.put(`http://localhost:3002/empresas/${id}`, body, { headers }));
+            const userUrl = this.getServiceBaseUrl('user');
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.put(`${userUrl}/empresas/${id}`, body, { headers }));
             return response.data;
         }
         catch (error) {
@@ -253,7 +317,8 @@ let ApiGatewayController = class ApiGatewayController {
     async updateJefeEmpresaEstado(id, body, req) {
         try {
             const headers = this.getHeadersWithAuth(req);
-            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.patch(`http://localhost:3002/empresas/${id}/estado`, body, { headers }));
+            const userUrl = this.getServiceBaseUrl('user');
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.patch(`${userUrl}/empresas/${id}/estado`, body, { headers }));
             return response.data;
         }
         catch (error) {
@@ -263,7 +328,8 @@ let ApiGatewayController = class ApiGatewayController {
     async getJefeEmpresaEjecutivas(id, req) {
         try {
             const headers = this.getHeadersWithAuth(req);
-            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get(`http://localhost:3002/empresas/${id}/ejecutivas`, { headers }));
+            const userUrl = this.getServiceBaseUrl('user');
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get(`${userUrl}/empresas/${id}/ejecutivas`, { headers }));
             return response.data;
         }
         catch (error) {
@@ -273,7 +339,8 @@ let ApiGatewayController = class ApiGatewayController {
     async addJefeEmpresaEjecutiva(id, body, req) {
         try {
             const headers = this.getHeadersWithAuth(req);
-            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.post(`http://localhost:3002/empresas/${id}/ejecutivas`, body, { headers }));
+            const userUrl = this.getServiceBaseUrl('user');
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.post(`${userUrl}/empresas/${id}/ejecutivas`, body, { headers }));
             return response.data;
         }
         catch (error) {
@@ -284,7 +351,8 @@ let ApiGatewayController = class ApiGatewayController {
         try {
             console.log('➖ [API Gateway] Removiendo ejecutiva de empresa:', { empresaId, ejecutivaId });
             const headers = this.getHeadersWithAuth(req);
-            const url = `http://localhost:3002/empresas/${empresaId}/ejecutivas/${ejecutivaId}`;
+            const userUrl = this.getServiceBaseUrl('user');
+            const url = `${userUrl}/empresas/${empresaId}/ejecutivas/${ejecutivaId}`;
             console.log('🔍 [API Gateway] URL destino:', url);
             const response = await (0, rxjs_1.firstValueFrom)(this.httpService.delete(url, { headers }));
             console.log('✅ [API Gateway] Ejecutiva removida exitosamente');
@@ -302,7 +370,8 @@ let ApiGatewayController = class ApiGatewayController {
     async asignarEjecutivaAEmpresa(id, body, req) {
         try {
             const headers = this.getHeadersWithAuth(req);
-            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.put(`http://localhost:3002/empresas/${id}/asignar-ejecutiva`, body, { headers }));
+            const userUrl = this.getServiceBaseUrl('user');
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.put(`${userUrl}/empresas/${id}/asignar-ejecutiva`, body, { headers }));
             return response.data;
         }
         catch (error) {
@@ -313,7 +382,8 @@ let ApiGatewayController = class ApiGatewayController {
         try {
             console.log('🔍 [API Gateway] Solicitando ejecutivas disponibles para empresas...');
             const headers = this.getHeadersWithAuth(req);
-            const url = 'http://localhost:3002/empresas/ejecutivas/disponibles';
+            const userUrl = this.getServiceBaseUrl('user');
+            const url = `${userUrl}/empresas/ejecutivas/disponibles`;
             console.log('🔍 [API Gateway] URL destino:', url);
             const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get(url, {
                 headers,
@@ -338,7 +408,8 @@ let ApiGatewayController = class ApiGatewayController {
     async getJefeClientes(req) {
         try {
             const headers = this.getHeadersWithAuth(req);
-            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get('http://localhost:3003/clientes', { headers }));
+            const salesUrl = this.getServiceBaseUrl('sales');
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get(`${salesUrl}/clientes`, { headers }));
             return response.data;
         }
         catch (error) {
@@ -348,7 +419,8 @@ let ApiGatewayController = class ApiGatewayController {
     async getJefeCliente(id, req) {
         try {
             const headers = this.getHeadersWithAuth(req);
-            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get(`http://localhost:3003/clientes/${id}`, { headers }));
+            const salesUrl = this.getServiceBaseUrl('sales');
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get(`${salesUrl}/clientes/${id}`, { headers }));
             return response.data;
         }
         catch (error) {
@@ -358,7 +430,8 @@ let ApiGatewayController = class ApiGatewayController {
     async createJefeCliente(body, req) {
         try {
             const headers = this.getHeadersWithAuth(req);
-            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.post('http://localhost:3003/clientes', body, { headers }));
+            const salesUrl = this.getServiceBaseUrl('sales');
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.post(`${salesUrl}/clientes`, body, { headers }));
             return response.data;
         }
         catch (error) {
@@ -368,7 +441,8 @@ let ApiGatewayController = class ApiGatewayController {
     async updateJefeCliente(id, body, req) {
         try {
             const headers = this.getHeadersWithAuth(req);
-            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.put(`http://localhost:3003/clientes/${id}`, body, { headers }));
+            const salesUrl = this.getServiceBaseUrl('sales');
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.put(`${salesUrl}/clientes/${id}`, body, { headers }));
             return response.data;
         }
         catch (error) {
@@ -379,7 +453,8 @@ let ApiGatewayController = class ApiGatewayController {
         try {
             console.log(`🔄 [ApiGateway] Activando cliente ID: ${id}`);
             const headers = this.getHeadersWithAuth(req);
-            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.patch(`http://localhost:3002/clientes/${id}/activate`, {}, { headers }));
+            const userUrl = this.getServiceBaseUrl('user');
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.patch(`${userUrl}/clientes/${id}/activate`, {}, { headers }));
             console.log(`✅ [ApiGateway] Cliente ${id} activado exitosamente`);
             return response.data;
         }
@@ -392,7 +467,8 @@ let ApiGatewayController = class ApiGatewayController {
         try {
             console.log(`🗑️ [ApiGateway] Desactivando cliente ID: ${id}`);
             const headers = this.getHeadersWithAuth(req);
-            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.patch(`http://localhost:3002/clientes/${id}/deactivate`, {}, { headers }));
+            const userUrl = this.getServiceBaseUrl('user');
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.patch(`${userUrl}/clientes/${id}/deactivate`, {}, { headers }));
             console.log(`✅ [ApiGateway] Cliente ${id} desactivado exitosamente`);
             return response.data;
         }
@@ -404,7 +480,8 @@ let ApiGatewayController = class ApiGatewayController {
     async getJefeTrazabilidad(empresaId, ejecutivaId, clienteId, fechaInicio, fechaFin, tipoContacto, etapaOportunidad, etapa, req) {
         try {
             const headers = this.getHeadersWithAuth(req);
-            let url = 'http://localhost:3007/jefe/trazabilidad?';
+            const traceabilityUrl = this.getServiceBaseUrl('traceability');
+            let url = `${traceabilityUrl}/jefe/trazabilidad?`;
             const params = new URLSearchParams();
             if (empresaId)
                 params.append('empresa', empresaId);
@@ -433,7 +510,8 @@ let ApiGatewayController = class ApiGatewayController {
     async getJefeTrazabilidadDashboard(req) {
         try {
             const headers = this.getHeadersWithAuth(req);
-            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get('http://localhost:3007/jefe/trazabilidad/dashboard', { headers }));
+            const traceabilityUrl = this.getServiceBaseUrl('traceability');
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get(`${traceabilityUrl}/jefe/trazabilidad/dashboard`, { headers }));
             return response.data;
         }
         catch (error) {
@@ -443,7 +521,8 @@ let ApiGatewayController = class ApiGatewayController {
     async getJefeEstadisticasEtapas(empresaId, fechaInicio, fechaFin, req) {
         try {
             const headers = this.getHeadersWithAuth(req);
-            let url = 'http://localhost:3007/jefe/trazabilidad/estadisticas-etapas?';
+            const traceabilityUrl = this.getServiceBaseUrl('traceability');
+            let url = `${traceabilityUrl}/jefe/trazabilidad/estadisticas-etapas?`;
             if (empresaId)
                 url += `empresa=${empresaId}&`;
             if (fechaInicio)
@@ -460,7 +539,8 @@ let ApiGatewayController = class ApiGatewayController {
     async createJefeTrazabilidad(body, req) {
         try {
             const headers = this.getHeadersWithAuth(req);
-            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.post('http://localhost:3007/jefe/trazabilidad', body, { headers }));
+            const traceabilityUrl = this.getServiceBaseUrl('traceability');
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.post(`${traceabilityUrl}/jefe/trazabilidad`, body, { headers }));
             return response.data;
         }
         catch (error) {
@@ -470,7 +550,8 @@ let ApiGatewayController = class ApiGatewayController {
     async updateJefeTrazabilidad(id, body, req) {
         try {
             const headers = this.getHeadersWithAuth(req);
-            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.put(`http://localhost:3007/jefe/trazabilidad/${id}`, body, { headers }));
+            const traceabilityUrl = this.getServiceBaseUrl('traceability');
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.put(`${traceabilityUrl}/jefe/trazabilidad/${id}`, body, { headers }));
             return response.data;
         }
         catch (error) {
@@ -480,7 +561,8 @@ let ApiGatewayController = class ApiGatewayController {
     async getJefeTrazabilidadKPIs(ejecutivaId, empresaId, clienteId, fechaDesde, fechaHasta, req) {
         try {
             const headers = this.getHeadersWithAuth(req);
-            let url = 'http://localhost:3007/jefe/trazabilidad/kpis?';
+            const traceabilityUrl = this.getServiceBaseUrl('traceability');
+            let url = `${traceabilityUrl}/jefe/trazabilidad/kpis?`;
             const params = new URLSearchParams();
             if (ejecutivaId)
                 params.append('ejecutivaId', ejecutivaId);
@@ -503,7 +585,8 @@ let ApiGatewayController = class ApiGatewayController {
     async getJefeTrazabilidadNuevosClientes(meses, ejecutivaId, req) {
         try {
             const headers = this.getHeadersWithAuth(req);
-            let url = 'http://localhost:3007/jefe/trazabilidad/kpis/nuevos-clientes?';
+            const traceabilityUrl = this.getServiceBaseUrl('traceability');
+            let url = `${traceabilityUrl}/jefe/trazabilidad/kpis/nuevos-clientes?`;
             if (meses)
                 url += `meses=${meses}&`;
             if (ejecutivaId)
@@ -518,7 +601,8 @@ let ApiGatewayController = class ApiGatewayController {
     async getJefeTrazabilidadContactosPorTipo(ejecutivaId, fechaDesde, fechaHasta, req) {
         try {
             const headers = this.getHeadersWithAuth(req);
-            let url = 'http://localhost:3007/jefe/trazabilidad/kpis/contactos-por-tipo?';
+            const traceabilityUrl = this.getServiceBaseUrl('traceability');
+            let url = `${traceabilityUrl}/jefe/trazabilidad/kpis/contactos-por-tipo?`;
             if (ejecutivaId)
                 url += `ejecutivaId=${ejecutivaId}&`;
             if (fechaDesde)
@@ -535,7 +619,8 @@ let ApiGatewayController = class ApiGatewayController {
     async getJefeTrazabilidadMontosPorEtapa(ejecutivaId, fechaDesde, fechaHasta, req) {
         try {
             const headers = this.getHeadersWithAuth(req);
-            let url = 'http://localhost:3007/jefe/trazabilidad/kpis/montos-por-etapa?';
+            const traceabilityUrl = this.getServiceBaseUrl('traceability');
+            let url = `${traceabilityUrl}/jefe/trazabilidad/kpis/montos-por-etapa?`;
             if (ejecutivaId)
                 url += `ejecutivaId=${ejecutivaId}&`;
             if (fechaDesde)
@@ -552,7 +637,8 @@ let ApiGatewayController = class ApiGatewayController {
     async getJefeTrazabilidadTasaConversion(fechaDesde, fechaHasta, req) {
         try {
             const headers = this.getHeadersWithAuth(req);
-            let url = 'http://localhost:3007/jefe/trazabilidad/kpis/tasa-conversion?';
+            const traceabilityUrl = this.getServiceBaseUrl('traceability');
+            let url = `${traceabilityUrl}/jefe/trazabilidad/kpis/tasa-conversion?`;
             if (fechaDesde)
                 url += `fechaDesde=${fechaDesde}&`;
             if (fechaHasta)
@@ -567,13 +653,14 @@ let ApiGatewayController = class ApiGatewayController {
     async getNuevasReuniones(query, req) {
         try {
             const headers = this.getHeadersWithAuth(req);
+            const traceabilityUrl = this.getServiceBaseUrl('traceability');
             const { meses, ejecutivaId } = query;
             const params = new URLSearchParams();
             if (meses)
                 params.append('meses', meses);
             if (ejecutivaId)
                 params.append('ejecutivaId', ejecutivaId);
-            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get(`http://localhost:3007/jefe/trazabilidad/kpis/nuevas-reuniones?${params.toString()}`, { headers }));
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get(`${traceabilityUrl}/jefe/trazabilidad/kpis/nuevas-reuniones?${params.toString()}`, { headers }));
             return response.data;
         }
         catch (error) {
@@ -584,13 +671,14 @@ let ApiGatewayController = class ApiGatewayController {
     async getNuevasVentas(query, req) {
         try {
             const headers = this.getHeadersWithAuth(req);
+            const traceabilityUrl = this.getServiceBaseUrl('traceability');
             const { meses, ejecutivaId } = query;
             const params = new URLSearchParams();
             if (meses)
                 params.append('meses', meses);
             if (ejecutivaId)
                 params.append('ejecutivaId', ejecutivaId);
-            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get(`http://localhost:3007/jefe/trazabilidad/kpis/nuevas-ventas?${params.toString()}`, { headers }));
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get(`${traceabilityUrl}/jefe/trazabilidad/kpis/nuevas-ventas?${params.toString()}`, { headers }));
             return response.data;
         }
         catch (error) {
@@ -601,6 +689,7 @@ let ApiGatewayController = class ApiGatewayController {
     async getEfectividadCanales(query, req) {
         try {
             const headers = this.getHeadersWithAuth(req);
+            const traceabilityUrl = this.getServiceBaseUrl('traceability');
             const { ejecutivaId, fechaDesde, fechaHasta } = query;
             const params = new URLSearchParams();
             if (ejecutivaId)
@@ -609,7 +698,7 @@ let ApiGatewayController = class ApiGatewayController {
                 params.append('fechaDesde', fechaDesde);
             if (fechaHasta)
                 params.append('fechaHasta', fechaHasta);
-            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get(`http://localhost:3007/jefe/trazabilidad/kpis/efectividad-canales?${params.toString()}`, { headers }));
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get(`${traceabilityUrl}/jefe/trazabilidad/kpis/efectividad-canales?${params.toString()}`, { headers }));
             return response.data;
         }
         catch (error) {
@@ -620,7 +709,8 @@ let ApiGatewayController = class ApiGatewayController {
     async getResumenSemanal(req) {
         try {
             const headers = this.getHeadersWithAuth(req);
-            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get('http://localhost:3007/jefe/trazabilidad/kpis/resumen-semanal', { headers }));
+            const traceabilityUrl = this.getServiceBaseUrl('traceability');
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get(`${traceabilityUrl}/jefe/trazabilidad/kpis/resumen-semanal`, { headers }));
             return response.data;
         }
         catch (error) {
@@ -631,6 +721,7 @@ let ApiGatewayController = class ApiGatewayController {
     async getEmbudoVentas(query, req) {
         try {
             const headers = this.getHeadersWithAuth(req);
+            const traceabilityUrl = this.getServiceBaseUrl('traceability');
             const { ejecutivaId, fechaDesde, fechaHasta } = query;
             const params = new URLSearchParams();
             if (ejecutivaId)
@@ -639,7 +730,7 @@ let ApiGatewayController = class ApiGatewayController {
                 params.append('fechaDesde', fechaDesde);
             if (fechaHasta)
                 params.append('fechaHasta', fechaHasta);
-            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get(`http://localhost:3007/jefe/trazabilidad/kpis/embudo-ventas?${params.toString()}`, { headers }));
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get(`${traceabilityUrl}/jefe/trazabilidad/kpis/embudo-ventas?${params.toString()}`, { headers }));
             return response.data;
         }
         catch (error) {
@@ -650,13 +741,14 @@ let ApiGatewayController = class ApiGatewayController {
     async getRankingEjecutivas(query, req) {
         try {
             const headers = this.getHeadersWithAuth(req);
+            const traceabilityUrl = this.getServiceBaseUrl('traceability');
             const { fechaDesde, fechaHasta } = query;
             const params = new URLSearchParams();
             if (fechaDesde)
                 params.append('fechaDesde', fechaDesde);
             if (fechaHasta)
                 params.append('fechaHasta', fechaHasta);
-            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get(`http://localhost:3007/jefe/trazabilidad/kpis/ranking-ejecutivas?${params.toString()}`, { headers }));
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get(`${traceabilityUrl}/jefe/trazabilidad/kpis/ranking-ejecutivas?${params.toString()}`, { headers }));
             return response.data;
         }
         catch (error) {
@@ -668,7 +760,8 @@ let ApiGatewayController = class ApiGatewayController {
         try {
             console.log('📊 [API Gateway] Solicitando reporte:', reportDto.reportType);
             const headers = this.getHeadersWithAuth(req);
-            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.post('http://localhost:3007/jefe/trazabilidad/report', reportDto, {
+            const traceabilityUrl = this.getServiceBaseUrl('traceability');
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.post(`${traceabilityUrl}/jefe/trazabilidad/report`, reportDto, {
                 headers,
                 responseType: 'text'
             }));
@@ -683,7 +776,8 @@ let ApiGatewayController = class ApiGatewayController {
         try {
             console.log('🧪 Probando endpoint de reporte...');
             const headers = this.getHeadersWithAuth(req);
-            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.post('http://localhost:3007/jefe/trazabilidad/report', {
+            const traceabilityUrl = this.getServiceBaseUrl('traceability');
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.post(`${traceabilityUrl}/jefe/trazabilidad/report`, {
                 reportType: 'etapa1',
                 filters: {},
                 format: 'csv'
@@ -705,7 +799,8 @@ let ApiGatewayController = class ApiGatewayController {
     async getJefeTrazabilidadEtapa1(ejecutivaId, empresaId, clienteId, resultadoContacto, tipoContacto, fechaDesde, fechaHasta, page, limit, req) {
         try {
             const headers = this.getHeadersWithAuth(req);
-            let url = 'http://localhost:3007/jefe/trazabilidad/etapa1?';
+            const traceabilityUrl = this.getServiceBaseUrl('traceability');
+            let url = `${traceabilityUrl}/jefe/trazabilidad/etapa1?`;
             const params = new URLSearchParams();
             if (ejecutivaId)
                 params.append('ejecutivaId', ejecutivaId);
@@ -736,7 +831,8 @@ let ApiGatewayController = class ApiGatewayController {
     async getJefeTrazabilidadEtapa2(ejecutivaId, empresaId, clienteId, etapaOportunidad, fechaDesde, fechaHasta, page, limit, req) {
         try {
             const headers = this.getHeadersWithAuth(req);
-            let url = 'http://localhost:3007/jefe/trazabilidad/etapa2?';
+            const traceabilityUrl = this.getServiceBaseUrl('traceability');
+            let url = `${traceabilityUrl}/jefe/trazabilidad/etapa2?`;
             const params = new URLSearchParams();
             if (ejecutivaId)
                 params.append('ejecutivaId', ejecutivaId);
@@ -765,7 +861,8 @@ let ApiGatewayController = class ApiGatewayController {
     async getJefeTrazabilidadFilterOptions(req) {
         try {
             const headers = this.getHeadersWithAuth(req);
-            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get('http://localhost:3007/jefe/trazabilidad/filter-options', { headers }));
+            const traceabilityUrl = this.getServiceBaseUrl('traceability');
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get(`${traceabilityUrl}/jefe/trazabilidad/filter-options`, { headers }));
             return response.data;
         }
         catch (error) {
@@ -775,7 +872,8 @@ let ApiGatewayController = class ApiGatewayController {
     async getAuditoriaContratos(fechaInicio, fechaFin, accion, usuario, req) {
         try {
             const headers = this.getHeadersWithAuth(req);
-            let url = 'http://localhost:3007/auditoria/contratos?';
+            const traceabilityUrl = this.getServiceBaseUrl('traceability');
+            let url = `${traceabilityUrl}/auditoria/contratos?`;
             if (fechaInicio)
                 url += `fechaInicio=${fechaInicio}&`;
             if (fechaFin)
@@ -794,7 +892,8 @@ let ApiGatewayController = class ApiGatewayController {
     async getAuditoriaEstadisticas(req) {
         try {
             const headers = this.getHeadersWithAuth(req);
-            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get('http://localhost:3007/auditoria/estadisticas', { headers }));
+            const traceabilityUrl = this.getServiceBaseUrl('traceability');
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get(`${traceabilityUrl}/auditoria/estadisticas`, { headers }));
             return response.data;
         }
         catch (error) {
@@ -804,7 +903,8 @@ let ApiGatewayController = class ApiGatewayController {
     async getAuditoriaResumenMensual(req) {
         try {
             const headers = this.getHeadersWithAuth(req);
-            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get('http://localhost:3007/auditoria/resumen-mensual', { headers }));
+            const traceabilityUrl = this.getServiceBaseUrl('traceability');
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get(`${traceabilityUrl}/auditoria/resumen-mensual`, { headers }));
             return response.data;
         }
         catch (error) {
@@ -814,7 +914,8 @@ let ApiGatewayController = class ApiGatewayController {
     async getClienteDashboardStats(empresaId, req) {
         try {
             const headers = this.getHeadersWithAuth(req);
-            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get(`http://localhost:3002/cliente/dashboard/stats?empresaId=${empresaId}`, { headers }));
+            const userUrl = this.getServiceBaseUrl('user');
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get(`${userUrl}/cliente/dashboard/stats?empresaId=${empresaId}`, { headers }));
             return response.data;
         }
         catch (error) {
@@ -824,7 +925,8 @@ let ApiGatewayController = class ApiGatewayController {
     async getClienteTrazabilidad(empresaId, req) {
         try {
             const headers = this.getHeadersWithAuth(req);
-            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get(`http://localhost:3007/cliente/trazabilidad?empresaId=${empresaId}`, { headers }));
+            const traceabilityUrl = this.getServiceBaseUrl('traceability');
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get(`${traceabilityUrl}/cliente/trazabilidad?empresaId=${empresaId}`, { headers }));
             return response.data;
         }
         catch (error) {
@@ -834,7 +936,8 @@ let ApiGatewayController = class ApiGatewayController {
     async getEjecutivaStats(ejecutivaId, req) {
         try {
             const headers = this.getHeadersWithAuth(req);
-            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get(`http://localhost:3002/ejecutiva/stats?ejecutivaId=${ejecutivaId}`, { headers }));
+            const userUrl = this.getServiceBaseUrl('user');
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get(`${userUrl}/ejecutiva/stats?ejecutivaId=${ejecutivaId}`, { headers }));
             return response.data;
         }
         catch (error) {
@@ -844,7 +947,8 @@ let ApiGatewayController = class ApiGatewayController {
     async getEjecutivaEmpresas(ejecutivaId, req) {
         try {
             const headers = this.getHeadersWithAuth(req);
-            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get(`http://localhost:3002/ejecutiva/empresas?ejecutivaId=${ejecutivaId}`, { headers }));
+            const userUrl = this.getServiceBaseUrl('user');
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get(`${userUrl}/ejecutiva/empresas?ejecutivaId=${ejecutivaId}`, { headers }));
             return response.data;
         }
         catch (error) {
@@ -854,7 +958,8 @@ let ApiGatewayController = class ApiGatewayController {
     async createEjecutivaEmpresa(body, req) {
         try {
             const headers = this.getHeadersWithAuth(req);
-            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.post('http://localhost:3002/ejecutiva/empresas', body, { headers }));
+            const userUrl = this.getServiceBaseUrl('user');
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.post(`${userUrl}/ejecutiva/empresas`, body, { headers }));
             return response.data;
         }
         catch (error) {
@@ -864,7 +969,8 @@ let ApiGatewayController = class ApiGatewayController {
     async getEjecutivaClientes(ejecutivaId, req) {
         try {
             const headers = this.getHeadersWithAuth(req);
-            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get(`http://localhost:3002/ejecutiva/clientes?ejecutivaId=${ejecutivaId}`, { headers }));
+            const userUrl = this.getServiceBaseUrl('user');
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get(`${userUrl}/ejecutiva/clientes?ejecutivaId=${ejecutivaId}`, { headers }));
             return response.data;
         }
         catch (error) {
@@ -874,7 +980,8 @@ let ApiGatewayController = class ApiGatewayController {
     async createEjecutivaCliente(body, req) {
         try {
             const headers = this.getHeadersWithAuth(req);
-            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.post('http://localhost:3002/ejecutiva/clientes', body, { headers }));
+            const userUrl = this.getServiceBaseUrl('user');
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.post(`${userUrl}/ejecutiva/clientes`, body, { headers }));
             return response.data;
         }
         catch (error) {
@@ -884,7 +991,8 @@ let ApiGatewayController = class ApiGatewayController {
     async getEjecutivaEmpresasRegistradas(ejecutivaId, req) {
         try {
             const headers = this.getHeadersWithAuth(req);
-            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get(`http://localhost:3002/ejecutiva/empresas/registradas?ejecutivaId=${ejecutivaId}`, { headers }));
+            const userUrl = this.getServiceBaseUrl('user');
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get(`${userUrl}/ejecutiva/empresas/registradas?ejecutivaId=${ejecutivaId}`, { headers }));
             return response.data;
         }
         catch (error) {
@@ -894,7 +1002,8 @@ let ApiGatewayController = class ApiGatewayController {
     async createEjecutivaEmpresaRegistrar(body, req) {
         try {
             const headers = this.getHeadersWithAuth(req);
-            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.post('http://localhost:3002/ejecutiva/empresas/registrar', body, { headers }));
+            const userUrl = this.getServiceBaseUrl('user');
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.post(`${userUrl}/ejecutiva/empresas/registrar`, body, { headers }));
             return response.data;
         }
         catch (error) {
@@ -904,7 +1013,8 @@ let ApiGatewayController = class ApiGatewayController {
     async createEjecutivaContacto(body, req) {
         try {
             const headers = this.getHeadersWithAuth(req);
-            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.post('http://localhost:3002/ejecutiva/contactos', body, { headers }));
+            const userUrl = this.getServiceBaseUrl('user');
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.post(`${userUrl}/ejecutiva/contactos`, body, { headers }));
             return response.data;
         }
         catch (error) {
@@ -914,7 +1024,8 @@ let ApiGatewayController = class ApiGatewayController {
     async getEjecutivaContactos(clienteId, ejecutivaId, req) {
         try {
             const headers = this.getHeadersWithAuth(req);
-            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get(`http://localhost:3002/ejecutiva/contactos?clienteId=${clienteId}&ejecutivaId=${ejecutivaId}`, { headers }));
+            const userUrl = this.getServiceBaseUrl('user');
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get(`${userUrl}/ejecutiva/contactos?clienteId=${clienteId}&ejecutivaId=${ejecutivaId}`, { headers }));
             return response.data;
         }
         catch (error) {
@@ -924,7 +1035,8 @@ let ApiGatewayController = class ApiGatewayController {
     async getEjecutivaPipeline(ejecutivaId, req) {
         try {
             const headers = this.getHeadersWithAuth(req);
-            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get(`http://localhost:3002/ejecutiva/pipeline?ejecutivaId=${ejecutivaId}`, { headers }));
+            const userUrl = this.getServiceBaseUrl('user');
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get(`${userUrl}/ejecutiva/pipeline?ejecutivaId=${ejecutivaId}`, { headers }));
             return response.data;
         }
         catch (error) {
@@ -934,7 +1046,8 @@ let ApiGatewayController = class ApiGatewayController {
     async getEjecutivaActividades(ejecutivaId, limit = '10', req) {
         try {
             const headers = this.getHeadersWithAuth(req);
-            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get(`http://localhost:3002/ejecutiva/actividades?ejecutivaId=${ejecutivaId}&limit=${limit}`, { headers }));
+            const userUrl = this.getServiceBaseUrl('user');
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get(`${userUrl}/ejecutiva/actividades?ejecutivaId=${ejecutivaId}&limit=${limit}`, { headers }));
             return response.data;
         }
         catch (error) {
@@ -944,7 +1057,8 @@ let ApiGatewayController = class ApiGatewayController {
     async getEjecutivaKPIsSemanales(ejecutivaId, req) {
         try {
             const headers = this.getHeadersWithAuth(req);
-            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get(`http://localhost:3002/ejecutiva/kpis/semanales?ejecutivaId=${ejecutivaId}`, { headers }));
+            const userUrl = this.getServiceBaseUrl('user');
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get(`${userUrl}/ejecutiva/kpis/semanales?ejecutivaId=${ejecutivaId}`, { headers }));
             return response.data;
         }
         catch (error) {
@@ -954,7 +1068,8 @@ let ApiGatewayController = class ApiGatewayController {
     async getEjecutivaTrazabilidad(ejecutivaId, req) {
         try {
             const headers = this.getHeadersWithAuth(req);
-            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get(`http://localhost:3007/ejecutiva/trazabilidad?ejecutivaId=${ejecutivaId}`, { headers }));
+            const traceabilityUrl = this.getServiceBaseUrl('traceability');
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get(`${traceabilityUrl}/ejecutiva/trazabilidad?ejecutivaId=${ejecutivaId}`, { headers }));
             return response.data;
         }
         catch (error) {
@@ -964,7 +1079,8 @@ let ApiGatewayController = class ApiGatewayController {
     async createEjecutivaTrazabilidad(body, req) {
         try {
             const headers = this.getHeadersWithAuth(req);
-            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.post('http://localhost:3007/ejecutiva/trazabilidad', body, { headers }));
+            const traceabilityUrl = this.getServiceBaseUrl('traceability');
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.post(`${traceabilityUrl}/ejecutiva/trazabilidad`, body, { headers }));
             return response.data;
         }
         catch (error) {
@@ -974,7 +1090,8 @@ let ApiGatewayController = class ApiGatewayController {
     async getEjecutivaTrazabilidadPipeline(ejecutivaId, req) {
         try {
             const headers = this.getHeadersWithAuth(req);
-            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get(`http://localhost:3007/ejecutiva/trazabilidad/pipeline?ejecutivaId=${ejecutivaId}`, { headers }));
+            const traceabilityUrl = this.getServiceBaseUrl('traceability');
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get(`${traceabilityUrl}/ejecutiva/trazabilidad/pipeline?ejecutivaId=${ejecutivaId}`, { headers }));
             return response.data;
         }
         catch (error) {
@@ -984,7 +1101,8 @@ let ApiGatewayController = class ApiGatewayController {
     async getEjecutivaTrazabilidadActividades(ejecutivaId, limit = '1000', req) {
         try {
             const headers = this.getHeadersWithAuth(req);
-            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get(`http://localhost:3007/ejecutiva/trazabilidad/actividades?ejecutivaId=${ejecutivaId}&limit=${limit}`, { headers }));
+            const traceabilityUrl = this.getServiceBaseUrl('traceability');
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get(`${traceabilityUrl}/ejecutiva/trazabilidad/actividades?ejecutivaId=${ejecutivaId}&limit=${limit}`, { headers }));
             return response.data;
         }
         catch (error) {
@@ -994,7 +1112,8 @@ let ApiGatewayController = class ApiGatewayController {
     async updateEjecutivaTrazabilidadEtapa(body, req) {
         try {
             const headers = this.getHeadersWithAuth(req);
-            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.put('http://localhost:3007/ejecutiva/trazabilidad/etapa', body, { headers }));
+            const traceabilityUrl = this.getServiceBaseUrl('traceability');
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.put(`${traceabilityUrl}/ejecutiva/trazabilidad/etapa`, body, { headers }));
             return response.data;
         }
         catch (error) {
@@ -1004,7 +1123,8 @@ let ApiGatewayController = class ApiGatewayController {
     async getEjecutivaTrazabilidadStats(ejecutivaId, req) {
         try {
             const headers = this.getHeadersWithAuth(req);
-            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get(`http://localhost:3007/ejecutiva/trazabilidad/stats?ejecutivaId=${ejecutivaId}`, { headers }));
+            const traceabilityUrl = this.getServiceBaseUrl('traceability');
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get(`${traceabilityUrl}/ejecutiva/trazabilidad/stats?ejecutivaId=${ejecutivaId}`, { headers }));
             return response.data;
         }
         catch (error) {
@@ -1016,7 +1136,8 @@ let ApiGatewayController = class ApiGatewayController {
             console.log('📊 [API Gateway] === EMPRESA DASHBOARD STATS ===');
             console.log('📊 [API Gateway] Query clienteUsuarioId:', clienteUsuarioId);
             const headers = this.getHeadersWithAuth(req);
-            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get(`http://localhost:3002/empresa/dashboard/stats?clienteUsuarioId=${clienteUsuarioId}`, { headers }));
+            const userUrl = this.getServiceBaseUrl('user');
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get(`${userUrl}/empresa/dashboard/stats?clienteUsuarioId=${clienteUsuarioId}`, { headers }));
             console.log('✅ [API Gateway] Stats de empresa obtenidas exitosamente');
             return response.data;
         }
@@ -1029,7 +1150,8 @@ let ApiGatewayController = class ApiGatewayController {
         try {
             console.log('📋 [API Gateway] === EMPRESA TRAZABILIDAD ===');
             const headers = this.getHeadersWithAuth(req);
-            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get(`http://localhost:3002/empresa/trazabilidad?clienteUsuarioId=${clienteUsuarioId}`, { headers }));
+            const userUrl = this.getServiceBaseUrl('user');
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get(`${userUrl}/empresa/trazabilidad?clienteUsuarioId=${clienteUsuarioId}`, { headers }));
             console.log('✅ [API Gateway] Trazabilidad de empresa obtenida exitosamente');
             return response.data;
         }
@@ -1042,7 +1164,8 @@ let ApiGatewayController = class ApiGatewayController {
         try {
             console.log('👩‍💼 [API Gateway] === EMPRESA EJECUTIVA ===');
             const headers = this.getHeadersWithAuth(req);
-            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get(`http://localhost:3002/empresa/ejecutiva?clienteUsuarioId=${clienteUsuarioId}`, { headers }));
+            const userUrl = this.getServiceBaseUrl('user');
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get(`${userUrl}/empresa/ejecutiva?clienteUsuarioId=${clienteUsuarioId}`, { headers }));
             console.log('✅ [API Gateway] Info de ejecutiva obtenida exitosamente');
             return response.data;
         }
@@ -1055,7 +1178,8 @@ let ApiGatewayController = class ApiGatewayController {
         try {
             console.log('🔄 [API Gateway] === EMPRESA ACTIVIDADES ===');
             const headers = this.getHeadersWithAuth(req);
-            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get(`http://localhost:3002/empresa/actividades?clienteUsuarioId=${clienteUsuarioId}`, { headers }));
+            const userUrl = this.getServiceBaseUrl('user');
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get(`${userUrl}/empresa/actividades?clienteUsuarioId=${clienteUsuarioId}`, { headers }));
             console.log('✅ [API Gateway] Actividades de empresa obtenidas exitosamente');
             return response.data;
         }
@@ -1069,7 +1193,8 @@ let ApiGatewayController = class ApiGatewayController {
             console.log('👥 [API Gateway] === EMPRESA CLIENTES ===');
             console.log('👥 [API Gateway] Query clienteUsuarioId:', clienteUsuarioId);
             const headers = this.getHeadersWithAuth(req);
-            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get(`http://localhost:3002/empresa/clientes?clienteUsuarioId=${clienteUsuarioId}`, { headers }));
+            const userUrl = this.getServiceBaseUrl('user');
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get(`${userUrl}/empresa/clientes?clienteUsuarioId=${clienteUsuarioId}`, { headers }));
             console.log('✅ [API Gateway] Clientes de empresa obtenidos exitosamente');
             return response.data;
         }
@@ -1083,7 +1208,8 @@ let ApiGatewayController = class ApiGatewayController {
             console.log('👥 [API Gateway] === EMPRESA EJECUTIVAS ===');
             console.log('👥 [API Gateway] Query empresaId:', empresaId);
             const headers = this.getHeadersWithAuth(req);
-            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get(`http://localhost:3002/empresa/ejecutivas?empresaId=${empresaId}`, { headers }));
+            const userUrl = this.getServiceBaseUrl('user');
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get(`${userUrl}/empresa/ejecutivas?empresaId=${empresaId}`, { headers }));
             console.log('✅ [API Gateway] Ejecutivas de empresa obtenidas exitosamente');
             return response.data;
         }
@@ -1097,7 +1223,8 @@ let ApiGatewayController = class ApiGatewayController {
             console.log('📊 [API Gateway] === EMPRESA EQUIPO STATS ===');
             console.log('📊 [API Gateway] Query empresaId:', empresaId);
             const headers = this.getHeadersWithAuth(req);
-            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get(`http://localhost:3002/empresa/equipo/stats?empresaId=${empresaId}`, { headers }));
+            const userUrl = this.getServiceBaseUrl('user');
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get(`${userUrl}/empresa/equipo/stats?empresaId=${empresaId}`, { headers }));
             console.log('✅ [API Gateway] Stats de equipo obtenidas exitosamente');
             return response.data;
         }
@@ -1111,7 +1238,8 @@ let ApiGatewayController = class ApiGatewayController {
             console.log('🎯 [API Gateway] === EJECUTIVA EMBUDO ===');
             console.log('🎯 [API Gateway] Ejecutiva ID:', ejecutivaId, 'Empresa ID:', empresaId);
             const headers = this.getHeadersWithAuth(req);
-            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get(`http://localhost:3002/empresa/ejecutiva/${ejecutivaId}/embudo?empresaId=${empresaId}`, { headers }));
+            const userUrl = this.getServiceBaseUrl('user');
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get(`${userUrl}/empresa/ejecutiva/${ejecutivaId}/embudo?empresaId=${empresaId}`, { headers }));
             console.log('✅ [API Gateway] Embudo de ejecutiva obtenido exitosamente');
             return response.data;
         }
@@ -1125,7 +1253,8 @@ let ApiGatewayController = class ApiGatewayController {
             console.log('📈 [API Gateway] === EJECUTIVA ESTADÍSTICAS ===');
             console.log('📈 [API Gateway] Ejecutiva ID:', ejecutivaId, 'Empresa ID:', empresaId);
             const headers = this.getHeadersWithAuth(req);
-            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get(`http://localhost:3002/empresa/ejecutiva/${ejecutivaId}/estadisticas?empresaId=${empresaId}`, { headers }));
+            const userUrl = this.getServiceBaseUrl('user');
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get(`${userUrl}/empresa/ejecutiva/${ejecutivaId}/estadisticas?empresaId=${empresaId}`, { headers }));
             console.log('✅ [API Gateway] Estadísticas de ejecutiva obtenidas exitosamente');
             return response.data;
         }
@@ -1139,7 +1268,8 @@ let ApiGatewayController = class ApiGatewayController {
             console.log('👥 [API Gateway] === EJECUTIVA CLIENTES ===');
             console.log('👥 [API Gateway] Ejecutiva ID:', ejecutivaId, 'Empresa ID:', empresaId);
             const headers = this.getHeadersWithAuth(req);
-            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get(`http://localhost:3002/empresa/ejecutiva/${ejecutivaId}/clientes?empresaId=${empresaId}`, { headers }));
+            const userUrl = this.getServiceBaseUrl('user');
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get(`${userUrl}/empresa/ejecutiva/${ejecutivaId}/clientes?empresaId=${empresaId}`, { headers }));
             console.log('✅ [API Gateway] Clientes de ejecutiva obtenidos exitosamente');
             return response.data;
         }
@@ -1163,11 +1293,12 @@ let ApiGatewayController = class ApiGatewayController {
                 tipo: file.mimetype
             });
             const headers = this.getHeadersWithAuth(req);
+            const userUrl = this.getServiceBaseUrl('user');
             const formData = new FormData();
             const blob = new Blob([file.buffer], { type: file.mimetype });
             formData.append('file', blob, file.originalname);
             formData.append('ejecutivaId', ejecutivaId);
-            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.post('http://localhost:3002/ejecutiva/clientes/bulk', formData, {
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.post(`${userUrl}/ejecutiva/clientes/bulk`, formData, {
                 headers: {
                     ...headers,
                     'Content-Type': 'multipart/form-data'
@@ -1185,7 +1316,8 @@ let ApiGatewayController = class ApiGatewayController {
         try {
             console.log('📥 [API Gateway] === DESCARGAR PLANTILLA CLIENTES ===');
             const headers = this.getHeadersWithAuth(req);
-            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get(`http://localhost:3002/ejecutiva/clientes/plantilla?ejecutivaId=${ejecutivaId}`, {
+            const userUrl = this.getServiceBaseUrl('user');
+            const response = await (0, rxjs_1.firstValueFrom)(this.httpService.get(`${userUrl}/ejecutiva/clientes/plantilla?ejecutivaId=${ejecutivaId}`, {
                 headers,
                 responseType: 'stream'
             }));

@@ -11,12 +11,9 @@ export class LoggingInterceptor implements NestInterceptor {
     const url = request.url;
     const now = Date.now();
 
-    console.log(`➡️  ${method} ${url}`);
-
     return next.handle().pipe(
       tap(() => {
         const responseTime = Date.now() - now;
-        console.log(`✅  ${method} ${url} - ${responseTime}ms`);
       }),
     );
   }

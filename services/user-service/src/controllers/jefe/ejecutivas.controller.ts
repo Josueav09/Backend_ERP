@@ -49,16 +49,28 @@ export class EjecutivasController {
   }
 
   @Put(':id')
-  async updateEjecutiva(@Param('id') id: string, @Body() body: any) {
+  async updateEjecutiva(
+    @Param('id') id: string,
+    @Body() data: any
+  ) {
+ 
     try {
-      const result = await this.ejecutivasService.updateEjecutiva(parseInt(id), body);
+      const result = await this.ejecutivasService.updateEjecutiva(Number(id), data);
+
       if (!result) {
         throw new HttpException('Ejecutiva no encontrada', HttpStatus.NOT_FOUND);
       }
-      return result;
+
+      return {
+        success: true,
+        message: 'Ejecutiva actualizada correctamente',
+        data: result
+      };
     } catch (error) {
-      if (error instanceof HttpException) throw error;
-      throw new HttpException('Error al actualizar ejecutiva', HttpStatus.INTERNAL_SERVER_ERROR);
+      throw new HttpException(
+        error.message || 'Error al actualizar ejecutiva',
+        HttpStatus.BAD_REQUEST
+      );
     }
   }
 
@@ -79,7 +91,6 @@ export class EjecutivasController {
   @Get('disponibles-simple')
   async getEjecutivasDisponiblesSimple() {
     try {
-      console.log('🔍 [EjecutivasController] Endpoint simple para ejecutivas disponibles');
 
       const ejecutivas = await this.ejecutivaRepository.find({
         where: {
@@ -122,12 +133,9 @@ export class EjecutivasController {
           fecha_creacion: ej.fecha_creacion
         };
       });
-
-      console.log('✅ [EjecutivasController] Ejecutivas simples retornadas:', resultado.length);
       return resultado;
 
     } catch (error) {
-      console.error('❌ [EjecutivasController] Error en endpoint simple:', error);
 
       // ✅ SIEMPRE RETORNAR ARRAY, NUNCA ERROR
       return [];
