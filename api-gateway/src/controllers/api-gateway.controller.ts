@@ -31,19 +31,30 @@ export class ApiGatewayController {
 
   // 🔧 FUNCIÓN AUXILIAR PARA URLs DINÁMICAS
   private getServiceBaseUrl(service: string): string {
-    // Detectar si estamos en Docker
-    const isDocker = process.env.NODE_ENV === 'production' ||
-      fs.existsSync('/.dockerenv') ||
-      process.env.COMPOSE_PROJECT_NAME !== undefined;
-
-    const services = {
-      auth: isDocker ? 'http://auth-service:3001' : 'http://localhost:3001',
-      user: isDocker ? 'http://user-service:3002' : 'http://localhost:3002',
-      sales: isDocker ? 'http://sales-service:3003' : 'http://localhost:3003',
-      traceability: isDocker ? 'http://traceability-service:3007' : 'http://localhost:3007'
+    // 🔥 PRIORIDAD 1: Variables de entorno específicas de Azure
+    const envUrls = {
+      auth: process.env.AUTH_SERVICE_URL,
+      user: process.env.USER_SERVICE_URL,
+      sales: process.env.SALES_SERVICE_URL,
+      traceability: process.env.TRACEABILITY_SERVICE_URL
     };
 
-    return services[service];
+    // Si existe la variable de entorno, usarla
+    if (envUrls[service]) {
+      console.log(`✅ Usando URL de env para ${service}: ${envUrls[service]}`);
+      return envUrls[service];
+    }
+
+    // 🔥 PRIORIDAD 2: Nombres de servicio internos de Azure Container Apps
+    const azureServices = {
+      auth: 'http://growvia-app-auth:3001',
+      user: 'http://growvia-app-user:3002', 
+      sales: 'http://growvia-app-sales:3003',
+      traceability: 'http://growvia-app-traceability:3007'
+    };
+
+    console.log(`⚠️ Usando URL de Azure para ${service}: ${azureServices[service]}`);
+    return azureServices[service];
   }
 
   // 🔐 =====================================================
@@ -53,13 +64,32 @@ export class ApiGatewayController {
   @Get('auth/captcha')
   async getCaptcha(@Req() req: Request) {
     try {
+      console.log('🔍 [Gateway] Iniciando petición a /auth/captcha');
+      
       const headers = this.getHeadersWithAuth(req);
       const authUrl = this.getServiceBaseUrl('auth');
+      
+      console.log(`🔍 [Gateway] URL de auth service: ${authUrl}`);
+      console.log(`🔍 [Gateway] Headers:`, headers);
+
       const response = await firstValueFrom(
-        this.httpService.get(`${authUrl}/auth/captcha`, { headers })
+        this.httpService.get(`${authUrl}/auth/captcha`, { 
+          headers,
+          timeout: 10000 
+        })
       );
+      
+      console.log('✅ [Gateway] Captcha obtenido exitosamente');
       return response.data;
     } catch (error) {
+      console.error('❌ [Gateway] Error en /auth/captcha:', {
+        message: error.message,
+        code: error.code,
+        response: error.response?.data,
+        status: error.response?.status,
+        url: error.config?.url
+      });
+      
       throw new HttpException(
         error.response?.data?.message || 'Error al obtener captcha',
         error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR
